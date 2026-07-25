@@ -1551,49 +1551,269 @@ function Showrooms() {
 /* ================= SETTINGS ================= */
 
 function Settings() {
+  const CMS_KEY = "tf_site_cms";
+  const STORE_KEY = "tf_store_info";
+  const TABS = ["Site CMS", "Store Info", "API Config", "Danger Zone"] as const;
+  const [tab, setTab] = useState<(typeof TABS)[number]>("Site CMS");
+
+  const [cms, setCms] = useState({
+    hero_headline: "Your perfect sofa, crafted for you",
+    hero_subtext:
+      "Every sofa is custom-built to your exact fabric, colour, size, and leg choice by master craftsmen at our Indore workshop.",
+    hero_image: "",
+    hero_badge: "Indore's Custom Sofa Studio · Est. 2007",
+    hero_cta1: "Browse All Sofas",
+    hero_cta2: "Get Free Quote",
+    announcement: "",
+    announcement_on: false,
+    meta_title: "True Furniture's — Custom Sofas",
+    meta_description: "Fully customizable sofas designed in 3D. Hand-tailored in Indore & Ujjain.",
+    whatsapp_number: "7773896496",
+    delivery_note: "Free delivery in Indore & MP above ₹15,000",
+  });
+
+  const [store, setStore] = useState({
+    storeName: "True Furniture's",
+    phone: "+91 77738 96496",
+    email: "hello@truefurnitures.in",
+    address: "Vijay Nagar, Indore — 452010",
+    adminEmail: "admin@truefurnitures.in",
+    depositRate: 20,
+    freeDelivery: 15000,
+  });
+
+  const [apiUrl, setApiUrl] = useState("");
+
+  useEffect(() => {
+    try {
+      const c = window.localStorage.getItem(CMS_KEY);
+      if (c) setCms((p) => ({ ...p, ...JSON.parse(c) }));
+      const s = window.localStorage.getItem(STORE_KEY);
+      if (s) setStore((p) => ({ ...p, ...JSON.parse(s) }));
+      setApiUrl(window.location.origin);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const saveCms = () => {
+    try {
+      window.localStorage.setItem(CMS_KEY, JSON.stringify(cms));
+      toast.success("Site CMS saved locally.");
+    } catch {
+      toast.error("Could not save.");
+    }
+  };
+  const saveStore = () => {
+    try {
+      window.localStorage.setItem(STORE_KEY, JSON.stringify(store));
+      toast.success("Store info saved locally.");
+    } catch {
+      toast.error("Could not save.");
+    }
+  };
+  const pingApi = async () => {
+    try {
+      const r = await fetch("/api/public/health");
+      toast.success(r.ok ? "✓ API reachable" : `API returned ${r.status}`);
+    } catch {
+      toast.error("✗ Cannot reach API endpoint.");
+    }
+  };
+  const clearLocal = () => {
+    if (!confirm("Clear all locally cached data (cart, CMS, visitors)?")) return;
+    ["tf_cart", "tf_visitors", "tf_site_cms", "tf_store_info", "tf_welcome_seen", "tf_selected_city"].forEach(
+      (k) => {
+        try {
+          window.localStorage.removeItem(k);
+        } catch {
+          /* ignore */
+        }
+      },
+    );
+    toast.success("Local cache cleared. Reload to refresh.");
+  };
+
+  const cmsPatch = <K extends keyof typeof cms>(k: K, v: (typeof cms)[K]) => setCms((p) => ({ ...p, [k]: v }));
+  const storePatch = <K extends keyof typeof store>(k: K, v: (typeof store)[K]) =>
+    setStore((p) => ({ ...p, [k]: v }));
+
   return (
-    <div className="grid gap-5 lg:grid-cols-2">
-      <Card>
-        <CardTitle>Store Information</CardTitle>
-        <div className="space-y-3">
-          <Field label="Store Name"><DarkInput defaultValue="True Furniture's" /></Field>
-          <Field label="Phone"><DarkInput defaultValue="+91 77738 96496" /></Field>
-          <Field label="WhatsApp"><DarkInput defaultValue="+91 77738 96496" /></Field>
-          <Field label="Email"><DarkInput defaultValue="hello@truefurnitures.in" /></Field>
-          <Field label="Address"><DarkInput defaultValue="Vijay Nagar, Indore — 452010" /></Field>
+    <div className="space-y-5 max-w-4xl">
+      <div className="flex border-b overflow-x-auto" style={{ borderColor: "#2A2A38" }}>
+        {TABS.map((t) => {
+          const active = tab === t;
+          return (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className="px-5 py-2.5 text-[12px] whitespace-nowrap -mb-px border-b-2 transition-colors"
+              style={{
+                background: "transparent",
+                color: active ? "#C8A86B" : "#888899",
+                borderBottomColor: active ? "#C8A86B" : "transparent",
+              }}
+            >
+              {t}
+            </button>
+          );
+        })}
+      </div>
+
+      {tab === "Site CMS" && (
+        <Card>
+          <CardTitle right="Controls the storefront">Site CMS</CardTitle>
+          <div className="grid gap-x-6 md:grid-cols-2">
+            <div className="space-y-4">
+              <div className="text-[11px] uppercase tracking-[0.14em]" style={{ color: "#C8A86B" }}>
+                Hero Section
+              </div>
+              <Field label="Hero Headline">
+                <DarkInput value={cms.hero_headline} onChange={(e) => cmsPatch("hero_headline", e.target.value)} />
+              </Field>
+              <Field label="Hero Sub-text">
+                <DarkTextarea rows={3} value={cms.hero_subtext} onChange={(e) => cmsPatch("hero_subtext", e.target.value)} />
+              </Field>
+              <Field label="Hero Badge">
+                <DarkInput value={cms.hero_badge} onChange={(e) => cmsPatch("hero_badge", e.target.value)} />
+              </Field>
+              <Field label="CTA Button 1">
+                <DarkInput value={cms.hero_cta1} onChange={(e) => cmsPatch("hero_cta1", e.target.value)} />
+              </Field>
+              <Field label="CTA Button 2">
+                <DarkInput value={cms.hero_cta2} onChange={(e) => cmsPatch("hero_cta2", e.target.value)} />
+              </Field>
+            </div>
+            <div className="space-y-4">
+              <div className="text-[11px] uppercase tracking-[0.14em]" style={{ color: "#C8A86B" }}>
+                Media & SEO
+              </div>
+              <Field label="Hero Image URL">
+                <DarkInput value={cms.hero_image} onChange={(e) => cmsPatch("hero_image", e.target.value)} placeholder="https://…" />
+                {cms.hero_image && (
+                  <img src={cms.hero_image} alt="" className="mt-3 w-full h-32 object-cover rounded-md opacity-70" />
+                )}
+              </Field>
+              <Field label="Meta Title (SEO)">
+                <DarkInput value={cms.meta_title} onChange={(e) => cmsPatch("meta_title", e.target.value)} />
+              </Field>
+              <Field label="Meta Description (SEO)">
+                <DarkTextarea rows={2} value={cms.meta_description} onChange={(e) => cmsPatch("meta_description", e.target.value)} />
+              </Field>
+              <div className="text-[11px] uppercase tracking-[0.14em] pt-2" style={{ color: "#C8A86B" }}>
+                Announcement Bar
+              </div>
+              <div className="flex items-center justify-between py-1">
+                <div className="text-[13px]">Show announcement</div>
+                <FeatureToggle defaultOn={cms.announcement_on} />
+              </div>
+              <Field label="Announcement Text">
+                <DarkInput value={cms.announcement} onChange={(e) => cmsPatch("announcement", e.target.value)} placeholder='e.g. "🎉 Sale — 20% off recliners"' />
+              </Field>
+              <Field label="WhatsApp Number">
+                <DarkInput value={cms.whatsapp_number} onChange={(e) => cmsPatch("whatsapp_number", e.target.value)} />
+              </Field>
+              <Field label="Delivery Note">
+                <DarkInput value={cms.delivery_note} onChange={(e) => cmsPatch("delivery_note", e.target.value)} />
+              </Field>
+            </div>
+          </div>
           <button
-            onClick={() => toast.success("Settings saved locally. Wire to a `store_settings` table when needed.")}
-            className="rounded-md px-4 py-2 text-[13px] font-semibold"
+            onClick={saveCms}
+            className="mt-6 rounded-md px-6 py-2.5 text-[13px] font-semibold"
             style={{ background: "#C8A86B", color: "#1a1a1a" }}
           >
-            Save Changes
+            💾 Save Site Config
+          </button>
+        </Card>
+      )}
+
+      {tab === "Store Info" && (
+        <Card>
+          <CardTitle>Store Information</CardTitle>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Store Name">
+              <DarkInput value={store.storeName} onChange={(e) => storePatch("storeName", e.target.value)} />
+            </Field>
+            <Field label="Phone">
+              <DarkInput value={store.phone} onChange={(e) => storePatch("phone", e.target.value)} />
+            </Field>
+            <Field label="Email">
+              <DarkInput value={store.email} onChange={(e) => storePatch("email", e.target.value)} />
+            </Field>
+            <Field label="Admin Email">
+              <DarkInput value={store.adminEmail} onChange={(e) => storePatch("adminEmail", e.target.value)} />
+            </Field>
+            <div className="sm:col-span-2">
+              <Field label="Address">
+                <DarkInput value={store.address} onChange={(e) => storePatch("address", e.target.value)} />
+              </Field>
+            </div>
+            <Field label="Advance Deposit (%)">
+              <DarkInput
+                type="number"
+                value={store.depositRate}
+                onChange={(e) => storePatch("depositRate", Number(e.target.value))}
+              />
+            </Field>
+            <Field label="Free Delivery Above (₹)">
+              <DarkInput
+                type="number"
+                value={store.freeDelivery}
+                onChange={(e) => storePatch("freeDelivery", Number(e.target.value))}
+              />
+            </Field>
+          </div>
+          <button
+            onClick={saveStore}
+            className="mt-6 rounded-md px-6 py-2.5 text-[13px] font-semibold"
+            style={{ background: "#C8A86B", color: "#1a1a1a" }}
+          >
+            💾 Save Store Info
+          </button>
+        </Card>
+      )}
+
+      {tab === "API Config" && (
+        <Card>
+          <CardTitle>API Configuration</CardTitle>
+          <Field label="App Origin">
+            <DarkInput value={apiUrl} readOnly />
+          </Field>
+          <button
+            onClick={pingApi}
+            className="mt-3 rounded-md px-4 py-2 text-[13px]"
+            style={{ background: "rgba(255,255,255,0.05)", border: "1px solid #2A2A38", color: "#E8E8F0" }}
+          >
+            ↺ Ping /api/public/health
+          </button>
+          <div
+            className="mt-5 rounded-lg p-4 text-[12px] space-y-1"
+            style={{ background: "#16161D", border: "1px solid #2A2A38", color: "#888899" }}
+          >
+            <div className="font-medium mb-2" style={{ color: "#E8E8F0" }}>Public endpoints</div>
+            <div>GET /api/public/health — Health check</div>
+            <div>POST /api/public/webhook — Webhook receiver</div>
+          </div>
+        </Card>
+      )}
+
+      {tab === "Danger Zone" && (
+        <div className="rounded-xl p-5" style={{ background: "#1E1E28", border: "1px solid rgba(224,80,80,0.3)" }}>
+          <div className="text-[13px] font-semibold mb-2" style={{ color: "#E05050" }}>Danger Zone</div>
+          <div className="text-[12px] mb-4" style={{ color: "#888899" }}>
+            Clear all locally cached data from this browser (cart, CMS drafts, visitor log, welcome popup state).
+            Live database data is unaffected.
+          </div>
+          <button
+            onClick={clearLocal}
+            className="rounded-md px-5 py-2.5 text-[13px]"
+            style={{ background: "transparent", border: "1px solid #E05050", color: "#E05050" }}
+          >
+            Clear Local Cache
           </button>
         </div>
-      </Card>
-      <Card>
-        <CardTitle>Feature Toggles</CardTitle>
-        <div className="space-y-3">
-          {[
-            ["3D Configurator", "Interactive models on product pages", true],
-            ["Welcome Modal", "First-visit location + discount popup", true],
-            ["Auto-confirm Orders", "Skip manual review for online deposits", false],
-            ["Newsletter Signup", "Footer + welcome modal capture", true],
-            ["Blog", "Public /blog route visible", true],
-          ].map(([label, hint, on]) => (
-            <div
-              key={label as string}
-              className="flex items-center justify-between py-2 border-b last:border-b-0"
-              style={{ borderColor: "rgba(42,42,56,0.5)" }}
-            >
-              <div>
-                <div className="text-[13px]">{label}</div>
-                <div className="text-[11px]" style={{ color: "#888899" }}>{hint}</div>
-              </div>
-              <FeatureToggle defaultOn={Boolean(on)} />
-            </div>
-          ))}
-        </div>
-      </Card>
+      )}
     </div>
   );
 }
