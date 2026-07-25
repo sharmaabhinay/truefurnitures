@@ -12,7 +12,7 @@ const slides = [
     italic: "Yours to Design.",
     body: "Bespoke sofas — fabric, colour, size, legs, add-ons. Every stitch, every curve, strictly by your rules.",
     cta: "Start 3D Design",
-    to: "/collections" as const,
+    to: "/design" as const,
   },
   {
     image: sofaEmerald,
@@ -70,7 +70,7 @@ export function HeroCarousel() {
               {s.cta}
             </Link>
           ) : (
-            <Link to="/collections" className="px-6 sm:px-8 py-4 bg-[color:var(--brand-dark)] text-white text-[10px] sm:text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors">
+            <Link to="/design" className="px-6 sm:px-8 py-4 bg-[color:var(--brand-dark)] text-white text-[10px] sm:text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors">
               {s.cta}
             </Link>
           )}

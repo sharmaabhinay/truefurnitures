@@ -13,6 +13,7 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as ShowroomsRouteImport } from './routes/showrooms'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as FaqRouteImport } from './routes/faq'
+import { Route as DesignRouteImport } from './routes/design'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CollectionsRouteImport } from './routes/collections'
 import { Route as CartRouteImport } from './routes/cart'
@@ -46,6 +47,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
 const FaqRoute = FaqRouteImport.update({
   id: '/faq',
   path: '/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DesignRoute = DesignRouteImport.update({
+  id: '/design',
+  path: '/design',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContactRoute = ContactRouteImport.update({
@@ -127,6 +133,7 @@ export interface FileRoutesByFullPath {
   '/cart': typeof CartRoute
   '/collections': typeof CollectionsRoute
   '/contact': typeof ContactRoute
+  '/design': typeof DesignRoute
   '/faq': typeof FaqRoute
   '/privacy': typeof PrivacyRoute
   '/showrooms': typeof ShowroomsRoute
@@ -146,6 +153,7 @@ export interface FileRoutesByTo {
   '/cart': typeof CartRoute
   '/collections': typeof CollectionsRoute
   '/contact': typeof ContactRoute
+  '/design': typeof DesignRoute
   '/faq': typeof FaqRoute
   '/privacy': typeof PrivacyRoute
   '/showrooms': typeof ShowroomsRoute
@@ -167,6 +175,7 @@ export interface FileRoutesById {
   '/cart': typeof CartRoute
   '/collections': typeof CollectionsRoute
   '/contact': typeof ContactRoute
+  '/design': typeof DesignRoute
   '/faq': typeof FaqRoute
   '/privacy': typeof PrivacyRoute
   '/showrooms': typeof ShowroomsRoute
@@ -188,6 +197,7 @@ export interface FileRouteTypes {
     | '/cart'
     | '/collections'
     | '/contact'
+    | '/design'
     | '/faq'
     | '/privacy'
     | '/showrooms'
@@ -207,6 +217,7 @@ export interface FileRouteTypes {
     | '/cart'
     | '/collections'
     | '/contact'
+    | '/design'
     | '/faq'
     | '/privacy'
     | '/showrooms'
@@ -227,6 +238,7 @@ export interface FileRouteTypes {
     | '/cart'
     | '/collections'
     | '/contact'
+    | '/design'
     | '/faq'
     | '/privacy'
     | '/showrooms'
@@ -248,6 +260,7 @@ export interface RootRouteChildren {
   CartRoute: typeof CartRoute
   CollectionsRoute: typeof CollectionsRoute
   ContactRoute: typeof ContactRoute
+  DesignRoute: typeof DesignRoute
   FaqRoute: typeof FaqRoute
   PrivacyRoute: typeof PrivacyRoute
   ShowroomsRoute: typeof ShowroomsRoute
@@ -284,6 +297,13 @@ declare module '@tanstack/react-router' {
       path: '/faq'
       fullPath: '/faq'
       preLoaderRoute: typeof FaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/design': {
+      id: '/design'
+      path: '/design'
+      fullPath: '/design'
+      preLoaderRoute: typeof DesignRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contact': {
@@ -420,6 +440,7 @@ const rootRouteChildren: RootRouteChildren = {
   CartRoute: CartRoute,
   CollectionsRoute: CollectionsRoute,
   ContactRoute: ContactRoute,
+  DesignRoute: DesignRoute,
   FaqRoute: FaqRoute,
   PrivacyRoute: PrivacyRoute,
   ShowroomsRoute: ShowroomsRoute,

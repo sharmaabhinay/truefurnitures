@@ -68,6 +68,24 @@ const sofaQuery = (slug: string) =>
     },
   });
 
+type RelatedSofa = { id: string; slug: string; name: string; tagline: string | null; base_price: number };
+
+const relatedQuery = (slug: string) =>
+  queryOptions({
+    queryKey: ["sofa-related", slug],
+    queryFn: async (): Promise<RelatedSofa[]> => {
+      const { data, error } = await supabase
+        .from("sofas")
+        .select("id, slug, name, tagline, base_price")
+        .eq("is_published", true)
+        .neq("slug", slug)
+        .order("sort_order")
+        .limit(3);
+      if (error) return [];
+      return data ?? [];
+    },
+  });
+
 export const Route = createFileRoute("/products/$slug")({
   loader: async ({ params, context }) => {
     const data = await context.queryClient.ensureQueryData(sofaQuery(params.slug));
@@ -123,6 +141,7 @@ function ProductPage() {
   const { slug } = Route.useParams();
   const navigate = useNavigate();
   const { data: sofa } = useQuery(sofaQuery(slug));
+  const { data: related } = useQuery(relatedQuery(slug));
   const cart = useCart();
   const [activeImage, setActiveImage] = useState(0);
   const [fabric, setFabric] = useState<keyof typeof fabricSwatches>("boucle");
@@ -291,6 +310,38 @@ function ProductPage() {
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+      )}
+
+      {/* Related products */}
+      {related && related.length > 0 && (
+        <section className="py-16 sm:py-20 max-w-7xl mx-auto px-4 sm:px-6 md:px-10">
+          <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
+            <div>
+              <span className="tf-chip mb-2">You May Also Like</span>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-display mt-3 text-balance">More silhouettes to customize.</h2>
+            </div>
+            <Link to="/collections" className="text-[10px] font-bold uppercase tracking-widest border-b border-[color:var(--brand-dark)] pb-1">View all →</Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {related.map((r) => {
+              const img = heroImages[r.slug] ?? sofaMalwa;
+              return (
+                <Link key={r.id} to="/products/$slug" params={{ slug: r.slug }} className="group hover-lift block">
+                  <div className="aspect-[4/5] bg-[color:var(--brand-muted)] mb-4 overflow-hidden">
+                    <img src={img} alt={r.name} loading="lazy" className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700" />
+                  </div>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-display text-lg">{r.name}</h3>
+                      <p className="text-[10px] uppercase tracking-widest text-[color:var(--brand-dark)]/40 mt-1">{r.tagline}</p>
+                    </div>
+                    <span className="text-sm font-medium whitespace-nowrap">{formatINR(Number(r.base_price))}</span>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </section>
       )}

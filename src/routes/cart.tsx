@@ -120,6 +120,42 @@ function CartPage() {
             </aside>
           </div>
         )}
+
+        {/* Payment options */}
+        <section className="mt-16 border-t border-[color:var(--brand-dark)]/10 pt-12">
+          <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
+            <div>
+              <span className="tf-chip mb-2">Secure Payments</span>
+              <h2 className="text-2xl sm:text-3xl font-display mt-3 text-balance">Every payment method you use — accepted.</h2>
+              <p className="text-sm text-[color:var(--brand-dark)]/60 mt-2 max-w-xl">Pay 20% deposit online now, balance on delivery. Choose UPI, cards, netbanking, wallets or cash-on-delivery in Indore &amp; Ujjain.</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {[
+              { name: "UPI", sub: "GPay · PhonePe · Paytm" },
+              { name: "Cards", sub: "Visa · Master · Rupay" },
+              { name: "Netbanking", sub: "All major banks" },
+              { name: "Wallets", sub: "Paytm · Amazon Pay" },
+              { name: "EMI", sub: "No-cost 3/6/9 mo" },
+              { name: "Cash on Delivery", sub: "Indore &amp; Ujjain" },
+            ].map((p) => (
+              <div key={p.name} className="bg-white border border-[color:var(--brand-dark)]/10 p-4 text-center hover-lift">
+                <div className="text-xs font-bold uppercase tracking-widest">{p.name}</div>
+                <div className="text-[10px] text-[color:var(--brand-dark)]/50 mt-1" dangerouslySetInnerHTML={{ __html: p.sub }} />
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 flex flex-wrap items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-dark)]/50">
+            <span className="flex items-center gap-2">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6z"/></svg>
+              256-bit SSL Secured
+            </span>
+            <span>·</span>
+            <span>PCI-DSS Compliant Gateway</span>
+            <span>·</span>
+            <a href="https://wa.me/917773896496" className="hover:text-[color:var(--brand-accent)]">Need help? WhatsApp +91 77738 96496</a>
+          </div>
+        </section>
       </div>
       <SiteFooter />
     </div>
