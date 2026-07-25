@@ -28,12 +28,15 @@ type SharedDesign = {
 export const Route = createFileRoute("/shared-design/$token")({
   loader: async ({ params }) => {
     const { data } = await supabase
-      .from("saved_designs")
-      .select("id, name, config, sofa:sofas(slug, name)")
-      .eq("share_token", params.token)
+      .rpc("get_shared_design", { p_token: params.token })
       .maybeSingle();
     if (!data) throw notFound();
-    return data as unknown as SharedDesign;
+    return {
+      id: data.id,
+      name: data.name,
+      config: data.config,
+      sofa: data.sofa_slug ? { slug: data.sofa_slug, name: data.sofa_name } : null,
+    } as SharedDesign;
   },
   head: ({ loaderData }) => ({
     meta: [
