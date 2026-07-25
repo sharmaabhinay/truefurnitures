@@ -102,7 +102,7 @@ function Home() {
                 <div className="w-4 h-px bg-white/30"></div> Instant Price Quote
               </li>
             </ul>
-            <Link to="/collections" className="inline-block px-10 py-5 bg-[color:var(--brand-accent)] text-[color:var(--brand-dark)] text-xs font-black uppercase tracking-[0.2em] hover:bg-white transition-colors">
+            <Link to="/design" className="inline-block px-10 py-5 bg-[color:var(--brand-accent)] text-[color:var(--brand-dark)] text-xs font-black uppercase tracking-[0.2em] hover:bg-white transition-colors">
               Open Creator
             </Link>
           </div>
