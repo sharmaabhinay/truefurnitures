@@ -478,24 +478,30 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           city: string | null
           created_at: string
+          email: string | null
           full_name: string | null
           id: string
           phone: string | null
           updated_at: string
         }
         Insert: {
+          avatar_url?: string | null
           city?: string | null
           created_at?: string
+          email?: string | null
           full_name?: string | null
           id: string
           phone?: string | null
           updated_at?: string
         }
         Update: {
+          avatar_url?: string | null
           city?: string | null
           created_at?: string
+          email?: string | null
           full_name?: string | null
           id?: string
           phone?: string | null
@@ -931,6 +937,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_addresses: {
+        Row: {
+          address_line: string
+          city: string
+          created_at: string
+          full_name: string
+          id: string
+          is_default: boolean
+          label: string
+          landmark: string | null
+          phone: string
+          pincode: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address_line: string
+          city: string
+          created_at?: string
+          full_name: string
+          id?: string
+          is_default?: boolean
+          label?: string
+          landmark?: string | null
+          phone: string
+          pincode: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address_line?: string
+          city?: string
+          created_at?: string
+          full_name?: string
+          id?: string
+          is_default?: boolean
+          label?: string
+          landmark?: string | null
+          phone?: string
+          pincode?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

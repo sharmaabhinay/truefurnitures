@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as ShowroomsRouteImport } from './routes/showrooms'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as FaqRouteImport } from './routes/faq'
@@ -29,6 +30,7 @@ import { Route as SharedDesignTokenRouteImport } from './routes/shared-design.$t
 import { Route as ProductsSlugRouteImport } from './routes/products.$slug'
 import { Route as ConfigureSlugRouteImport } from './routes/configure.$slug'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedPaymentRouteImport } from './routes/_authenticated/payment'
 import { Route as AuthenticatedMyDesignsRouteImport } from './routes/_authenticated/my-designs'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -48,6 +50,11 @@ const TermsRoute = TermsRouteImport.update({
 const ShowroomsRoute = ShowroomsRouteImport.update({
   id: '/showrooms',
   path: '/showrooms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -139,6 +146,11 @@ const BlogSlugRoute = BlogSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => BlogRoute,
 } as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPaymentRoute = AuthenticatedPaymentRouteImport.update({
   id: '/payment',
   path: '/payment',
@@ -208,6 +220,7 @@ export interface FileRoutesByFullPath {
   '/faq': typeof FaqRoute
   '/gallery': typeof GalleryRoute
   '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/showrooms': typeof ShowroomsRoute
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
@@ -215,6 +228,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/my-designs': typeof AuthenticatedMyDesignsRoute
   '/payment': typeof AuthenticatedPaymentRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/configure/$slug': typeof ConfigureSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
@@ -239,12 +253,14 @@ export interface FileRoutesByTo {
   '/faq': typeof FaqRoute
   '/gallery': typeof GalleryRoute
   '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/showrooms': typeof ShowroomsRoute
   '/terms': typeof TermsRoute
   '/checkout': typeof AuthenticatedCheckoutRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/my-designs': typeof AuthenticatedMyDesignsRoute
   '/payment': typeof AuthenticatedPaymentRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/configure/$slug': typeof ConfigureSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
@@ -271,6 +287,7 @@ export interface FileRoutesById {
   '/faq': typeof FaqRoute
   '/gallery': typeof GalleryRoute
   '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/showrooms': typeof ShowroomsRoute
   '/terms': typeof TermsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
@@ -278,6 +295,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/my-designs': typeof AuthenticatedMyDesignsRoute
   '/_authenticated/payment': typeof AuthenticatedPaymentRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/configure/$slug': typeof ConfigureSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
@@ -304,6 +322,7 @@ export interface FileRouteTypes {
     | '/faq'
     | '/gallery'
     | '/privacy'
+    | '/reset-password'
     | '/showrooms'
     | '/terms'
     | '/admin'
@@ -311,6 +330,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/my-designs'
     | '/payment'
+    | '/profile'
     | '/blog/$slug'
     | '/configure/$slug'
     | '/products/$slug'
@@ -335,12 +355,14 @@ export interface FileRouteTypes {
     | '/faq'
     | '/gallery'
     | '/privacy'
+    | '/reset-password'
     | '/showrooms'
     | '/terms'
     | '/checkout'
     | '/dashboard'
     | '/my-designs'
     | '/payment'
+    | '/profile'
     | '/blog/$slug'
     | '/configure/$slug'
     | '/products/$slug'
@@ -366,6 +388,7 @@ export interface FileRouteTypes {
     | '/faq'
     | '/gallery'
     | '/privacy'
+    | '/reset-password'
     | '/showrooms'
     | '/terms'
     | '/_authenticated/admin'
@@ -373,6 +396,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/my-designs'
     | '/_authenticated/payment'
+    | '/_authenticated/profile'
     | '/blog/$slug'
     | '/configure/$slug'
     | '/products/$slug'
@@ -399,6 +423,7 @@ export interface RootRouteChildren {
   FaqRoute: typeof FaqRoute
   GalleryRoute: typeof GalleryRoute
   PrivacyRoute: typeof PrivacyRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   ShowroomsRoute: typeof ShowroomsRoute
   TermsRoute: typeof TermsRoute
   ConfigureSlugRoute: typeof ConfigureSlugRoute
@@ -421,6 +446,13 @@ declare module '@tanstack/react-router' {
       path: '/showrooms'
       fullPath: '/showrooms'
       preLoaderRoute: typeof ShowroomsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -549,6 +581,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogSlugRouteImport
       parentRoute: typeof BlogRoute
     }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/payment': {
       id: '/_authenticated/payment'
       path: '/payment'
@@ -643,6 +682,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedMyDesignsRoute: typeof AuthenticatedMyDesignsRoute
   AuthenticatedPaymentRoute: typeof AuthenticatedPaymentRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedOrdersIdReceiptRoute: typeof AuthenticatedOrdersIdReceiptRoute
 }
 
@@ -652,6 +692,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedMyDesignsRoute: AuthenticatedMyDesignsRoute,
   AuthenticatedPaymentRoute: AuthenticatedPaymentRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedOrdersIdReceiptRoute: AuthenticatedOrdersIdReceiptRoute,
 }
 
@@ -683,6 +724,7 @@ const rootRouteChildren: RootRouteChildren = {
   FaqRoute: FaqRoute,
   GalleryRoute: GalleryRoute,
   PrivacyRoute: PrivacyRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   ShowroomsRoute: ShowroomsRoute,
   TermsRoute: TermsRoute,
   ConfigureSlugRoute: ConfigureSlugRoute,

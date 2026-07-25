@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
@@ -37,6 +37,18 @@ const schema = z.object({
 
 type FormState = z.infer<typeof schema>;
 
+type SavedAddress = {
+  id: string;
+  label: string;
+  full_name: string;
+  phone: string;
+  address_line: string;
+  landmark: string | null;
+  city: string;
+  pincode: string;
+  is_default: boolean;
+};
+
 function Checkout() {
   const { items, subtotal, discount, total, coupon, clear } = useCart();
   const navigate = useNavigate();
@@ -52,6 +64,70 @@ function Checkout() {
   });
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [addresses, setAddresses] = useState<SavedAddress[]>([]);
+  const [selectedAddrId, setSelectedAddrId] = useState<string>("");
+  const [saveAddress, setSaveAddress] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.auth.getUser();
+      const uid = data.user?.id ?? null;
+      setUserId(uid);
+      if (!uid) return;
+      const [{ data: p }, { data: a }] = await Promise.all([
+        supabase.from("profiles").select("full_name, phone, email, city").eq("id", uid).maybeSingle(),
+        supabase.from("user_addresses").select("*").eq("user_id", uid).order("is_default", { ascending: false }).order("created_at", { ascending: false }),
+      ]);
+      const list = (a as SavedAddress[] | null) ?? [];
+      setAddresses(list);
+      const authEmail = data.user?.email ?? "";
+      const profileEmail = (p as { email?: string | null } | null)?.email ?? "";
+      // Prefer default address; otherwise seed from profile
+      const def = list.find((x) => x.is_default) ?? list[0];
+      if (def) {
+        setSelectedAddrId(def.id);
+        setForm((s) => ({
+          ...s,
+          full_name: def.full_name,
+          phone: def.phone,
+          email: profileEmail || authEmail || s.email,
+          city: (def.city as "Indore" | "Ujjain") ?? "Indore",
+          address_line: def.address_line,
+          landmark: def.landmark ?? "",
+          pincode: def.pincode,
+        }));
+      } else if (p) {
+        const prof = p as { full_name?: string | null; phone?: string | null; city?: string | null; email?: string | null };
+        setForm((s) => ({
+          ...s,
+          full_name: prof.full_name ?? s.full_name,
+          phone: prof.phone ?? s.phone,
+          email: prof.email ?? authEmail ?? s.email,
+          city: (prof.city === "Ujjain" ? "Ujjain" : "Indore"),
+        }));
+      } else if (authEmail) {
+        setForm((s) => ({ ...s, email: authEmail }));
+      }
+    })();
+  }, []);
+
+  function selectAddress(id: string) {
+    setSelectedAddrId(id);
+    if (id === "__new") return;
+    const a = addresses.find((x) => x.id === id);
+    if (!a) return;
+    setForm((s) => ({
+      ...s,
+      full_name: a.full_name,
+      phone: a.phone,
+      city: (a.city as "Indore" | "Ujjain") ?? "Indore",
+      address_line: a.address_line,
+      landmark: a.landmark ?? "",
+      pincode: a.pincode,
+    }));
+    setErrors({});
+  }
 
   const deposit = Math.round(total * 0.2);
   const balance = total - deposit;
@@ -93,10 +169,41 @@ function Checkout() {
     setSubmitting(true);
     try {
       const { data: sess } = await supabase.auth.getSession();
-      const userId = sess.session?.user.id;
-      if (!userId) throw new Error("Not signed in");
+      const uid = sess.session?.user.id ?? userId;
+      if (!uid) throw new Error("Not signed in");
 
       const data = parsed.data;
+
+      // Optionally save this delivery address for future orders
+      if (saveAddress && selectedAddrId === "__new") {
+        try {
+          await supabase.from("user_addresses").insert({
+            user_id: uid,
+            label: "Home",
+            full_name: data.full_name,
+            phone: data.phone,
+            address_line: data.address_line,
+            landmark: data.landmark || null,
+            city: data.city,
+            pincode: data.pincode,
+            is_default: addresses.length === 0,
+          });
+        } catch {
+          // non-fatal
+        }
+      }
+
+      // Keep profile in sync (name/phone/city) so future checkouts prefill.
+      try {
+        await supabase.from("profiles").update({
+          full_name: data.full_name,
+          phone: data.phone,
+          city: data.city,
+        }).eq("id", uid);
+      } catch {
+        // non-fatal
+      }
+
       const addressBlob = [data.address_line, data.landmark, `Pincode: ${data.pincode}`, `Name: ${data.full_name}`, `Email: ${data.email}`]
         .filter(Boolean)
         .join(" · ");
@@ -108,7 +215,7 @@ function Checkout() {
         const lineTotal = lineSubtotal - lineDiscount;
         const lineDeposit = Math.round(lineTotal * 0.2);
         return {
-          user_id: userId,
+          user_id: uid,
           sofa_id: i.sofaId,
           sofa_snapshot: { name: i.name, slug: i.slug, image: i.image, unit_price: i.unitPrice, quantity: i.quantity },
           fabric_snapshot: { name: i.fabric },
@@ -166,6 +273,36 @@ function Checkout() {
           <div className="space-y-8">
             <section className="bg-white border border-[color:var(--brand-dark)]/10 p-6">
               <h2 className="font-display text-xl mb-6">Delivery Details</h2>
+              {addresses.length > 0 && (
+                <div className="mb-6">
+                  <label className={labelCls}>Deliver To</label>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {addresses.map((a) => (
+                      <button
+                        key={a.id}
+                        type="button"
+                        onClick={() => selectAddress(a.id)}
+                        className={`text-left border p-3 text-sm transition-colors ${selectedAddrId === a.id ? "border-[color:var(--brand-dark)] bg-[color:var(--brand-muted)]/50" : "border-[color:var(--brand-dark)]/15 hover:border-[color:var(--brand-dark)]/40"}`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] font-bold uppercase tracking-widest">{a.label}</span>
+                          {a.is_default && <span className="text-[9px] px-1.5 py-0.5 bg-[color:var(--brand-accent)] text-white uppercase tracking-widest">Default</span>}
+                        </div>
+                        <div className="font-semibold">{a.full_name}</div>
+                        <div className="text-[color:var(--brand-dark)]/70 text-xs line-clamp-2">{a.address_line}, {a.city} — {a.pincode}</div>
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedAddrId("__new"); setForm((s) => ({ ...s, full_name: "", phone: "", address_line: "", landmark: "", pincode: "" })); }}
+                      className={`text-left border p-3 text-sm border-dashed transition-colors ${selectedAddrId === "__new" ? "border-[color:var(--brand-dark)] bg-[color:var(--brand-muted)]/50" : "border-[color:var(--brand-dark)]/25 hover:border-[color:var(--brand-dark)]/60"}`}
+                    >
+                      <div className="text-[10px] font-bold uppercase tracking-widest mb-1">+ Use a new address</div>
+                      <div className="text-xs text-[color:var(--brand-dark)]/60">Enter details below</div>
+                    </button>
+                  </div>
+                </div>
+              )}
               <div className="grid gap-5 sm:grid-cols-2">
                 <div className="sm:col-span-2">
                   <label className={labelCls} htmlFor="full_name">Full Name</label>
@@ -208,6 +345,12 @@ function Checkout() {
                   <label className={labelCls} htmlFor="notes">Delivery Notes (optional)</label>
                   <textarea id="notes" rows={3} className={inputCls} value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Access instructions, preferred delivery window…" />
                 </div>
+                {(addresses.length === 0 || selectedAddrId === "__new") && (
+                  <label className="sm:col-span-2 flex items-center gap-2 text-xs text-[color:var(--brand-dark)]/70">
+                    <input type="checkbox" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} />
+                    Save this address to my profile for future orders
+                  </label>
+                )}
               </div>
             </section>
 
