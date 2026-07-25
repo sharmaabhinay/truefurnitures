@@ -112,6 +112,25 @@ function Dashboard() {
                     </div>
                   </header>
 
+                  {o.status === "pending_deposit" && (
+                    <div className="mb-6 flex flex-wrap items-center justify-between gap-4 bg-amber-50 border border-amber-200 p-4">
+                      <div className="min-w-0">
+                        <p className="text-xs font-black uppercase tracking-widest text-amber-900">Deposit pending</p>
+                        <p className="text-sm text-amber-900/80 mt-1">
+                          Pay {formatINR(Math.round(Number(o.total) * 0.2))} to confirm your build slot.
+                        </p>
+                      </div>
+                      <Link
+                        to="/payment"
+                        search={{ orders: o.id }}
+                        className="inline-flex items-center gap-2 px-5 py-3 bg-[color:var(--brand-dark)] text-white text-[10px] font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors"
+                      >
+                        <svg viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 10V7a6 6 0 1112 0v3"/><rect x="4" y="10" width="16" height="11" rx="2"/></svg>
+                        Complete Payment
+                      </Link>
+                    </div>
+                  )}
+
                   {o.status === "cancelled" ? (
                     <div className="bg-red-50 text-red-800 p-4 text-sm">This order was cancelled.</div>
                   ) : (
