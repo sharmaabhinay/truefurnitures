@@ -146,12 +146,14 @@ function AdminHome() {
         <nav className="flex-1 py-3 overflow-y-auto admin-scroll">
           {NAV.map((group) => (
             <div key={group.title}>
-              <div
-                className="px-5 pt-3 pb-1 text-[10px] tracking-[0.14em] uppercase"
-                style={{ color: "#888899" }}
-              >
-                {group.title}
-              </div>
+              {group.title && (
+                <div
+                  className="px-5 pt-3 pb-1 text-[10px] tracking-[0.14em] uppercase"
+                  style={{ color: "#888899" }}
+                >
+                  {group.title}
+                </div>
+              )}
               {group.items.map((item) => {
                 const active = panel === item.key;
                 return (
@@ -175,6 +177,16 @@ function AdminHome() {
               })}
             </div>
           ))}
+          <a
+            href="/"
+            target="_blank"
+            rel="noreferrer"
+            className="w-full flex items-center gap-3 px-6 py-2.5 text-[13px] text-left transition-colors border-l-2 border-l-transparent"
+            style={{ color: "#888899" }}
+          >
+            <span className="text-base w-4">🌐</span>
+            <span>View Store</span>
+          </a>
         </nav>
         <div className="p-5 border-t" style={{ borderColor: "#2A2A38" }}>
           <div className="flex items-center gap-3">
