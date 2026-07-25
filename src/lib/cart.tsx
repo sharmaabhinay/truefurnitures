@@ -9,6 +9,10 @@ export type CartItem = {
   unitPrice: number;
   fabric: string;
   quantity: number;
+  size?: string;
+  color?: string;
+  colorHex?: string;
+  addons?: string[];
 };
 
 type CartContextValue = {
@@ -49,7 +53,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       add: (input) => {
         setItems((cur) => {
           const existing = cur.find(
-            (i) => i.sofaId === input.sofaId && i.fabric === input.fabric,
+            (i) =>
+              i.sofaId === input.sofaId &&
+              i.fabric === input.fabric &&
+              i.size === input.size &&
+              i.color === input.color &&
+              JSON.stringify(i.addons ?? []) === JSON.stringify(input.addons ?? []),
           );
           if (existing) {
             return cur.map((i) =>
@@ -67,6 +76,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
               image: input.image,
               unitPrice: input.unitPrice,
               fabric: input.fabric,
+              size: input.size,
+              color: input.color,
+              colorHex: input.colorHex,
+              addons: input.addons,
             },
           ];
         });

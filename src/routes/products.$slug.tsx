@@ -241,6 +241,21 @@ function ProductPage() {
             </Link>
           </div>
 
+          <Link
+            to="/configure/$slug"
+            params={{ slug: sofa.slug }}
+            className="mb-8 -mt-2 group flex items-center justify-between gap-4 px-5 py-4 border border-[color:var(--brand-dark)] hover:bg-[color:var(--brand-dark)] hover:text-white transition-colors"
+          >
+            <span className="flex items-center gap-3">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 22V12"/><path d="M21 7l-9 5-9-5"/></svg>
+              <span>
+                <span className="block text-xs font-bold uppercase tracking-widest">Customize in 3D</span>
+                <span className="block text-[10px] opacity-70">Fabric · Color · Size · Add-ons — price updates live</span>
+              </span>
+            </span>
+            <span className="text-lg group-hover:translate-x-1 transition-transform">→</span>
+          </Link>
+
           {/* Specs */}
           <div className="border-t border-[color:var(--brand-dark)]/10 pt-6 space-y-4 text-sm">
             {sofa.dimensions && (
