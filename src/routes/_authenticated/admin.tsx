@@ -474,6 +474,16 @@ function Dashboard({ onGo }: { onGo: (p: PanelKey) => void }) {
   );
   const pendingBookings = (data?.bookings ?? []).filter((b: { status: string }) => b.status === "pending").length;
   const pendingReviews = (data?.reviews ?? []).filter((r: { approved: boolean }) => !r.approved).length;
+  const totalUsers = data?.customers.length ?? 0;
+  const monthAgo = Date.now() - 30 * 86400_000;
+  const monthOrders = orders.filter((o: { created_at: string }) => new Date(o.created_at).getTime() > monthAgo).length;
+  const monthRevenue = orders
+    .filter((o: { created_at: string }) => new Date(o.created_at).getTime() > monthAgo)
+    .reduce((n: number, o: { total: number }) => n + Number(o.total), 0);
+  const [visitorCount, setVisitorCount] = useState(0);
+  useEffect(() => {
+    setVisitorCount(getVisitors().length);
+  }, []);
 
   // 7-day bar chart
   const days = useMemo(() => {
@@ -517,10 +527,16 @@ function Dashboard({ onGo }: { onGo: (p: PanelKey) => void }) {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <Metric label="Total Revenue" value={formatINR(totalRevenue)} icon="💰" change={`${orders.length} orders`} />
-        <Metric label="Active Orders" value={activeOrders} icon="📦" change="in production" />
-        <Metric label="Products" value={data?.products.length ?? 0} icon="🛋️" change="live catalog" />
-        <Metric label="Cities Reached" value={cities.length} icon="📍" change={cities.slice(0, 2).join(", ") || "—"} />
+        <Metric label="Total Users" value={totalUsers} icon="👥" change={totalUsers ? "signed up" : undefined} />
+        <Metric label="Quote Requests" value={pendingBookings} icon="💬" change="awaiting follow-up" />
+        <Metric label="Active Products" value={data?.products.length ?? 0} icon="🛋️" change="live catalog" />
+        <Metric label="Total Revenue" value={formatINR(totalRevenue)} icon="💰" change={monthRevenue ? `${formatINR(monthRevenue)} this month` : undefined} />
+      </div>
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <Metric label="Total Orders" value={orders.length} icon="📦" change={monthOrders ? `+${monthOrders} this month` : undefined} />
+        <Metric label="Pending Orders" value={activeOrders} icon="⏳" change="need attention" />
+        <Metric label="Cities Reached" value={cities.length} icon="📍" change={cities.slice(0, 2).join(", ") || "via delivery"} />
+        <Metric label="Visitor Events" value={visitorCount} icon="👁️" change="tracked live" />
       </div>
 
       <div className="grid gap-5 lg:grid-cols-3">
