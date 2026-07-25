@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatINR, formatDate, ORDER_STATUS_STEPS } from "@/lib/format";
 import { toast } from "sonner";
+import { getVisitors, clearVisitors, getDeviceIcon, getBrowser, type VisitorEvent } from "@/lib/visitor-tracker";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   ssr: false,
@@ -27,6 +28,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 type PanelKey =
   | "dashboard"
+  | "visitors"
   | "orders"
   | "products"
   | "bookings"
@@ -46,6 +48,12 @@ const NAV: NavGroup[] = [
     title: "Overview",
     items: [
       { key: "dashboard", label: "Dashboard", icon: "📊" },
+    ],
+  },
+  {
+    title: "",
+    items: [
+      { key: "visitors", label: "Visitor Analytics", icon: "👁️" },
       { key: "orders", label: "Orders", icon: "📦" },
       { key: "customers", label: "Customers", icon: "👥" },
     ],
@@ -54,28 +62,34 @@ const NAV: NavGroup[] = [
     title: "Store",
     items: [
       { key: "products", label: "Products", icon: "🛋️" },
-      { key: "bookings", label: "Bookings", icon: "💬" },
-      { key: "reviews", label: "Reviews", icon: "⭐" },
-      { key: "coupons", label: "Coupons", icon: "🏷️" },
-      { key: "designs", label: "Saved Designs", icon: "🎨" },
+      { key: "bookings", label: "Quote Requests", icon: "💬" },
     ],
   },
   {
-    title: "Content",
+    title: "Settings",
     items: [
+      { key: "settings", label: "Settings", icon: "⚙️" },
+    ],
+  },
+  {
+    title: "Extras",
+    items: [
+      { key: "reviews", label: "Reviews", icon: "⭐" },
+      { key: "coupons", label: "Coupons", icon: "🏷️" },
+      { key: "designs", label: "Saved Designs", icon: "🎨" },
       { key: "blog", label: "Blog", icon: "📝" },
       { key: "showrooms", label: "Showrooms", icon: "📍" },
-      { key: "settings", label: "Settings", icon: "⚙️" },
     ],
   },
 ];
 
 const TITLES: Record<PanelKey, string> = {
   dashboard: "Dashboard",
+  visitors: "Visitor Analytics",
   orders: "Orders",
   customers: "Customers",
   products: "Product Manager",
-  bookings: "Showroom Bookings",
+  bookings: "Quote Requests",
   reviews: "Reviews",
   coupons: "Coupons",
   blog: "Blog",
@@ -133,12 +147,14 @@ function AdminHome() {
         <nav className="flex-1 py-3 overflow-y-auto admin-scroll">
           {NAV.map((group) => (
             <div key={group.title}>
-              <div
-                className="px-5 pt-3 pb-1 text-[10px] tracking-[0.14em] uppercase"
-                style={{ color: "#888899" }}
-              >
-                {group.title}
-              </div>
+              {group.title && (
+                <div
+                  className="px-5 pt-3 pb-1 text-[10px] tracking-[0.14em] uppercase"
+                  style={{ color: "#888899" }}
+                >
+                  {group.title}
+                </div>
+              )}
               {group.items.map((item) => {
                 const active = panel === item.key;
                 return (
@@ -162,6 +178,16 @@ function AdminHome() {
               })}
             </div>
           ))}
+          <a
+            href="/"
+            target="_blank"
+            rel="noreferrer"
+            className="w-full flex items-center gap-3 px-6 py-2.5 text-[13px] text-left transition-colors border-l-2 border-l-transparent"
+            style={{ color: "#888899" }}
+          >
+            <span className="text-base w-4">🌐</span>
+            <span>View Store</span>
+          </a>
         </nav>
         <div className="p-5 border-t" style={{ borderColor: "#2A2A38" }}>
           <div className="flex items-center gap-3">
@@ -222,11 +248,19 @@ function AdminHome() {
             >
               View Store ↗
             </Link>
+            <button
+              onClick={() => window.location.reload()}
+              className="rounded-md px-3 py-1.5 text-[12px] font-medium"
+              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid #2A2A38", color: "#E8E8F0" }}
+            >
+              ↺ Refresh
+            </button>
           </div>
         </header>
 
         <main className="flex-1 p-4 sm:p-8 overflow-x-hidden">
           {panel === "dashboard" && <Dashboard onGo={setPanel} />}
+          {panel === "visitors" && <Visitors />}
           {panel === "orders" && <Orders />}
           {panel === "customers" && <Customers />}
           {panel === "products" && <Products />}
@@ -440,6 +474,16 @@ function Dashboard({ onGo }: { onGo: (p: PanelKey) => void }) {
   );
   const pendingBookings = (data?.bookings ?? []).filter((b: { status: string }) => b.status === "pending").length;
   const pendingReviews = (data?.reviews ?? []).filter((r: { approved: boolean }) => !r.approved).length;
+  const totalUsers = data?.customers.length ?? 0;
+  const monthAgo = Date.now() - 30 * 86400_000;
+  const monthOrders = orders.filter((o: { created_at: string }) => new Date(o.created_at).getTime() > monthAgo).length;
+  const monthRevenue = orders
+    .filter((o: { created_at: string }) => new Date(o.created_at).getTime() > monthAgo)
+    .reduce((n: number, o: { total: number }) => n + Number(o.total), 0);
+  const [visitorCount, setVisitorCount] = useState(0);
+  useEffect(() => {
+    setVisitorCount(getVisitors().length);
+  }, []);
 
   // 7-day bar chart
   const days = useMemo(() => {
@@ -483,10 +527,16 @@ function Dashboard({ onGo }: { onGo: (p: PanelKey) => void }) {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <Metric label="Total Revenue" value={formatINR(totalRevenue)} icon="💰" change={`${orders.length} orders`} />
-        <Metric label="Active Orders" value={activeOrders} icon="📦" change="in production" />
-        <Metric label="Products" value={data?.products.length ?? 0} icon="🛋️" change="live catalog" />
-        <Metric label="Cities Reached" value={cities.length} icon="📍" change={cities.slice(0, 2).join(", ") || "—"} />
+        <Metric label="Total Users" value={totalUsers} icon="👥" change={totalUsers ? "signed up" : undefined} />
+        <Metric label="Quote Requests" value={pendingBookings} icon="💬" change="awaiting follow-up" />
+        <Metric label="Active Products" value={data?.products.length ?? 0} icon="🛋️" change="live catalog" />
+        <Metric label="Total Revenue" value={formatINR(totalRevenue)} icon="💰" change={monthRevenue ? `${formatINR(monthRevenue)} this month` : undefined} />
+      </div>
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <Metric label="Total Orders" value={orders.length} icon="📦" change={monthOrders ? `+${monthOrders} this month` : undefined} />
+        <Metric label="Pending Orders" value={activeOrders} icon="⏳" change="need attention" />
+        <Metric label="Cities Reached" value={cities.length} icon="📍" change={cities.slice(0, 2).join(", ") || "via delivery"} />
+        <Metric label="Visitor Events" value={visitorCount} icon="👁️" change="tracked live" />
       </div>
 
       <div className="grid gap-5 lg:grid-cols-3">
@@ -1501,49 +1551,269 @@ function Showrooms() {
 /* ================= SETTINGS ================= */
 
 function Settings() {
+  const CMS_KEY = "tf_site_cms";
+  const STORE_KEY = "tf_store_info";
+  const TABS = ["Site CMS", "Store Info", "API Config", "Danger Zone"] as const;
+  const [tab, setTab] = useState<(typeof TABS)[number]>("Site CMS");
+
+  const [cms, setCms] = useState({
+    hero_headline: "Your perfect sofa, crafted for you",
+    hero_subtext:
+      "Every sofa is custom-built to your exact fabric, colour, size, and leg choice by master craftsmen at our Indore workshop.",
+    hero_image: "",
+    hero_badge: "Indore's Custom Sofa Studio · Est. 2007",
+    hero_cta1: "Browse All Sofas",
+    hero_cta2: "Get Free Quote",
+    announcement: "",
+    announcement_on: false,
+    meta_title: "True Furniture's — Custom Sofas",
+    meta_description: "Fully customizable sofas designed in 3D. Hand-tailored in Indore & Ujjain.",
+    whatsapp_number: "7773896496",
+    delivery_note: "Free delivery in Indore & MP above ₹15,000",
+  });
+
+  const [store, setStore] = useState({
+    storeName: "True Furniture's",
+    phone: "+91 77738 96496",
+    email: "hello@truefurnitures.in",
+    address: "Vijay Nagar, Indore — 452010",
+    adminEmail: "admin@truefurnitures.in",
+    depositRate: 20,
+    freeDelivery: 15000,
+  });
+
+  const [apiUrl, setApiUrl] = useState("");
+
+  useEffect(() => {
+    try {
+      const c = window.localStorage.getItem(CMS_KEY);
+      if (c) setCms((p) => ({ ...p, ...JSON.parse(c) }));
+      const s = window.localStorage.getItem(STORE_KEY);
+      if (s) setStore((p) => ({ ...p, ...JSON.parse(s) }));
+      setApiUrl(window.location.origin);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const saveCms = () => {
+    try {
+      window.localStorage.setItem(CMS_KEY, JSON.stringify(cms));
+      toast.success("Site CMS saved locally.");
+    } catch {
+      toast.error("Could not save.");
+    }
+  };
+  const saveStore = () => {
+    try {
+      window.localStorage.setItem(STORE_KEY, JSON.stringify(store));
+      toast.success("Store info saved locally.");
+    } catch {
+      toast.error("Could not save.");
+    }
+  };
+  const pingApi = async () => {
+    try {
+      const r = await fetch("/api/public/health");
+      toast.success(r.ok ? "✓ API reachable" : `API returned ${r.status}`);
+    } catch {
+      toast.error("✗ Cannot reach API endpoint.");
+    }
+  };
+  const clearLocal = () => {
+    if (!confirm("Clear all locally cached data (cart, CMS, visitors)?")) return;
+    ["tf_cart", "tf_visitors", "tf_site_cms", "tf_store_info", "tf_welcome_seen", "tf_selected_city"].forEach(
+      (k) => {
+        try {
+          window.localStorage.removeItem(k);
+        } catch {
+          /* ignore */
+        }
+      },
+    );
+    toast.success("Local cache cleared. Reload to refresh.");
+  };
+
+  const cmsPatch = <K extends keyof typeof cms>(k: K, v: (typeof cms)[K]) => setCms((p) => ({ ...p, [k]: v }));
+  const storePatch = <K extends keyof typeof store>(k: K, v: (typeof store)[K]) =>
+    setStore((p) => ({ ...p, [k]: v }));
+
   return (
-    <div className="grid gap-5 lg:grid-cols-2">
-      <Card>
-        <CardTitle>Store Information</CardTitle>
-        <div className="space-y-3">
-          <Field label="Store Name"><DarkInput defaultValue="True Furniture's" /></Field>
-          <Field label="Phone"><DarkInput defaultValue="+91 77738 96496" /></Field>
-          <Field label="WhatsApp"><DarkInput defaultValue="+91 77738 96496" /></Field>
-          <Field label="Email"><DarkInput defaultValue="hello@truefurnitures.in" /></Field>
-          <Field label="Address"><DarkInput defaultValue="Vijay Nagar, Indore — 452010" /></Field>
+    <div className="space-y-5 max-w-4xl">
+      <div className="flex border-b overflow-x-auto" style={{ borderColor: "#2A2A38" }}>
+        {TABS.map((t) => {
+          const active = tab === t;
+          return (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className="px-5 py-2.5 text-[12px] whitespace-nowrap -mb-px border-b-2 transition-colors"
+              style={{
+                background: "transparent",
+                color: active ? "#C8A86B" : "#888899",
+                borderBottomColor: active ? "#C8A86B" : "transparent",
+              }}
+            >
+              {t}
+            </button>
+          );
+        })}
+      </div>
+
+      {tab === "Site CMS" && (
+        <Card>
+          <CardTitle right="Controls the storefront">Site CMS</CardTitle>
+          <div className="grid gap-x-6 md:grid-cols-2">
+            <div className="space-y-4">
+              <div className="text-[11px] uppercase tracking-[0.14em]" style={{ color: "#C8A86B" }}>
+                Hero Section
+              </div>
+              <Field label="Hero Headline">
+                <DarkInput value={cms.hero_headline} onChange={(e) => cmsPatch("hero_headline", e.target.value)} />
+              </Field>
+              <Field label="Hero Sub-text">
+                <DarkTextarea rows={3} value={cms.hero_subtext} onChange={(e) => cmsPatch("hero_subtext", e.target.value)} />
+              </Field>
+              <Field label="Hero Badge">
+                <DarkInput value={cms.hero_badge} onChange={(e) => cmsPatch("hero_badge", e.target.value)} />
+              </Field>
+              <Field label="CTA Button 1">
+                <DarkInput value={cms.hero_cta1} onChange={(e) => cmsPatch("hero_cta1", e.target.value)} />
+              </Field>
+              <Field label="CTA Button 2">
+                <DarkInput value={cms.hero_cta2} onChange={(e) => cmsPatch("hero_cta2", e.target.value)} />
+              </Field>
+            </div>
+            <div className="space-y-4">
+              <div className="text-[11px] uppercase tracking-[0.14em]" style={{ color: "#C8A86B" }}>
+                Media & SEO
+              </div>
+              <Field label="Hero Image URL">
+                <DarkInput value={cms.hero_image} onChange={(e) => cmsPatch("hero_image", e.target.value)} placeholder="https://…" />
+                {cms.hero_image && (
+                  <img src={cms.hero_image} alt="" className="mt-3 w-full h-32 object-cover rounded-md opacity-70" />
+                )}
+              </Field>
+              <Field label="Meta Title (SEO)">
+                <DarkInput value={cms.meta_title} onChange={(e) => cmsPatch("meta_title", e.target.value)} />
+              </Field>
+              <Field label="Meta Description (SEO)">
+                <DarkTextarea rows={2} value={cms.meta_description} onChange={(e) => cmsPatch("meta_description", e.target.value)} />
+              </Field>
+              <div className="text-[11px] uppercase tracking-[0.14em] pt-2" style={{ color: "#C8A86B" }}>
+                Announcement Bar
+              </div>
+              <div className="flex items-center justify-between py-1">
+                <div className="text-[13px]">Show announcement</div>
+                <FeatureToggle defaultOn={cms.announcement_on} />
+              </div>
+              <Field label="Announcement Text">
+                <DarkInput value={cms.announcement} onChange={(e) => cmsPatch("announcement", e.target.value)} placeholder='e.g. "🎉 Sale — 20% off recliners"' />
+              </Field>
+              <Field label="WhatsApp Number">
+                <DarkInput value={cms.whatsapp_number} onChange={(e) => cmsPatch("whatsapp_number", e.target.value)} />
+              </Field>
+              <Field label="Delivery Note">
+                <DarkInput value={cms.delivery_note} onChange={(e) => cmsPatch("delivery_note", e.target.value)} />
+              </Field>
+            </div>
+          </div>
           <button
-            onClick={() => toast.success("Settings saved locally. Wire to a `store_settings` table when needed.")}
-            className="rounded-md px-4 py-2 text-[13px] font-semibold"
+            onClick={saveCms}
+            className="mt-6 rounded-md px-6 py-2.5 text-[13px] font-semibold"
             style={{ background: "#C8A86B", color: "#1a1a1a" }}
           >
-            Save Changes
+            💾 Save Site Config
+          </button>
+        </Card>
+      )}
+
+      {tab === "Store Info" && (
+        <Card>
+          <CardTitle>Store Information</CardTitle>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Store Name">
+              <DarkInput value={store.storeName} onChange={(e) => storePatch("storeName", e.target.value)} />
+            </Field>
+            <Field label="Phone">
+              <DarkInput value={store.phone} onChange={(e) => storePatch("phone", e.target.value)} />
+            </Field>
+            <Field label="Email">
+              <DarkInput value={store.email} onChange={(e) => storePatch("email", e.target.value)} />
+            </Field>
+            <Field label="Admin Email">
+              <DarkInput value={store.adminEmail} onChange={(e) => storePatch("adminEmail", e.target.value)} />
+            </Field>
+            <div className="sm:col-span-2">
+              <Field label="Address">
+                <DarkInput value={store.address} onChange={(e) => storePatch("address", e.target.value)} />
+              </Field>
+            </div>
+            <Field label="Advance Deposit (%)">
+              <DarkInput
+                type="number"
+                value={store.depositRate}
+                onChange={(e) => storePatch("depositRate", Number(e.target.value))}
+              />
+            </Field>
+            <Field label="Free Delivery Above (₹)">
+              <DarkInput
+                type="number"
+                value={store.freeDelivery}
+                onChange={(e) => storePatch("freeDelivery", Number(e.target.value))}
+              />
+            </Field>
+          </div>
+          <button
+            onClick={saveStore}
+            className="mt-6 rounded-md px-6 py-2.5 text-[13px] font-semibold"
+            style={{ background: "#C8A86B", color: "#1a1a1a" }}
+          >
+            💾 Save Store Info
+          </button>
+        </Card>
+      )}
+
+      {tab === "API Config" && (
+        <Card>
+          <CardTitle>API Configuration</CardTitle>
+          <Field label="App Origin">
+            <DarkInput value={apiUrl} readOnly />
+          </Field>
+          <button
+            onClick={pingApi}
+            className="mt-3 rounded-md px-4 py-2 text-[13px]"
+            style={{ background: "rgba(255,255,255,0.05)", border: "1px solid #2A2A38", color: "#E8E8F0" }}
+          >
+            ↺ Ping /api/public/health
+          </button>
+          <div
+            className="mt-5 rounded-lg p-4 text-[12px] space-y-1"
+            style={{ background: "#16161D", border: "1px solid #2A2A38", color: "#888899" }}
+          >
+            <div className="font-medium mb-2" style={{ color: "#E8E8F0" }}>Public endpoints</div>
+            <div>GET /api/public/health — Health check</div>
+            <div>POST /api/public/webhook — Webhook receiver</div>
+          </div>
+        </Card>
+      )}
+
+      {tab === "Danger Zone" && (
+        <div className="rounded-xl p-5" style={{ background: "#1E1E28", border: "1px solid rgba(224,80,80,0.3)" }}>
+          <div className="text-[13px] font-semibold mb-2" style={{ color: "#E05050" }}>Danger Zone</div>
+          <div className="text-[12px] mb-4" style={{ color: "#888899" }}>
+            Clear all locally cached data from this browser (cart, CMS drafts, visitor log, welcome popup state).
+            Live database data is unaffected.
+          </div>
+          <button
+            onClick={clearLocal}
+            className="rounded-md px-5 py-2.5 text-[13px]"
+            style={{ background: "transparent", border: "1px solid #E05050", color: "#E05050" }}
+          >
+            Clear Local Cache
           </button>
         </div>
-      </Card>
-      <Card>
-        <CardTitle>Feature Toggles</CardTitle>
-        <div className="space-y-3">
-          {[
-            ["3D Configurator", "Interactive models on product pages", true],
-            ["Welcome Modal", "First-visit location + discount popup", true],
-            ["Auto-confirm Orders", "Skip manual review for online deposits", false],
-            ["Newsletter Signup", "Footer + welcome modal capture", true],
-            ["Blog", "Public /blog route visible", true],
-          ].map(([label, hint, on]) => (
-            <div
-              key={label as string}
-              className="flex items-center justify-between py-2 border-b last:border-b-0"
-              style={{ borderColor: "rgba(42,42,56,0.5)" }}
-            >
-              <div>
-                <div className="text-[13px]">{label}</div>
-                <div className="text-[11px]" style={{ color: "#888899" }}>{hint}</div>
-              </div>
-              <FeatureToggle defaultOn={Boolean(on)} />
-            </div>
-          ))}
-        </div>
-      </Card>
+      )}
     </div>
   );
 }
@@ -1562,5 +1832,216 @@ function FeatureToggle({ defaultOn }: { defaultOn: boolean }) {
         style={{ left: on ? "18px" : "2px" }}
       />
     </button>
+  );
+}
+
+/* ================= VISITOR ANALYTICS ================= */
+
+const V_TYPE_ICONS: Record<string, string> = {
+  session: "🌐",
+  visit: "📍",
+  add_to_cart: "🛒",
+  quote: "💬",
+  newsletter: "📧",
+  product_view: "👁️",
+  view_3d: "🧊",
+};
+const V_TYPE_COLORS: Record<string, string> = {
+  session: "#5090E0",
+  visit: "#4CAF82",
+  add_to_cart: "#B478FF",
+  quote: "#C8A86B",
+  newsletter: "#E56AA7",
+  product_view: "#5090E0",
+  view_3d: "#B478FF",
+};
+const V_ALL_TYPES = ["all", "session", "visit", "product_view", "view_3d", "add_to_cart", "quote", "newsletter"];
+
+function fmtRel(iso: string) {
+  const t = new Date(iso).getTime();
+  const diff = Date.now() - t;
+  if (diff < 60_000) return "just now";
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
+  return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+}
+
+function Visitors() {
+  const [visitors, setVisitors] = useState<VisitorEvent[]>([]);
+  const [filter, setFilter] = useState<string>("all");
+
+  useEffect(() => {
+    setVisitors(getVisitors());
+  }, []);
+
+  const filtered = filter === "all" ? visitors : visitors.filter((v) => v.type === filter);
+  const recent = [...filtered].reverse().slice(0, 80);
+
+  const stats = V_ALL_TYPES.filter((t) => t !== "all").map((t) => ({
+    type: t,
+    count: visitors.filter((v) => v.type === t).length,
+  }));
+
+  const cityMap: Record<string, number> = {};
+  visitors.filter((v) => v.city).forEach((v) => {
+    cityMap[v.city!] = (cityMap[v.city!] || 0) + 1;
+  });
+  const topCities = Object.entries(cityMap).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const maxCity = topCities[0]?.[1] || 1;
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <div className="text-[15px] font-semibold">Visitor Analytics</div>
+          <div className="text-[11px]" style={{ color: "#888899" }}>
+            {visitors.length} events tracked · live session
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setVisitors(getVisitors())}
+            className="rounded-md px-3 py-1.5 text-[12px]"
+            style={{ background: "rgba(255,255,255,0.05)", border: "1px solid #2A2A38", color: "#E8E8F0" }}
+          >
+            ↺ Refresh
+          </button>
+          <button
+            onClick={() => {
+              if (!confirm("Clear all locally tracked visitor events?")) return;
+              clearVisitors();
+              setVisitors([]);
+              toast.success("Visitor log cleared");
+            }}
+            className="rounded-md px-3 py-1.5 text-[12px]"
+            style={{ background: "transparent", border: "1px solid #2A2A38", color: "#E05050" }}
+          >
+            Clear Log
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {[{ type: "all", count: visitors.length }, ...stats].map(({ type, count }) => {
+          const active = filter === type;
+          return (
+            <button
+              key={type}
+              onClick={() => setFilter(type)}
+              className="rounded-xl p-3 text-left transition-all"
+              style={{
+                background: active ? "rgba(200,168,107,0.06)" : "#1E1E28",
+                border: `1px solid ${active ? "#C8A86B" : "#2A2A38"}`,
+              }}
+            >
+              <span className="text-xl block mb-1">{V_TYPE_ICONS[type] || "📊"}</span>
+              <div
+                className="admin-serif text-2xl font-semibold"
+                style={{ color: active ? "#C8A86B" : "#E8E8F0" }}
+              >
+                {count}
+              </div>
+              <div className="text-[10px] capitalize" style={{ color: "#888899" }}>
+                {type.replaceAll("_", " ")}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {topCities.length > 0 && (
+        <Card>
+          <CardTitle>Top Locations</CardTitle>
+          <div className="space-y-2">
+            {topCities.map(([city, n]) => (
+              <div key={city} className="flex items-center gap-3">
+                <span className="text-[13px] flex-1">📍 {city}</span>
+                <div
+                  className="w-32 h-1.5 rounded-full overflow-hidden"
+                  style={{ background: "rgba(255,255,255,0.06)" }}
+                >
+                  <div
+                    className="h-full rounded-full"
+                    style={{ width: `${Math.round((n / maxCity) * 100)}%`, background: "#C8A86B" }}
+                  />
+                </div>
+                <span className="text-[12px] w-6 text-right" style={{ color: "#888899" }}>{n}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      <Card>
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <div className="text-[13px] font-semibold">Event Log</div>
+          <div className="flex flex-wrap gap-2">
+            {["all", "session", "add_to_cart", "quote"].map((t) => {
+              const active = filter === t;
+              return (
+                <button
+                  key={t}
+                  onClick={() => setFilter(t)}
+                  className="text-[11px] px-3 py-1 rounded-full transition-all"
+                  style={{
+                    background: active ? "#C8A86B" : "transparent",
+                    color: active ? "#1a1a1a" : "#888899",
+                    border: `1px solid ${active ? "#C8A86B" : "#2A2A38"}`,
+                  }}
+                >
+                  {t === "all" ? "All" : t.replaceAll("_", " ")}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        {recent.length === 0 ? (
+          <div className="text-center py-12" style={{ color: "#888899" }}>
+            <div className="text-4xl mb-3">👁️</div>
+            <div className="text-[13px]">
+              No visitor events yet. Wire <code className="text-[11px]">logVisitor()</code> from
+              <span className="mx-1" style={{ color: "#C8A86B" }}>@/lib/visitor-tracker</span>
+              into storefront pages to start tracking.
+            </div>
+          </div>
+        ) : (
+          <div className="max-h-96 overflow-y-auto admin-scroll">
+            {recent.map((v, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-3 py-2 border-b last:border-b-0"
+                style={{ borderColor: "rgba(42,42,56,0.5)" }}
+              >
+                <span className="text-base flex-shrink-0">{V_TYPE_ICONS[v.type] || "•"}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[12px] truncate">
+                    {v.type.replaceAll("_", " ")}
+                    {v.item ? ` — ${v.item}` : ""}
+                    {v.city ? ` from ${v.city}` : ""}
+                    {v.page ? ` (${v.page})` : ""}
+                  </div>
+                  <div className="text-[10px]" style={{ color: "#888899" }}>
+                    {v.ua && `${getDeviceIcon(v.ua)} ${getBrowser(v.ua)}`}
+                    {v.screen && ` · ${v.screen}`}
+                  </div>
+                </div>
+                <span
+                  className="text-[10px] px-2 py-0.5 rounded-full capitalize flex-shrink-0"
+                  style={{
+                    background: `${V_TYPE_COLORS[v.type] || "#888899"}26`,
+                    color: V_TYPE_COLORS[v.type] || "#888899",
+                  }}
+                >
+                  {v.type.replaceAll("_", " ")}
+                </span>
+                <span className="text-[10px] whitespace-nowrap flex-shrink-0" style={{ color: "#888899" }}>
+                  {fmtRel(v.time)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
   );
 }
