@@ -1,14 +1,15 @@
-import { Suspense, useMemo, useRef, type ReactNode } from "react";
+import { Component, Suspense, useMemo, useRef, type ReactNode } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, ContactShadows, Environment } from "@react-three/drei";
-import type { Mesh, Group } from "three";
+import { OrbitControls, ContactShadows, Environment, useGLTF } from "@react-three/drei";
+import type { Group } from "three";
 
 export type Sofa3DProps = {
   colorHex: string;
   seats: number; // 2, 3, 4 (L)
   isSectional: boolean;
-  fabric: "boucle" | "velvet" | "linen" | "leather";
+  fabric: string;
   addons: { cupHolder: boolean; footrest: boolean; usb: boolean; storage: boolean };
+  modelUrl?: string | null;
 };
 
 function Cushion({ position, size, color, roughness }: {
@@ -31,7 +32,8 @@ function SofaModel({ colorHex, seats, isSectional, fabric, addons }: Sofa3DProps
     if (group.current) group.current.rotation.y += delta * 0.15;
   });
 
-  const roughness = fabric === "leather" ? 0.35 : fabric === "velvet" ? 0.55 : 0.9;
+  const fabricKey = fabric.toLowerCase();
+  const roughness = fabricKey.includes("leather") ? 0.35 : fabricKey.includes("velvet") ? 0.55 : 0.9;
   const legColor = "#3a2b1f";
   const seatWidth = seats * 0.9; // 1.8, 2.7, 3.6
   const depth = 1.05;
@@ -144,6 +146,37 @@ function SofaModel({ colorHex, seats, isSectional, fabric, addons }: Sofa3DProps
   );
 }
 
+function UploadedSofaModel({ modelUrl }: { modelUrl: string }) {
+  const group = useRef<Group>(null);
+  const gltf = useGLTF(modelUrl);
+
+  useFrame((_, delta) => {
+    if (group.current) group.current.rotation.y += delta * 0.12;
+  });
+
+  return (
+    <group ref={group} position={[0, -0.45, 0]} scale={1.45}>
+      <primitive object={gltf.scene} />
+    </group>
+  );
+}
+
+class ModelErrorBoundary extends Component<
+  { children: ReactNode; fallback: ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) return this.props.fallback;
+    return this.props.children;
+  }
+}
+
 export default function Sofa3D(props: Sofa3DProps) {
   return (
     <Canvas
@@ -156,7 +189,13 @@ export default function Sofa3D(props: Sofa3DProps) {
       <ambientLight intensity={0.6} />
       <directionalLight position={[5, 6, 4]} intensity={1.1} castShadow shadow-mapSize={[1024, 1024]} />
       <Suspense fallback={null}>
-        <SofaModel {...props} />
+        {props.modelUrl ? (
+          <ModelErrorBoundary key={props.modelUrl} fallback={<SofaModel {...props} />}>
+            <UploadedSofaModel modelUrl={props.modelUrl} />
+          </ModelErrorBoundary>
+        ) : (
+          <SofaModel {...props} />
+        )}
         <Environment preset="apartment" />
       </Suspense>
       <ContactShadows position={[0, -0.4, 0]} opacity={0.5} scale={10} blur={2.4} far={2} />
