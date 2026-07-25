@@ -5,6 +5,8 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { supabase } from "@/integrations/supabase/client";
 import { formatINR, estimatedDelivery } from "@/lib/format";
+import { useCart } from "@/lib/cart";
+import { toast } from "sonner";
 import sofaMalwa from "@/assets/sofa-malwa.jpg";
 import sofaUjjain from "@/assets/sofa-ujjain.jpg";
 import sofaIndore from "@/assets/sofa-indore.jpg";
@@ -121,6 +123,7 @@ function ProductPage() {
   const { slug } = Route.useParams();
   const navigate = useNavigate();
   const { data: sofa } = useQuery(sofaQuery(slug));
+  const cart = useCart();
   const [activeImage, setActiveImage] = useState(0);
   const [fabric, setFabric] = useState<keyof typeof fabricSwatches>("boucle");
 
@@ -217,14 +220,21 @@ function ProductPage() {
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-3 mb-8">
             <button
-              onClick={async () => {
-                const { data } = await supabase.auth.getSession();
-                if (!data.session) { navigate({ to: "/auth" }); return; }
-                navigate({ to: "/dashboard" });
+              onClick={() => {
+                cart.add({
+                  sofaId: sofa.id,
+                  slug: sofa.slug,
+                  name: sofa.name,
+                  image: hero,
+                  unitPrice: sale ?? price,
+                  fabric,
+                });
+                toast.success(`${sofa.name} added to cart`);
+                navigate({ to: "/cart" });
               }}
               className="flex-1 px-6 py-4 bg-[color:var(--brand-dark)] text-white text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors"
             >
-              Reserve · Deposit {formatINR(deposit)}
+              Add to Cart · Deposit {formatINR(deposit)}
             </button>
             <Link to="/showrooms" className="flex-1 text-center px-6 py-4 border border-[color:var(--brand-dark)]/20 text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-dark)] hover:text-white transition-colors">
               Book Showroom Visit

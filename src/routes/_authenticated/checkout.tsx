@@ -1,0 +1,256 @@
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import { z } from "zod";
+import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
+import { supabase } from "@/integrations/supabase/client";
+import { useCart } from "@/lib/cart";
+import { formatINR, estimatedDelivery } from "@/lib/format";
+import { toast } from "sonner";
+
+export const Route = createFileRoute("/_authenticated/checkout")({
+  head: () => ({
+    meta: [
+      { title: "Checkout — True Furniture's" },
+      { name: "description", content: "Confirm your delivery details and place your bespoke sofa order." },
+      { name: "robots", content: "noindex" },
+      { property: "og:title", content: "Checkout — True Furniture's" },
+      { property: "og:description", content: "Confirm your delivery details and place your bespoke sofa order." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
+  component: Checkout,
+});
+
+const schema = z.object({
+  full_name: z.string().trim().min(2, "Enter your full name").max(80),
+  phone: z.string().trim().regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian mobile"),
+  email: z.string().trim().email("Enter a valid email").max(160),
+  city: z.enum(["Indore", "Ujjain"]),
+  address_line: z.string().trim().min(6, "Enter your full address").max(240),
+  landmark: z.string().trim().max(120).optional().or(z.literal("")),
+  pincode: z.string().trim().regex(/^\d{6}$/, "Enter a valid 6-digit pincode"),
+  notes: z.string().trim().max(500).optional().or(z.literal("")),
+});
+
+type FormState = z.infer<typeof schema>;
+
+function Checkout() {
+  const { items, subtotal, clear } = useCart();
+  const navigate = useNavigate();
+  const [form, setForm] = useState<FormState>({
+    full_name: "",
+    phone: "",
+    email: "",
+    city: "Indore",
+    address_line: "",
+    landmark: "",
+    pincode: "",
+    notes: "",
+  });
+  const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
+  const [submitting, setSubmitting] = useState(false);
+
+  const deposit = Math.round(subtotal * 0.2);
+  const balance = subtotal - deposit;
+
+  if (items.length === 0) {
+    return (
+      <div className="min-h-screen bg-[color:var(--brand-cream)]">
+        <SiteHeader />
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 md:px-10 py-20 text-center">
+          <h1 className="text-3xl font-display mb-4">Your cart is empty</h1>
+          <p className="text-[color:var(--brand-dark)]/60 mb-8">Add a piece to your cart to place an order.</p>
+          <Link to="/collections" className="inline-block px-6 py-4 bg-[color:var(--brand-dark)] text-white text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors">
+            Browse Collections
+          </Link>
+        </div>
+        <SiteFooter />
+      </div>
+    );
+  }
+
+  const set = <K extends keyof FormState>(k: K, v: FormState[K]) => {
+    setForm((s) => ({ ...s, [k]: v }));
+    if (errors[k]) setErrors((e) => ({ ...e, [k]: undefined }));
+  };
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const parsed = schema.safeParse(form);
+    if (!parsed.success) {
+      const errs: Partial<Record<keyof FormState, string>> = {};
+      for (const issue of parsed.error.issues) {
+        const k = issue.path[0] as keyof FormState;
+        if (!errs[k]) errs[k] = issue.message;
+      }
+      setErrors(errs);
+      toast.error("Please fix the highlighted fields");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const userId = sess.session?.user.id;
+      if (!userId) throw new Error("Not signed in");
+
+      const data = parsed.data;
+      const addressBlob = [data.address_line, data.landmark, `Pincode: ${data.pincode}`, `Name: ${data.full_name}`, `Email: ${data.email}`]
+        .filter(Boolean)
+        .join(" · ");
+
+      const rows = items.map((i) => {
+        const lineSubtotal = i.unitPrice * i.quantity;
+        const lineDeposit = Math.round(lineSubtotal * 0.2);
+        return {
+          user_id: userId,
+          sofa_id: i.sofaId,
+          sofa_snapshot: { name: i.name, slug: i.slug, image: i.image, unit_price: i.unitPrice, quantity: i.quantity },
+          fabric_snapshot: { name: i.fabric },
+          size_snapshot: {},
+          addons_snapshot: [],
+          subtotal: lineSubtotal,
+          discount: 0,
+          total: lineSubtotal,
+          deposit_paid: 0,
+          balance_due: lineSubtotal - lineDeposit,
+          status: "pending_deposit" as const,
+          delivery_city: data.city,
+          delivery_address: addressBlob,
+          phone: data.phone,
+          customer_notes: data.notes || null,
+          expected_delivery_date: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString().slice(0, 10),
+        };
+      });
+
+      const { error } = await supabase.from("orders").insert(rows);
+      if (error) throw error;
+
+      clear();
+      toast.success("Order placed! Redirecting to your dashboard…");
+      navigate({ to: "/dashboard" });
+    } catch (err) {
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : "Could not place your order");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const inputCls =
+    "w-full px-4 py-3 bg-white border border-[color:var(--brand-dark)]/15 focus:border-[color:var(--brand-dark)] focus:outline-none text-sm";
+  const labelCls = "block text-[10px] font-black uppercase tracking-widest mb-2";
+
+  return (
+    <div className="min-h-screen bg-[color:var(--brand-cream)] text-[color:var(--brand-dark)]">
+      <SiteHeader />
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 py-10 md:py-16">
+        <span className="tf-chip mb-4">Almost There</span>
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-display mb-8 text-balance">Checkout</h1>
+
+        <form onSubmit={onSubmit} className="grid gap-8 lg:grid-cols-[1fr_380px]">
+          <div className="space-y-8">
+            <section className="bg-white border border-[color:var(--brand-dark)]/10 p-6">
+              <h2 className="font-display text-xl mb-6">Delivery Details</h2>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label className={labelCls} htmlFor="full_name">Full Name</label>
+                  <input id="full_name" className={inputCls} value={form.full_name} onChange={(e) => set("full_name", e.target.value)} />
+                  {errors.full_name && <p className="text-xs text-red-600 mt-1">{errors.full_name}</p>}
+                </div>
+                <div>
+                  <label className={labelCls} htmlFor="phone">Mobile</label>
+                  <input id="phone" inputMode="numeric" maxLength={10} className={inputCls} value={form.phone} onChange={(e) => set("phone", e.target.value.replace(/\D/g, ""))} placeholder="10-digit" />
+                  {errors.phone && <p className="text-xs text-red-600 mt-1">{errors.phone}</p>}
+                </div>
+                <div>
+                  <label className={labelCls} htmlFor="email">Email</label>
+                  <input id="email" type="email" className={inputCls} value={form.email} onChange={(e) => set("email", e.target.value)} />
+                  {errors.email && <p className="text-xs text-red-600 mt-1">{errors.email}</p>}
+                </div>
+                <div>
+                  <label className={labelCls} htmlFor="city">City</label>
+                  <select id="city" className={inputCls} value={form.city} onChange={(e) => set("city", e.target.value as FormState["city"])}>
+                    <option value="Indore">Indore</option>
+                    <option value="Ujjain">Ujjain</option>
+                  </select>
+                  {errors.city && <p className="text-xs text-red-600 mt-1">{errors.city}</p>}
+                </div>
+                <div>
+                  <label className={labelCls} htmlFor="pincode">Pincode</label>
+                  <input id="pincode" inputMode="numeric" maxLength={6} className={inputCls} value={form.pincode} onChange={(e) => set("pincode", e.target.value.replace(/\D/g, ""))} />
+                  {errors.pincode && <p className="text-xs text-red-600 mt-1">{errors.pincode}</p>}
+                </div>
+                <div className="sm:col-span-2">
+                  <label className={labelCls} htmlFor="address_line">Address</label>
+                  <textarea id="address_line" rows={3} className={inputCls} value={form.address_line} onChange={(e) => set("address_line", e.target.value)} placeholder="House / Flat, Street, Area" />
+                  {errors.address_line && <p className="text-xs text-red-600 mt-1">{errors.address_line}</p>}
+                </div>
+                <div className="sm:col-span-2">
+                  <label className={labelCls} htmlFor="landmark">Landmark (optional)</label>
+                  <input id="landmark" className={inputCls} value={form.landmark} onChange={(e) => set("landmark", e.target.value)} />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className={labelCls} htmlFor="notes">Delivery Notes (optional)</label>
+                  <textarea id="notes" rows={3} className={inputCls} value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Access instructions, preferred delivery window…" />
+                </div>
+              </div>
+            </section>
+
+            <section className="bg-[color:var(--brand-muted)]/50 border border-[color:var(--brand-dark)]/10 p-6">
+              <h2 className="font-display text-lg mb-2">Reserve · Pay Later</h2>
+              <p className="text-sm text-[color:var(--brand-dark)]/70">
+                Pay a 20% booking deposit to lock in your build slot. The balance is due on delivery. Our team will contact you within 24 hours to confirm the deposit and fabric choices.
+              </p>
+            </section>
+          </div>
+
+          <aside className="bg-white border border-[color:var(--brand-dark)]/10 p-6 h-fit lg:sticky lg:top-24">
+            <h2 className="font-display text-xl mb-4">Order Summary</h2>
+            <div className="space-y-3 mb-5 max-h-64 overflow-auto">
+              {items.map((i) => (
+                <div key={i.id} className="flex gap-3">
+                  <div className="size-14 shrink-0 bg-[color:var(--brand-muted)] overflow-hidden">
+                    <img src={i.image} alt="" className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1 min-w-0 text-sm">
+                    <div className="truncate">{i.name} × {i.quantity}</div>
+                    <div className="text-xs text-[color:var(--brand-dark)]/50 capitalize">{i.fabric}</div>
+                  </div>
+                  <div className="text-sm">{formatINR(i.unitPrice * i.quantity)}</div>
+                </div>
+              ))}
+            </div>
+            <div className="space-y-2 text-sm border-t border-[color:var(--brand-dark)]/10 pt-4">
+              <div className="flex justify-between"><span className="text-[color:var(--brand-dark)]/60">Subtotal</span><span>{formatINR(subtotal)}</span></div>
+              <div className="flex justify-between"><span className="text-[color:var(--brand-dark)]/60">Delivery</span><span>Free</span></div>
+              <div className="flex justify-between items-baseline pt-2 border-t border-[color:var(--brand-dark)]/10">
+                <span className="text-xs font-bold uppercase tracking-widest">Total</span>
+                <span className="font-display text-2xl">{formatINR(subtotal)}</span>
+              </div>
+            </div>
+            <div className="bg-[color:var(--brand-muted)]/60 p-3 mt-4 space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="font-bold uppercase tracking-widest">Deposit (20%)</span>
+                <span className="font-display text-base">{formatINR(deposit)}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-[color:var(--brand-dark)]/60">Balance on delivery</span>
+                <span>{formatINR(balance)}</span>
+              </div>
+              <div className="text-[10px] text-[color:var(--brand-dark)]/60 pt-1">Estimated delivery by {estimatedDelivery(30)}.</div>
+            </div>
+            <button type="submit" disabled={submitting} className="mt-6 w-full px-6 py-4 bg-[color:var(--brand-dark)] text-white text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+              {submitting ? "Placing Order…" : "Place Order"}
+            </button>
+            <Link to="/cart" className="mt-3 block text-center text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-dark)]/60 hover:text-[color:var(--brand-accent)]">
+              ← Back to Cart
+            </Link>
+          </aside>
+        </form>
+      </div>
+      <SiteFooter />
+    </div>
+  );
+}
