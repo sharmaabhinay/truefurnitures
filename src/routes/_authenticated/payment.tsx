@@ -54,7 +54,7 @@ function PaymentPage() {
   const [processing, setProcessing] = useState(false);
 
   const orderIds = useMemo(
-    () => ordersParam.split(",").map((s) => s.trim()).filter(Boolean),
+    () => String(ordersParam).split(",").map((s: string) => s.trim()).filter(Boolean),
     [ordersParam],
   );
 
