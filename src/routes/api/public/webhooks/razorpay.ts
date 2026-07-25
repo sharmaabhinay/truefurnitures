@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createHmac, timingSafeEqual } from "crypto";
+import { sendOrderConfirmationEmail } from "@/lib/email.functions";
 
 // Razorpay webhook: https://razorpay.com/docs/webhooks/
 // Signature: HMAC-SHA256(raw_body, webhook_secret) sent in X-Razorpay-Signature.
@@ -55,6 +56,7 @@ export const Route = createFileRoute("/api/public/webhooks/razorpay")({
         }
 
         const nowIso = new Date().toISOString();
+        const confirmedIds: string[] = [];
         for (const row of orders as Array<{ id: string; total: number; deposit_paid: number; status: string }>) {
           if (row.status === "confirmed" || row.status === "in_production" || row.status === "shipped" || row.status === "delivered") {
             continue; // already advanced; idempotent no-op
@@ -73,6 +75,15 @@ export const Route = createFileRoute("/api/public/webhooks/razorpay")({
             })
             .eq("id", row.id);
           if (uerr) console.error("[razorpay-webhook] update failed", row.id, uerr);
+          else confirmedIds.push(row.id);
+        }
+
+        for (const id of confirmedIds) {
+          try {
+            await sendOrderConfirmationEmail({ data: { orderId: id } });
+          } catch (e) {
+            console.error("[razorpay-webhook] email failed", id, e);
+          }
         }
 
         return new Response("ok", { status: 200 });
