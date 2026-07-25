@@ -36,3 +36,32 @@ export type OrderStatusKey = (typeof ORDER_STATUS_STEPS)[number]["key"] | "cance
 export function statusIndex(status: string): number {
   return ORDER_STATUS_STEPS.findIndex((s) => s.key === status);
 }
+
+export const STATUS_META: Record<string, { label: string; tone: "neutral" | "positive" | "warning" | "danger" | "info" }> = {
+  pending_deposit: { label: "Deposit Pending", tone: "warning" },
+  confirmed: { label: "Confirmed", tone: "info" },
+  in_production: { label: "In Production", tone: "info" },
+  quality_check: { label: "Quality Check", tone: "info" },
+  shipped: { label: "Shipped", tone: "info" },
+  out_for_delivery: { label: "Out for Delivery", tone: "info" },
+  delivered: { label: "Delivered", tone: "positive" },
+  cancellation_requested: { label: "Cancellation Requested", tone: "warning" },
+  cancelled: { label: "Cancelled", tone: "danger" },
+  refund_requested: { label: "Refund Requested", tone: "warning" },
+  refunded: { label: "Refunded", tone: "danger" },
+};
+
+export function canUserCancel(status: string): boolean {
+  return status === "pending_deposit" || status === "confirmed";
+}
+
+export function canUserRequestRefund(status: string): boolean {
+  // Once a deposit is paid & build has progressed, a refund request replaces a hard cancel.
+  return [
+    "in_production",
+    "quality_check",
+    "shipped",
+    "out_for_delivery",
+    "delivered",
+  ].includes(status);
+}
