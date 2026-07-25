@@ -62,7 +62,17 @@ function CartPage() {
                         <Link to="/products/$slug" params={{ slug: i.slug }} className="font-display text-lg sm:text-xl block truncate hover:text-[color:var(--brand-accent)]">
                           {i.name}
                         </Link>
-                        <p className="text-xs text-[color:var(--brand-dark)]/60 mt-1 capitalize">Fabric · {i.fabric}</p>
+                        <div className="text-xs text-[color:var(--brand-dark)]/60 mt-1 space-y-0.5">
+                          <p className="capitalize">Fabric · {i.fabric}</p>
+                          {i.size && <p>Size · {i.size}</p>}
+                          {i.color && (
+                            <p className="flex items-center gap-1.5">
+                              Color · {i.color}
+                              {i.colorHex && <span className="inline-block size-3 rounded-full border border-[color:var(--brand-dark)]/20" style={{ backgroundColor: i.colorHex }} />}
+                            </p>
+                          )}
+                          {i.addons && i.addons.length > 0 && <p>Add-ons · {i.addons.join(", ")}</p>}
+                        </div>
                       </div>
                       <button onClick={() => remove(i.id)} aria-label="Remove" className="text-[color:var(--brand-dark)]/40 hover:text-[color:var(--brand-accent)] p-1">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M6 6l12 12M18 6L6 18"/></svg>
