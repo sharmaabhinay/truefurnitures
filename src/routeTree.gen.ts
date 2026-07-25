@@ -29,6 +29,7 @@ import { Route as SharedDesignTokenRouteImport } from './routes/shared-design.$t
 import { Route as ProductsSlugRouteImport } from './routes/products.$slug'
 import { Route as ConfigureSlugRouteImport } from './routes/configure.$slug'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
+import { Route as AuthenticatedPaymentRouteImport } from './routes/_authenticated/payment'
 import { Route as AuthenticatedMyDesignsRouteImport } from './routes/_authenticated/my-designs'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCheckoutRouteImport } from './routes/_authenticated/checkout'
@@ -137,6 +138,11 @@ const BlogSlugRoute = BlogSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => BlogRoute,
 } as any)
+const AuthenticatedPaymentRoute = AuthenticatedPaymentRouteImport.update({
+  id: '/payment',
+  path: '/payment',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMyDesignsRoute = AuthenticatedMyDesignsRouteImport.update({
   id: '/my-designs',
   path: '/my-designs',
@@ -201,6 +207,7 @@ export interface FileRoutesByFullPath {
   '/checkout': typeof AuthenticatedCheckoutRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/my-designs': typeof AuthenticatedMyDesignsRoute
+  '/payment': typeof AuthenticatedPaymentRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/configure/$slug': typeof ConfigureSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
@@ -229,6 +236,7 @@ export interface FileRoutesByTo {
   '/checkout': typeof AuthenticatedCheckoutRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/my-designs': typeof AuthenticatedMyDesignsRoute
+  '/payment': typeof AuthenticatedPaymentRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/configure/$slug': typeof ConfigureSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
@@ -260,6 +268,7 @@ export interface FileRoutesById {
   '/_authenticated/checkout': typeof AuthenticatedCheckoutRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/my-designs': typeof AuthenticatedMyDesignsRoute
+  '/_authenticated/payment': typeof AuthenticatedPaymentRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/configure/$slug': typeof ConfigureSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
@@ -291,6 +300,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/dashboard'
     | '/my-designs'
+    | '/payment'
     | '/blog/$slug'
     | '/configure/$slug'
     | '/products/$slug'
@@ -319,6 +329,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/dashboard'
     | '/my-designs'
+    | '/payment'
     | '/blog/$slug'
     | '/configure/$slug'
     | '/products/$slug'
@@ -349,6 +360,7 @@ export interface FileRouteTypes {
     | '/_authenticated/checkout'
     | '/_authenticated/dashboard'
     | '/_authenticated/my-designs'
+    | '/_authenticated/payment'
     | '/blog/$slug'
     | '/configure/$slug'
     | '/products/$slug'
@@ -524,6 +536,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogSlugRouteImport
       parentRoute: typeof BlogRoute
     }
+    '/_authenticated/payment': {
+      id: '/_authenticated/payment'
+      path: '/payment'
+      fullPath: '/payment'
+      preLoaderRoute: typeof AuthenticatedPaymentRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/my-designs': {
       id: '/_authenticated/my-designs'
       path: '/my-designs'
@@ -603,6 +622,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCheckoutRoute: typeof AuthenticatedCheckoutRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedMyDesignsRoute: typeof AuthenticatedMyDesignsRoute
+  AuthenticatedPaymentRoute: typeof AuthenticatedPaymentRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -610,6 +630,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCheckoutRoute: AuthenticatedCheckoutRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedMyDesignsRoute: AuthenticatedMyDesignsRoute,
+  AuthenticatedPaymentRoute: AuthenticatedPaymentRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

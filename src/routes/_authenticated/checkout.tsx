@@ -7,26 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/lib/cart";
 import { formatINR, estimatedDelivery } from "@/lib/format";
 import { toast } from "sonner";
-import { useServerFn } from "@tanstack/react-start";
-import { createRazorpayOrder, verifyRazorpayPayment } from "@/lib/razorpay.functions";
-
-declare global {
-  interface Window {
-    Razorpay?: any;
-  }
-}
-
-function loadRazorpayScript(): Promise<boolean> {
-  return new Promise((resolve) => {
-    if (typeof window === "undefined") return resolve(false);
-    if (window.Razorpay) return resolve(true);
-    const s = document.createElement("script");
-    s.src = "https://checkout.razorpay.com/v1/checkout.js";
-    s.onload = () => resolve(true);
-    s.onerror = () => resolve(false);
-    document.body.appendChild(s);
-  });
-}
+import { PaymentMethods } from "@/components/payment-methods";
 
 export const Route = createFileRoute("/_authenticated/checkout")({
   head: () => ({
@@ -59,8 +40,6 @@ type FormState = z.infer<typeof schema>;
 function Checkout() {
   const { items, subtotal, discount, total, coupon, clear } = useCart();
   const navigate = useNavigate();
-  const createRzp = useServerFn(createRazorpayOrder);
-  const verifyRzp = useServerFn(verifyRazorpayPayment);
   const [form, setForm] = useState<FormState>({
     full_name: "",
     phone: "",

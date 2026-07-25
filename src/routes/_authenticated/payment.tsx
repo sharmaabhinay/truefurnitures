@@ -17,7 +17,7 @@ const searchSchema = z.object({
 });
 
 export const Route = createFileRoute("/_authenticated/payment")({
-  validateSearch: (s) => searchSchema.parse(s),
+  validateSearch: (s: Record<string, unknown>) => searchSchema.parse(s),
   head: () => ({
     meta: [
       { title: "Complete Payment — True Furniture's" },
