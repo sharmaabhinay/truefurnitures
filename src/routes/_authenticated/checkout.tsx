@@ -273,6 +273,36 @@ function Checkout() {
           <div className="space-y-8">
             <section className="bg-white border border-[color:var(--brand-dark)]/10 p-6">
               <h2 className="font-display text-xl mb-6">Delivery Details</h2>
+              {addresses.length > 0 && (
+                <div className="mb-6">
+                  <label className={labelCls}>Deliver To</label>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {addresses.map((a) => (
+                      <button
+                        key={a.id}
+                        type="button"
+                        onClick={() => selectAddress(a.id)}
+                        className={`text-left border p-3 text-sm transition-colors ${selectedAddrId === a.id ? "border-[color:var(--brand-dark)] bg-[color:var(--brand-muted)]/50" : "border-[color:var(--brand-dark)]/15 hover:border-[color:var(--brand-dark)]/40"}`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] font-bold uppercase tracking-widest">{a.label}</span>
+                          {a.is_default && <span className="text-[9px] px-1.5 py-0.5 bg-[color:var(--brand-accent)] text-white uppercase tracking-widest">Default</span>}
+                        </div>
+                        <div className="font-semibold">{a.full_name}</div>
+                        <div className="text-[color:var(--brand-dark)]/70 text-xs line-clamp-2">{a.address_line}, {a.city} — {a.pincode}</div>
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedAddrId("__new"); setForm((s) => ({ ...s, full_name: "", phone: "", address_line: "", landmark: "", pincode: "" })); }}
+                      className={`text-left border p-3 text-sm border-dashed transition-colors ${selectedAddrId === "__new" ? "border-[color:var(--brand-dark)] bg-[color:var(--brand-muted)]/50" : "border-[color:var(--brand-dark)]/25 hover:border-[color:var(--brand-dark)]/60"}`}
+                    >
+                      <div className="text-[10px] font-bold uppercase tracking-widest mb-1">+ Use a new address</div>
+                      <div className="text-xs text-[color:var(--brand-dark)]/60">Enter details below</div>
+                    </button>
+                  </div>
+                </div>
+              )}
               <div className="grid gap-5 sm:grid-cols-2">
                 <div className="sm:col-span-2">
                   <label className={labelCls} htmlFor="full_name">Full Name</label>
@@ -315,6 +345,12 @@ function Checkout() {
                   <label className={labelCls} htmlFor="notes">Delivery Notes (optional)</label>
                   <textarea id="notes" rows={3} className={inputCls} value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Access instructions, preferred delivery window…" />
                 </div>
+                {(addresses.length === 0 || selectedAddrId === "__new") && (
+                  <label className="sm:col-span-2 flex items-center gap-2 text-xs text-[color:var(--brand-dark)]/70">
+                    <input type="checkbox" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} />
+                    Save this address to my profile for future orders
+                  </label>
+                )}
               </div>
             </section>
 
