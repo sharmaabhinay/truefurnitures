@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +26,7 @@ function Auth() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -96,7 +98,24 @@ function Auth() {
             </div>
             <div>
               <label className="text-[10px] font-black uppercase tracking-widest block mb-2">Password</label>
-              <input required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} type="password" className="w-full border-b border-[color:var(--brand-dark)]/20 pb-2 focus:outline-none focus:border-[color:var(--brand-accent)] bg-transparent" />
+              <div className="relative">
+                <input
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  type={showPassword ? "text" : "password"}
+                  className="w-full border-b border-[color:var(--brand-dark)]/20 pb-2 pr-8 focus:outline-none focus:border-[color:var(--brand-accent)] bg-transparent"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="absolute right-0 bottom-2 text-[color:var(--brand-dark)]/50 hover:text-[color:var(--brand-accent)] transition-colors"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
             {error && <p className="text-xs text-red-600">{error}</p>}
             {info && <p className="text-xs text-green-700">{info}</p>}
