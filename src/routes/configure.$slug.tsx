@@ -135,6 +135,36 @@ function ConfigurePage() {
 
   const addonList = ADDONS.filter((a) => addons[a.key]).map((a) => a.label);
 
+  const saveDesign = async () => {
+    const { data: sess } = await supabase.auth.getSession();
+    if (!sess.session) {
+      toast.error("Sign in to save designs");
+      navigate({ to: "/auth" });
+      return;
+    }
+    const name = prompt("Name this design", `${sofa.name} — ${sizeDef.label}`) ?? `${sofa.name}`;
+    const { data, error } = await supabase.from("saved_designs").insert({
+      user_id: sess.session.user.id,
+      sofa_id: sofa.id,
+      name,
+      config: {
+        colorHex: colorDef.hex,
+        seats: sizeDef.seats,
+        isSectional: sizeDef.sectional,
+        fabric,
+        addons,
+        price,
+        sizeLabel: sizeDef.label,
+        colorLabel: colorDef.label,
+        fabricLabel: fabricDef.label,
+      },
+    }).select("share_token").maybeSingle();
+    if (error) return toast.error(error.message);
+    const link = `${window.location.origin}/shared-design/${data?.share_token}`;
+    await navigator.clipboard.writeText(link).catch(() => {});
+    toast.success("Design saved! Share link copied to clipboard.");
+  };
+
   return (
     <div className="min-h-screen bg-[color:var(--brand-cream)] text-[color:var(--brand-dark)]">
       <SiteHeader />
@@ -302,6 +332,12 @@ function ConfigurePage() {
             className="w-full px-6 py-4 bg-[color:var(--brand-dark)] text-white text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors"
           >
             Add Configuration to Cart · Deposit {formatINR(deposit)}
+          </button>
+          <button
+            onClick={saveDesign}
+            className="mt-3 w-full px-6 py-3 border border-[color:var(--brand-dark)] text-[color:var(--brand-dark)] text-[10px] font-bold uppercase tracking-widest hover:bg-[color:var(--brand-dark)] hover:text-white transition-colors"
+          >
+            Save &amp; Share Design
           </button>
         </div>
       </section>

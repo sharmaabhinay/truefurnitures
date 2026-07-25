@@ -131,11 +131,6 @@ function Checkout() {
       const { error } = await supabase.from("orders").insert(rows);
       if (error) throw error;
 
-      if (coupon) {
-        // increment usage count (best-effort; permission depends on RLS - service_role handles under trigger)
-        await supabase.rpc as never;
-      }
-
       clear();
       toast.success("Order placed! Redirecting to your dashboard…");
       navigate({ to: "/dashboard" });
