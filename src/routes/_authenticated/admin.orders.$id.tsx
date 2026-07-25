@@ -111,7 +111,7 @@ function OrderDetail() {
   const snap = (order.sofa_snapshot ?? {}) as { name?: string; slug?: string; hero_image?: string };
   const fabric = (order.fabric_snapshot ?? {}) as { name?: string };
   const size = (order.size_snapshot ?? {}) as { label?: string };
-  const addons = ((order.addons_snapshot ?? []) as Array<{ name?: string; price?: number }>) ?? [];
+  const addons = (order.addons_snapshot ?? []) as Array<{ name?: string; price?: number }>;
   const currentIdx = (order.status as string) === "cancelled" ? -1 : statusIndex(order.status as string);
 
   return (
