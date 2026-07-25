@@ -1009,6 +1009,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_shared_design: {
+        Args: { p_token: string }
+        Returns: {
+          config: Json
+          id: string
+          name: string
+          sofa_name: string
+          sofa_slug: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
