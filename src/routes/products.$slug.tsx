@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useQuery, queryOptions } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +18,112 @@ import fabricVelvet from "@/assets/fabric-velvet.jpg";
 import fabricLinen from "@/assets/fabric-linen.jpg";
 import fabricLeather from "@/assets/fabric-leather.jpg";
 import showroomIndore from "@/assets/showroom-indore.jpg";
+
+type GalleryImage = { src: string; label: string };
+
+function ProductGallery({
+  images,
+  activeImage,
+  setActiveImage,
+  sofaName,
+  sofaSlug,
+}: {
+  images: GalleryImage[];
+  activeImage: number;
+  setActiveImage: (i: number) => void;
+  sofaName: string;
+  sofaSlug: string;
+}) {
+  const [paused, setPaused] = useState(false);
+  useEffect(() => {
+    if (paused) return;
+    const t = setInterval(() => {
+      setActiveImage((activeImage + 1) % images.length);
+    }, 4500);
+    return () => clearInterval(t);
+  }, [paused, activeImage, images.length, setActiveImage]);
+
+  const go = (dir: -1 | 1) => {
+    const next = (activeImage + dir + images.length) % images.length;
+    setActiveImage(next);
+  };
+
+  return (
+    <div
+      className="animate-fade-up"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      <div className="relative aspect-[4/5] bg-[color:var(--brand-muted)] overflow-hidden mb-3 group">
+        {images.map((g, i) => (
+          <img
+            key={i}
+            src={g.src}
+            alt={`${sofaName} — ${g.label}`}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${activeImage === i ? "opacity-100" : "opacity-0"}`}
+          />
+        ))}
+
+        {/* Prev / next */}
+        <button
+          type="button"
+          onClick={() => go(-1)}
+          aria-label="Previous image"
+          className="absolute left-3 top-1/2 -translate-y-1/2 size-10 grid place-items-center bg-white/85 backdrop-blur border border-[color:var(--brand-dark)]/10 hover:bg-white transition opacity-0 group-hover:opacity-100"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <button
+          type="button"
+          onClick={() => go(1)}
+          aria-label="Next image"
+          className="absolute right-3 top-1/2 -translate-y-1/2 size-10 grid place-items-center bg-white/85 backdrop-blur border border-[color:var(--brand-dark)]/10 hover:bg-white transition opacity-0 group-hover:opacity-100"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+
+        {/* Label */}
+        <span className="absolute bottom-3 left-3 tf-chip bg-white/85 backdrop-blur">{images[activeImage].label}</span>
+
+        {/* 3D experience button */}
+        <Link
+          to="/configure/$slug"
+          params={{ slug: sofaSlug }}
+          className="absolute top-3 right-3 flex items-center gap-2 px-4 py-2.5 bg-[color:var(--brand-dark)] text-white text-[10px] font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors shadow-lg"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 22V12"/><path d="M21 7l-9 5-9-5"/></svg>
+          View in 3D
+        </Link>
+
+        {/* Dots */}
+        <div className="absolute bottom-3 right-3 flex gap-1.5">
+          {images.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setActiveImage(i)}
+              aria-label={`Go to image ${i + 1}`}
+              className={`h-1.5 rounded-full transition-all ${activeImage === i ? "w-6 bg-white" : "w-1.5 bg-white/50"}`}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Thumbnails */}
+      <div className="grid grid-cols-5 gap-2 sm:gap-3">
+        {images.map((g, i) => (
+          <button
+            key={i}
+            onClick={() => setActiveImage(i)}
+            aria-label={`View ${g.label}`}
+            className={`aspect-square bg-[color:var(--brand-muted)] overflow-hidden border-2 transition-colors ${activeImage === i ? "border-[color:var(--brand-dark)]" : "border-transparent hover:border-[color:var(--brand-dark)]/30"}`}
+          >
+            <img src={g.src} alt="" className="w-full h-full object-cover" />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 const heroImages: Record<string, string> = {
   "malwa-modular": sofaMalwa,
@@ -165,7 +271,16 @@ function ProductPage() {
   if (!sofa) return null;
 
   const hero = heroImages[sofa.slug] ?? sofa.hero_image ?? sofaMalwa;
-  const gallery = [hero, fabricSwatches[fabric], showroomIndore, hero];
+  const otherAngles = Object.entries(heroImages)
+    .filter(([k]) => k !== sofa.slug)
+    .map(([, v]) => v)
+    .slice(0, 2);
+  const gallery = [
+    { src: hero, label: "Studio" },
+    { src: showroomIndore, label: "In showroom" },
+    { src: fabricSwatches[fabric], label: `${fabric} detail` },
+    ...otherAngles.map((s, i) => ({ src: s, label: `Styled ${i + 1}` })),
+  ];
   const price = Number(sofa.base_price);
   const sale = sofa.sale_price ? Number(sofa.sale_price) : null;
   const deposit = Math.round((sale ?? price) * 0.2);
@@ -183,24 +298,14 @@ function ProductPage() {
       </div>
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-8 md:py-12 grid gap-8 md:gap-12 lg:grid-cols-2">
-        {/* Gallery */}
-        <div className="animate-fade-up">
-          <div className="aspect-[4/5] bg-[color:var(--brand-muted)] overflow-hidden mb-3">
-            <img src={gallery[activeImage]} alt={sofa.name} className="w-full h-full object-cover" />
-          </div>
-          <div className="grid grid-cols-4 gap-2 sm:gap-3">
-            {gallery.map((g, i) => (
-              <button
-                key={i}
-                onClick={() => setActiveImage(i)}
-                aria-label={`View image ${i + 1}`}
-                className={`aspect-square bg-[color:var(--brand-muted)] overflow-hidden border-2 transition-colors ${activeImage === i ? "border-[color:var(--brand-dark)]" : "border-transparent"}`}
-              >
-                <img src={g} alt="" className="w-full h-full object-cover" />
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Gallery carousel */}
+        <ProductGallery
+          images={gallery}
+          activeImage={activeImage}
+          setActiveImage={setActiveImage}
+          sofaName={sofa.name}
+          sofaSlug={sofa.slug}
+        />
 
         {/* Details */}
         <div className="animate-fade-up delay-100">
