@@ -30,6 +30,7 @@ import { Route as SharedDesignTokenRouteImport } from './routes/shared-design.$t
 import { Route as ProductsSlugRouteImport } from './routes/products.$slug'
 import { Route as ConfigureSlugRouteImport } from './routes/configure.$slug'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedPaymentRouteImport } from './routes/_authenticated/payment'
 import { Route as AuthenticatedMyDesignsRouteImport } from './routes/_authenticated/my-designs'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -145,6 +146,11 @@ const BlogSlugRoute = BlogSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => BlogRoute,
 } as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPaymentRoute = AuthenticatedPaymentRouteImport.update({
   id: '/payment',
   path: '/payment',
@@ -222,6 +228,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/my-designs': typeof AuthenticatedMyDesignsRoute
   '/payment': typeof AuthenticatedPaymentRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/configure/$slug': typeof ConfigureSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
@@ -253,6 +260,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/my-designs': typeof AuthenticatedMyDesignsRoute
   '/payment': typeof AuthenticatedPaymentRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/configure/$slug': typeof ConfigureSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
@@ -287,6 +295,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/my-designs': typeof AuthenticatedMyDesignsRoute
   '/_authenticated/payment': typeof AuthenticatedPaymentRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/configure/$slug': typeof ConfigureSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
@@ -321,6 +330,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/my-designs'
     | '/payment'
+    | '/profile'
     | '/blog/$slug'
     | '/configure/$slug'
     | '/products/$slug'
@@ -352,6 +362,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/my-designs'
     | '/payment'
+    | '/profile'
     | '/blog/$slug'
     | '/configure/$slug'
     | '/products/$slug'
@@ -385,6 +396,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/my-designs'
     | '/_authenticated/payment'
+    | '/_authenticated/profile'
     | '/blog/$slug'
     | '/configure/$slug'
     | '/products/$slug'
@@ -569,6 +581,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogSlugRouteImport
       parentRoute: typeof BlogRoute
     }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/payment': {
       id: '/_authenticated/payment'
       path: '/payment'
@@ -663,6 +682,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedMyDesignsRoute: typeof AuthenticatedMyDesignsRoute
   AuthenticatedPaymentRoute: typeof AuthenticatedPaymentRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedOrdersIdReceiptRoute: typeof AuthenticatedOrdersIdReceiptRoute
 }
 
@@ -672,6 +692,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedMyDesignsRoute: AuthenticatedMyDesignsRoute,
   AuthenticatedPaymentRoute: AuthenticatedPaymentRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedOrdersIdReceiptRoute: AuthenticatedOrdersIdReceiptRoute,
 }
 
