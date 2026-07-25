@@ -1598,3 +1598,214 @@ function FeatureToggle({ defaultOn }: { defaultOn: boolean }) {
     </button>
   );
 }
+
+/* ================= VISITOR ANALYTICS ================= */
+
+const V_TYPE_ICONS: Record<string, string> = {
+  session: "🌐",
+  visit: "📍",
+  add_to_cart: "🛒",
+  quote: "💬",
+  newsletter: "📧",
+  product_view: "👁️",
+  view_3d: "🧊",
+};
+const V_TYPE_COLORS: Record<string, string> = {
+  session: "#5090E0",
+  visit: "#4CAF82",
+  add_to_cart: "#B478FF",
+  quote: "#C8A86B",
+  newsletter: "#E56AA7",
+  product_view: "#5090E0",
+  view_3d: "#B478FF",
+};
+const V_ALL_TYPES = ["all", "session", "visit", "product_view", "view_3d", "add_to_cart", "quote", "newsletter"];
+
+function fmtRel(iso: string) {
+  const t = new Date(iso).getTime();
+  const diff = Date.now() - t;
+  if (diff < 60_000) return "just now";
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
+  return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+}
+
+function Visitors() {
+  const [visitors, setVisitors] = useState<VisitorEvent[]>([]);
+  const [filter, setFilter] = useState<string>("all");
+
+  useEffect(() => {
+    setVisitors(getVisitors());
+  }, []);
+
+  const filtered = filter === "all" ? visitors : visitors.filter((v) => v.type === filter);
+  const recent = [...filtered].reverse().slice(0, 80);
+
+  const stats = V_ALL_TYPES.filter((t) => t !== "all").map((t) => ({
+    type: t,
+    count: visitors.filter((v) => v.type === t).length,
+  }));
+
+  const cityMap: Record<string, number> = {};
+  visitors.filter((v) => v.city).forEach((v) => {
+    cityMap[v.city!] = (cityMap[v.city!] || 0) + 1;
+  });
+  const topCities = Object.entries(cityMap).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const maxCity = topCities[0]?.[1] || 1;
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <div className="text-[15px] font-semibold">Visitor Analytics</div>
+          <div className="text-[11px]" style={{ color: "#888899" }}>
+            {visitors.length} events tracked · live session
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setVisitors(getVisitors())}
+            className="rounded-md px-3 py-1.5 text-[12px]"
+            style={{ background: "rgba(255,255,255,0.05)", border: "1px solid #2A2A38", color: "#E8E8F0" }}
+          >
+            ↺ Refresh
+          </button>
+          <button
+            onClick={() => {
+              if (!confirm("Clear all locally tracked visitor events?")) return;
+              clearVisitors();
+              setVisitors([]);
+              toast.success("Visitor log cleared");
+            }}
+            className="rounded-md px-3 py-1.5 text-[12px]"
+            style={{ background: "transparent", border: "1px solid #2A2A38", color: "#E05050" }}
+          >
+            Clear Log
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {[{ type: "all", count: visitors.length }, ...stats].map(({ type, count }) => {
+          const active = filter === type;
+          return (
+            <button
+              key={type}
+              onClick={() => setFilter(type)}
+              className="rounded-xl p-3 text-left transition-all"
+              style={{
+                background: active ? "rgba(200,168,107,0.06)" : "#1E1E28",
+                border: `1px solid ${active ? "#C8A86B" : "#2A2A38"}`,
+              }}
+            >
+              <span className="text-xl block mb-1">{V_TYPE_ICONS[type] || "📊"}</span>
+              <div
+                className="admin-serif text-2xl font-semibold"
+                style={{ color: active ? "#C8A86B" : "#E8E8F0" }}
+              >
+                {count}
+              </div>
+              <div className="text-[10px] capitalize" style={{ color: "#888899" }}>
+                {type.replaceAll("_", " ")}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {topCities.length > 0 && (
+        <Card>
+          <CardTitle>Top Locations</CardTitle>
+          <div className="space-y-2">
+            {topCities.map(([city, n]) => (
+              <div key={city} className="flex items-center gap-3">
+                <span className="text-[13px] flex-1">📍 {city}</span>
+                <div
+                  className="w-32 h-1.5 rounded-full overflow-hidden"
+                  style={{ background: "rgba(255,255,255,0.06)" }}
+                >
+                  <div
+                    className="h-full rounded-full"
+                    style={{ width: `${Math.round((n / maxCity) * 100)}%`, background: "#C8A86B" }}
+                  />
+                </div>
+                <span className="text-[12px] w-6 text-right" style={{ color: "#888899" }}>{n}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      <Card>
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <div className="text-[13px] font-semibold">Event Log</div>
+          <div className="flex flex-wrap gap-2">
+            {["all", "session", "add_to_cart", "quote"].map((t) => {
+              const active = filter === t;
+              return (
+                <button
+                  key={t}
+                  onClick={() => setFilter(t)}
+                  className="text-[11px] px-3 py-1 rounded-full transition-all"
+                  style={{
+                    background: active ? "#C8A86B" : "transparent",
+                    color: active ? "#1a1a1a" : "#888899",
+                    border: `1px solid ${active ? "#C8A86B" : "#2A2A38"}`,
+                  }}
+                >
+                  {t === "all" ? "All" : t.replaceAll("_", " ")}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        {recent.length === 0 ? (
+          <div className="text-center py-12" style={{ color: "#888899" }}>
+            <div className="text-4xl mb-3">👁️</div>
+            <div className="text-[13px]">
+              No visitor events yet. Wire <code className="text-[11px]">logVisitor()</code> from
+              <span className="mx-1" style={{ color: "#C8A86B" }}>@/lib/visitor-tracker</span>
+              into storefront pages to start tracking.
+            </div>
+          </div>
+        ) : (
+          <div className="max-h-96 overflow-y-auto admin-scroll">
+            {recent.map((v, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-3 py-2 border-b last:border-b-0"
+                style={{ borderColor: "rgba(42,42,56,0.5)" }}
+              >
+                <span className="text-base flex-shrink-0">{V_TYPE_ICONS[v.type] || "•"}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[12px] truncate">
+                    {v.type.replaceAll("_", " ")}
+                    {v.item ? ` — ${v.item}` : ""}
+                    {v.city ? ` from ${v.city}` : ""}
+                    {v.page ? ` (${v.page})` : ""}
+                  </div>
+                  <div className="text-[10px]" style={{ color: "#888899" }}>
+                    {v.ua && `${getDeviceIcon(v.ua)} ${getBrowser(v.ua)}`}
+                    {v.screen && ` · ${v.screen}`}
+                  </div>
+                </div>
+                <span
+                  className="text-[10px] px-2 py-0.5 rounded-full capitalize flex-shrink-0"
+                  style={{
+                    background: `${V_TYPE_COLORS[v.type] || "#888899"}26`,
+                    color: V_TYPE_COLORS[v.type] || "#888899",
+                  }}
+                >
+                  {v.type.replaceAll("_", " ")}
+                </span>
+                <span className="text-[10px] whitespace-nowrap flex-shrink-0" style={{ color: "#888899" }}>
+                  {fmtRel(v.time)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
