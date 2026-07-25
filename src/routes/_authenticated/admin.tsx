@@ -639,7 +639,7 @@ function Orders() {
       return data ?? [];
     },
   });
-  const update = async (id: string, patch: Record<string, unknown>) => {
+  const update = async (id: string, patch: any) => {
     const { error } = await supabase.from("orders").update(patch).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Order updated");
@@ -834,7 +834,7 @@ function Products() {
     },
   });
 
-  const update = async (id: string, patch: Record<string, unknown>) => {
+  const update = async (id: string, patch: any) => {
     const { error } = await supabase.from("sofas").update(patch).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Saved");
@@ -1436,7 +1436,7 @@ function Showrooms() {
     queryKey: ["admin-showrooms"],
     queryFn: async () => (await supabase.from("showrooms").select("*").order("sort_order")).data ?? [],
   });
-  const update = async (id: string, patch: Record<string, unknown>) => {
+  const update = async (id: string, patch: any) => {
     const { error } = await supabase.from("showrooms").update(patch).eq("id", id);
     if (error) return toast.error(error.message);
     qc.invalidateQueries({ queryKey: ["admin-showrooms"] });
