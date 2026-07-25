@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatINR, formatDate, ORDER_STATUS_STEPS } from "@/lib/format";
 import { toast } from "sonner";
+import { getVisitors, clearVisitors, getDeviceIcon, getBrowser, type VisitorEvent } from "@/lib/visitor-tracker";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   ssr: false,
