@@ -178,7 +178,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function parseProductOptions(value: Json | null | undefined): ProductOptions {
-  return isRecord(value) ? (value as ProductOptions) : {};
+  return isRecord(value) ? (value as unknown as ProductOptions) : {};
 }
 
 function slugify(value: string) {
