@@ -93,7 +93,12 @@ function PaymentPage() {
         prefill: { contact: first?.phone ?? undefined },
         onSuccess: () => {
           toast.success("Payment received! Your order is confirmed.");
-          navigate({ to: "/dashboard" });
+          const firstId = orderIds[0];
+          if (firstId) {
+            navigate({ to: "/orders/$id/receipt", params: { id: firstId } });
+          } else {
+            navigate({ to: "/dashboard" });
+          }
         },
         onDismiss: () => {
           toast.info("Payment cancelled. You can complete it anytime from your dashboard.");
