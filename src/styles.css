@@ -153,3 +153,33 @@
     font-family: var(--font-display);
   }
 }
+
+/* Utility animations */
+@keyframes tf-fade-up {
+  0% { opacity: 0; transform: translateY(16px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes tf-fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes tf-shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.animate-fade-up { animation: tf-fade-up 0.7s ease-out both; }
+.animate-fade-in-slow { animation: tf-fade-in 1s ease-out both; }
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-500 { animation-delay: 0.5s; }
+
+.tf-skeleton {
+  background: linear-gradient(90deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.05) 100%);
+  background-size: 800px 100%;
+  animation: tf-shimmer 1.4s linear infinite;
+}
+
+.hover-lift { transition: transform 0.5s cubic-bezier(.2,.8,.2,1), box-shadow 0.5s ease; }
+.hover-lift:hover { transform: translateY(-4px); }

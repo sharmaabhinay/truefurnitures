@@ -5,9 +5,10 @@ export function SiteFooter() {
     <footer className="bg-[color:var(--brand-dark)] text-white py-20 px-6 md:px-10">
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start gap-12">
         <div className="max-w-xs">
-          <div className="text-2xl font-display font-bold tracking-tight mb-6 uppercase">AVANT</div>
+          <div className="text-2xl font-display font-bold tracking-tight mb-3">True Furniture&apos;s</div>
+          <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--brand-accent)] mb-5">Fully Customizable Furniture</p>
           <p className="text-white/40 text-sm font-light leading-relaxed">
-            Defining the standard of custom-made furniture in Madhya Pradesh since 2018.
+            Bespoke sofas hand-tailored in Central India. Serving the discerning homes of Indore &amp; Ujjain since 2018.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-16">
@@ -30,7 +31,7 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="max-w-6xl mx-auto mt-16 pt-8 border-t border-white/5 flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-white/30">
-        <span>© {new Date().getFullYear()} Avant-Garde Atelier</span>
+        <span>© {new Date().getFullYear()} True Furniture&apos;s</span>
         <span>Designed for Indore &amp; Ujjain</span>
       </div>
     </footer>
