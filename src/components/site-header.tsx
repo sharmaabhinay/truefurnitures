@@ -88,18 +88,23 @@ export function SiteHeader() {
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
-  const nav = [
+  // Minimal top nav — only the essentials are shown on desktop.
+  const primaryNav = [
     { to: "/collections", label: "Collections" },
     { to: "/design", label: "Design 3D" },
-    { to: "/about", label: "The Atelier" },
     { to: "/showrooms", label: "Showrooms" },
+    { to: "/contact", label: "Contact" },
+  ] as const;
+  // Everything else lives in the mobile drawer + footer.
+  const secondaryNav = [
+    { to: "/about", label: "The Atelier" },
     { to: "/gallery", label: "Gallery" },
     { to: "/book-visit", label: "Book Visit" },
     { to: "/blog", label: "Journal" },
     { to: "/faq", label: "FAQ" },
     { to: "/careers", label: "Careers" },
-    { to: "/contact", label: "Contact" },
   ] as const;
+  const drawerNav = [...primaryNav, ...secondaryNav];
 
   const suggestions = useMemo(() => {
     const query = q.trim().toLowerCase();
@@ -129,8 +134,8 @@ export function SiteHeader() {
         <Link to="/" className="font-display text-xl sm:text-2xl font-bold tracking-tight text-[color:var(--brand-dark)] hover:text-[color:var(--brand-accent)] transition-colors shrink-0">
           True Furniture&apos;s
         </Link>
-        <div className="hidden xl:flex gap-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-[color:var(--brand-dark)]">
-          {nav.map((n) => (
+        <div className="hidden lg:flex gap-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-[color:var(--brand-dark)]">
+          {primaryNav.map((n) => (
             <Link key={n.to} to={n.to} className="hover:text-[color:var(--brand-accent)] transition-colors">{n.label}</Link>
           ))}
         </div>
@@ -228,14 +233,14 @@ export function SiteHeader() {
           <button
             aria-label="Open menu"
             onClick={() => setOpen(true)}
-            className="xl:hidden p-2 -mr-2 text-[color:var(--brand-dark)]"
+            className="lg:hidden p-2 -mr-2 text-[color:var(--brand-dark)]"
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
           </button>
         </div>
       </nav>
       {open && (
-        <div className="fixed inset-0 z-[60] xl:hidden">
+        <div className="fixed inset-0 z-[60] lg:hidden">
           <div className="absolute inset-0 bg-[color:var(--brand-dark)]/50 backdrop-blur-sm" onClick={() => setOpen(false)} />
           <div className="absolute right-0 top-0 h-full w-[86%] max-w-sm bg-[color:var(--brand-cream)] p-6 flex flex-col animate-slide-in">
             <div className="flex items-center justify-between mb-8">
@@ -270,7 +275,7 @@ export function SiteHeader() {
               </ul>
             )}
             <div className="flex flex-col gap-1">
-              {nav.map((n) => (
+              {drawerNav.map((n) => (
                 <Link key={n.to} to={n.to} onClick={() => setOpen(false)} className="py-3 border-b border-[color:var(--brand-dark)]/10 text-sm font-semibold uppercase tracking-widest">
                   {n.label}
                 </Link>
