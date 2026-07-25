@@ -32,6 +32,7 @@ import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as AuthenticatedMyDesignsRouteImport } from './routes/_authenticated/my-designs'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCheckoutRouteImport } from './routes/_authenticated/checkout'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -147,6 +148,11 @@ const AuthenticatedCheckoutRoute = AuthenticatedCheckoutRouteImport.update({
   path: '/checkout',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -164,6 +170,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/showrooms': typeof ShowroomsRoute
   '/terms': typeof TermsRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/checkout': typeof AuthenticatedCheckoutRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/my-designs': typeof AuthenticatedMyDesignsRoute
@@ -188,6 +195,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/showrooms': typeof ShowroomsRoute
   '/terms': typeof TermsRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/checkout': typeof AuthenticatedCheckoutRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/my-designs': typeof AuthenticatedMyDesignsRoute
@@ -214,6 +222,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/showrooms': typeof ShowroomsRoute
   '/terms': typeof TermsRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/checkout': typeof AuthenticatedCheckoutRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/my-designs': typeof AuthenticatedMyDesignsRoute
@@ -240,6 +249,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/showrooms'
     | '/terms'
+    | '/admin'
     | '/checkout'
     | '/dashboard'
     | '/my-designs'
@@ -264,6 +274,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/showrooms'
     | '/terms'
+    | '/admin'
     | '/checkout'
     | '/dashboard'
     | '/my-designs'
@@ -289,6 +300,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/showrooms'
     | '/terms'
+    | '/_authenticated/admin'
     | '/_authenticated/checkout'
     | '/_authenticated/dashboard'
     | '/_authenticated/my-designs'
@@ -483,16 +495,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCheckoutRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedCheckoutRoute: typeof AuthenticatedCheckoutRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedMyDesignsRoute: typeof AuthenticatedMyDesignsRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedCheckoutRoute: AuthenticatedCheckoutRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedMyDesignsRoute: AuthenticatedMyDesignsRoute,
