@@ -2,6 +2,7 @@ import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-ro
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import { formatINR, formatDate, ORDER_STATUS_STEPS } from "@/lib/format";
 import { toast } from "sonner";
 import { getVisitors, clearVisitors, getDeviceIcon, getBrowser, type VisitorEvent } from "@/lib/visitor-tracker";
@@ -887,13 +888,67 @@ type SofaRow = {
   name: string;
   tagline: string | null;
   description: string | null;
+  full_description: string | null;
+  features: string[] | null;
+  dimensions: string | null;
+  materials: string | null;
   base_price: number;
   sale_price: number | null;
   hero_image: string | null;
+  gallery: string[] | null;
+  model_url: string | null;
+  video_url: string | null;
+  seo_title: string | null;
+  seo_description: string | null;
   is_published: boolean;
   is_featured: boolean;
   lead_time_days: number;
+  delivery_days: number | null;
+  product_options: Json | null;
 };
+
+type SpecRow = { key: string; val: string };
+type SizeVariant = { label: string; price: string; dimensions: string; seating: string };
+type FabricVariant = { name: string; priceAdjust: number };
+type ColourOption = { label: string; hex: string };
+type ProductOptions = {
+  sku?: string;
+  collection?: string;
+  badge?: string;
+  warranty?: string;
+  specs?: SpecRow[];
+  sizes?: SizeVariant[];
+  colours?: ColourOption[];
+  fabrics?: FabricVariant[];
+  cushionFill?: string[];
+  modelPath?: string;
+  modelFileName?: string;
+};
+
+const PRODUCT_TABS = ["Basic", "Images", "Specs & Desc", "Variants", "3D Model"];
+const PRODUCT_BADGES = ["", "New", "Bestseller", "Premium", "Limited", "Made to Order"];
+const DEFAULT_COLOURS: ColourOption[] = [
+  { label: "Sand", hex: "#D9C9A8" },
+  { label: "Ivory", hex: "#F0EADB" },
+  { label: "Charcoal", hex: "#2F2F33" },
+  { label: "Emerald", hex: "#22574A" },
+  { label: "Terracotta", hex: "#B0563A" },
+  { label: "Midnight", hex: "#25384F" },
+];
+const DEFAULT_CUSHIONS = ["High-density foam", "Memory foam", "Feather blend", "Pocket spring"];
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function asString(value: unknown) {
+  return typeof value === "string" ? value : "";
+}
+
+function parseProductOptions(value: Json | null | undefined): ProductOptions {
+  if (!isRecord(value)) return {};
+  return value as ProductOptions;
+}
 
 function Products() {
   const qc = useQueryClient();
@@ -905,7 +960,7 @@ function Products() {
     queryFn: async () => {
       const { data } = await supabase
         .from("sofas")
-        .select("id, slug, name, tagline, description, base_price, sale_price, hero_image, is_published, is_featured, lead_time_days")
+        .select("id, slug, name, tagline, description, full_description, features, dimensions, materials, base_price, sale_price, hero_image, gallery, model_url, video_url, seo_title, seo_description, is_published, is_featured, lead_time_days, delivery_days, product_options")
         .order("sort_order");
       return (data ?? []) as SofaRow[];
     },
@@ -1033,19 +1088,135 @@ function ProductModal({
   onSaved: () => void;
 }) {
   const isEdit = Boolean(product.id);
+  const options = parseProductOptions(product.product_options);
+  const [tab, setTab] = useState(0);
   const [name, setName] = useState(product.name ?? "");
   const [slug, setSlug] = useState(product.slug ?? "");
   const [tagline, setTagline] = useState(product.tagline ?? "");
   const [basePrice, setBasePrice] = useState<string>(product.base_price ? String(product.base_price) : "");
   const [salePrice, setSalePrice] = useState<string>(product.sale_price ? String(product.sale_price) : "");
-  const [heroImage, setHeroImage] = useState(product.hero_image ?? "");
+  const [sku, setSku] = useState(options.sku ?? "");
+  const [collection, setCollection] = useState(options.collection ?? "");
+  const [badge, setBadge] = useState(options.badge ?? "");
+  const [warranty, setWarranty] = useState(options.warranty ?? "5-year frame warranty · 1-year upholstery");
+  const [images, setImages] = useState<string[]>(() => {
+    const merged = [product.hero_image, ...(product.gallery ?? [])].filter((v): v is string => Boolean(v));
+    return Array.from(new Set(merged));
+  });
+  const [imageUrl, setImageUrl] = useState("");
+  const [modelUrl, setModelUrl] = useState(product.model_url ?? "");
+  const [modelPath, setModelPath] = useState(options.modelPath ?? "");
+  const [modelFileName, setModelFileName] = useState(options.modelFileName ?? "");
   const [description, setDescription] = useState(product.description ?? "");
+  const [fullDescription, setFullDescription] = useState(product.full_description ?? "");
+  const [features, setFeatures] = useState<string[]>(product.features?.length ? product.features : [""]);
+  const [specs, setSpecs] = useState<SpecRow[]>(() => {
+    if (Array.isArray(options.specs) && options.specs.length > 0) return options.specs;
+    const rows: SpecRow[] = [];
+    if (product.dimensions) rows.push({ key: "Dimensions", val: product.dimensions });
+    if (product.materials) rows.push({ key: "Materials", val: product.materials });
+    return rows.length ? rows : [{ key: "Frame", val: "" }];
+  });
+  const [sizes, setSizes] = useState<SizeVariant[]>(() =>
+    Array.isArray(options.sizes) && options.sizes.length > 0
+      ? options.sizes
+      : [{ label: "3-Seater", price: product.base_price ? String(product.base_price) : "", dimensions: product.dimensions ?? "", seating: "3" }],
+  );
+  const [colours, setColours] = useState<ColourOption[]>(() =>
+    Array.isArray(options.colours) && options.colours.length > 0 ? options.colours : DEFAULT_COLOURS.slice(0, 4),
+  );
+  const [fabrics, setFabrics] = useState<FabricVariant[]>(() =>
+    Array.isArray(options.fabrics) && options.fabrics.length > 0
+      ? options.fabrics
+      : [
+          { name: "Bouclé", priceAdjust: 0 },
+          { name: "Velvet", priceAdjust: 5000 },
+        ],
+  );
+  const [cushionFill, setCushionFill] = useState<string[]>(() =>
+    Array.isArray(options.cushionFill) ? options.cushionFill.filter((v): v is string => typeof v === "string") : ["High-density foam"],
+  );
   const [leadTime, setLeadTime] = useState<string>(String(product.lead_time_days ?? 30));
+  const [videoUrl, setVideoUrl] = useState(product.video_url ?? "");
+  const [seoTitle, setSeoTitle] = useState(product.seo_title ?? "");
+  const [seoDescription, setSeoDescription] = useState(product.seo_description ?? "");
   const [isPublished, setIsPublished] = useState(product.is_published ?? true);
+  const [isFeatured, setIsFeatured] = useState(product.is_featured ?? false);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState<"images" | "model" | null>(null);
 
   const autoSlug = (v: string) =>
     v.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+  const productFolder = autoSlug(slug || name) || "new-product";
+
+  const uploadProductFile = async (file: File, folder: "images" | "models") => {
+    const cleanName = file.name.toLowerCase().replace(/[^a-z0-9._-]+/g, "-");
+    const path = `${productFolder}/${folder}/${Date.now()}-${cleanName}`;
+    const { error } = await supabase.storage.from("product-media").upload(path, file, {
+      upsert: true,
+      contentType: file.type || "application/octet-stream",
+    });
+    if (error) throw error;
+    const { data, error: signError } = await supabase.storage.from("product-media").createSignedUrl(path, 60 * 60 * 24 * 365);
+    if (signError) throw signError;
+    if (!data?.signedUrl) throw new Error("Could not prepare uploaded file URL");
+    return { path, url: data.signedUrl };
+  };
+
+  const uploadImages = async (files: FileList | null) => {
+    const selected = files ? Array.from(files) : [];
+    if (selected.length === 0) return;
+    setUploading("images");
+    try {
+      const uploaded: string[] = [];
+      for (const file of selected) {
+        const { url } = await uploadProductFile(file, "images");
+        uploaded.push(url);
+      }
+      setImages((cur) => Array.from(new Set([...cur, ...uploaded])));
+      toast.success(`${uploaded.length} image${uploaded.length === 1 ? "" : "s"} uploaded`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Image upload failed");
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  const uploadModel = async (file: File | undefined) => {
+    if (!file) return;
+    setUploading("model");
+    try {
+      const { path, url } = await uploadProductFile(file, "models");
+      setModelUrl(url);
+      setModelPath(path);
+      setModelFileName(file.name);
+      toast.success("3D model uploaded");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "3D upload failed");
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  const addImageUrl = () => {
+    const url = imageUrl.trim();
+    if (!url) return;
+    setImages((cur) => Array.from(new Set([...cur, url])));
+    setImageUrl("");
+  };
+
+  const setSpec = (index: number, patch: Partial<SpecRow>) => {
+    setSpecs((cur) => cur.map((row, i) => (i === index ? { ...row, ...patch } : row)));
+  };
+
+  const setSize = (index: number, patch: Partial<SizeVariant>) => {
+    setSizes((cur) => cur.map((row, i) => (i === index ? { ...row, ...patch } : row)));
+  };
+
+  const setFabric = (index: number, patch: Partial<FabricVariant>) => {
+    setFabrics((cur) => cur.map((row, i) => (i === index ? { ...row, ...patch } : row)));
+  };
 
   const save = async () => {
     if (!name.trim() || !basePrice) {
@@ -1053,22 +1224,56 @@ function ProductModal({
       return;
     }
     setSaving(true);
+    const cleanSpecs = specs.filter((s) => s.key.trim() || s.val.trim());
+    const cleanFeatures = features.map((f) => f.trim()).filter(Boolean);
+    const heroImage = images[0] ?? "";
+    const gallery = images.slice(1);
+    const dimensions = cleanSpecs.find((s) => s.key.toLowerCase().includes("dimension"))?.val.trim() || null;
+    const materials = cleanSpecs
+      .filter((s) => !s.key.toLowerCase().includes("dimension"))
+      .map((s) => `${s.key.trim()}: ${s.val.trim()}`)
+      .filter((s) => !s.endsWith(": "))
+      .join(" · ") || null;
     const payload = {
       name: name.trim(),
       slug: (slug || autoSlug(name)).trim(),
       tagline: tagline || null,
       description: description || null,
+      full_description: fullDescription || null,
+      features: cleanFeatures.length ? cleanFeatures : null,
+      dimensions,
+      materials,
       base_price: Number(basePrice),
       sale_price: salePrice ? Number(salePrice) : null,
       hero_image: heroImage || null,
+      gallery,
+      model_url: modelUrl || null,
+      video_url: videoUrl || null,
+      seo_title: seoTitle || null,
+      seo_description: seoDescription || null,
       lead_time_days: Number(leadTime) || 30,
+      delivery_days: Number(leadTime) || 30,
       is_published: isPublished,
+      is_featured: isFeatured,
+      product_options: {
+        sku: sku || null,
+        collection: collection || null,
+        badge: badge || null,
+        warranty: warranty || null,
+        specs: cleanSpecs,
+        sizes: sizes.filter((s) => s.label.trim() || s.price || s.dimensions.trim() || s.seating.trim()),
+        colours,
+        fabrics: fabrics.filter((f) => f.name.trim()),
+        cushionFill,
+        modelPath: modelPath || null,
+        modelFileName: modelFileName || null,
+      },
     };
-    const { error } = isEdit
-      ? await supabase.from("sofas").update(payload).eq("id", product.id!)
+    const result = isEdit && product.id
+      ? await supabase.from("sofas").update(payload).eq("id", product.id)
       : await supabase.from("sofas").insert(payload);
     setSaving(false);
-    if (error) return toast.error(error.message);
+    if (result.error) return toast.error(result.error.message);
     toast.success(isEdit ? "Product updated" : "Product created");
     onSaved();
   };
@@ -1080,69 +1285,288 @@ function ProductModal({
       onClick={onClose}
     >
       <div
-        className="rounded-2xl p-6 sm:p-8 w-full max-w-xl max-h-[90vh] overflow-y-auto admin-scroll"
+        className="rounded-2xl w-full max-w-4xl max-h-[92vh] overflow-hidden flex flex-col admin-scroll"
         style={{ background: "#1E1E28", border: "1px solid #2A2A38" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-5">
-          <div className="text-[17px] font-semibold">{isEdit ? "Edit Product" : "Add New Product"}</div>
+        <div className="flex items-center justify-between gap-4 px-5 sm:px-6 py-4 border-b" style={{ borderColor: "#2A2A38" }}>
+          <div>
+            <div className="text-[17px] font-semibold">{isEdit ? "Edit Product" : "Add New Product"}</div>
+            <div className="text-[11px] mt-0.5" style={{ color: "#888899" }}>Full CMS product setup · images · variants · 3D model</div>
+          </div>
           <button onClick={onClose} className="text-xl" style={{ color: "#888899" }}>×</button>
         </div>
 
-        <div className="space-y-4">
-          <div className="grid sm:grid-cols-2 gap-4">
-            <Field label="Product Name">
-              <DarkInput
-                value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  if (!isEdit) setSlug(autoSlug(e.target.value));
-                }}
-                placeholder="Royale Sectional"
-              />
-            </Field>
-            <Field label="Slug (URL)">
-              <DarkInput
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                placeholder="royale-sectional"
-              />
-            </Field>
-          </div>
-          <Field label="Tagline">
-            <DarkInput value={tagline} onChange={(e) => setTagline(e.target.value)} placeholder="Optional short strapline" />
-          </Field>
-          <div className="grid sm:grid-cols-3 gap-4">
-            <Field label="Base Price (₹)">
-              <DarkInput type="number" value={basePrice} onChange={(e) => setBasePrice(e.target.value)} placeholder="48500" />
-            </Field>
-            <Field label="Sale Price (₹)">
-              <DarkInput type="number" value={salePrice} onChange={(e) => setSalePrice(e.target.value)} placeholder="Optional" />
-            </Field>
-            <Field label="Lead Days">
-              <DarkInput type="number" value={leadTime} onChange={(e) => setLeadTime(e.target.value)} placeholder="30" />
-            </Field>
-          </div>
-          <Field label="Hero Image URL">
-            <DarkInput value={heroImage} onChange={(e) => setHeroImage(e.target.value)} placeholder="https://…" />
-            {heroImage && (
-              <img src={heroImage} alt="" className="mt-3 w-full h-40 object-cover rounded-md" />
-            )}
-          </Field>
-          <Field label="Description">
-            <DarkTextarea rows={4} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe the product…" />
-          </Field>
-          <label className="flex items-center gap-2 text-[13px]" style={{ color: "#888899" }}>
-            <input
-              type="checkbox"
-              checked={isPublished}
-              onChange={(e) => setIsPublished(e.target.checked)}
-            />
-            Publish immediately
-          </label>
+        <div className="flex overflow-x-auto border-b admin-scroll" style={{ borderColor: "#2A2A38" }}>
+          {PRODUCT_TABS.map((label, index) => (
+            <button
+              key={label}
+              onClick={() => setTab(index)}
+              className="px-4 sm:px-5 py-3 text-[12px] font-semibold whitespace-nowrap border-b-2 transition-colors"
+              style={{ color: tab === index ? "#C8A86B" : "#888899", borderColor: tab === index ? "#C8A86B" : "transparent" }}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
-        <div className="flex gap-3 mt-6">
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5 admin-scroll">
+          {tab === 0 && (
+            <>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <Field label="Product Name *">
+                  <DarkInput
+                    value={name}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      if (!isEdit) setSlug(autoSlug(e.target.value));
+                    }}
+                    placeholder="Royale Sectional"
+                  />
+                </Field>
+                <Field label="Slug (URL)">
+                  <DarkInput value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="royale-sectional" />
+                </Field>
+                <Field label="Collection">
+                  <DarkInput value={collection} onChange={(e) => setCollection(e.target.value)} placeholder="e.g. Royale" />
+                </Field>
+                <Field label="SKU">
+                  <DarkInput value={sku} onChange={(e) => setSku(e.target.value)} placeholder="TF-SF-001" />
+                </Field>
+                <Field label="Price (₹) *">
+                  <DarkInput type="number" value={basePrice} onChange={(e) => setBasePrice(e.target.value)} placeholder="48500" />
+                </Field>
+                <Field label="Sale Price / Offer (₹)">
+                  <DarkInput type="number" value={salePrice} onChange={(e) => setSalePrice(e.target.value)} placeholder="Optional" />
+                </Field>
+                <Field label="Badge">
+                  <DarkSelect value={badge} onChange={(e) => setBadge(e.target.value)} className="w-full py-2">
+                    {PRODUCT_BADGES.map((b) => <option key={b} value={b}>{b || "None"}</option>)}
+                  </DarkSelect>
+                </Field>
+                <Field label="Delivery Days">
+                  <DarkInput type="number" value={leadTime} onChange={(e) => setLeadTime(e.target.value)} placeholder="30" />
+                </Field>
+                <Field label="Warranty">
+                  <DarkInput value={warranty} onChange={(e) => setWarranty(e.target.value)} placeholder="Warranty text" />
+                </Field>
+                <Field label="Video URL">
+                  <DarkInput value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="Muted product video URL" />
+                </Field>
+              </div>
+              <Field label="Tagline">
+                <DarkInput value={tagline} onChange={(e) => setTagline(e.target.value)} placeholder="Optional short strapline" />
+              </Field>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <Field label="SEO Title">
+                  <DarkInput value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} placeholder="Premium Custom Sofa in Indore" />
+                </Field>
+                <Field label="SEO Description">
+                  <DarkInput value={seoDescription} onChange={(e) => setSeoDescription(e.target.value)} placeholder="Short search/social description" />
+                </Field>
+              </div>
+              <div className="flex flex-wrap gap-6">
+                <label className="flex items-center gap-2 text-[13px] cursor-pointer" style={{ color: "#888899" }}>
+                  <input type="checkbox" checked={isPublished} onChange={(e) => setIsPublished(e.target.checked)} />
+                  Active / visible in store
+                </label>
+                <label className="flex items-center gap-2 text-[13px] cursor-pointer" style={{ color: "#888899" }}>
+                  <input type="checkbox" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} />
+                  Featured on homepage
+                </label>
+              </div>
+            </>
+          )}
+
+          {tab === 1 && (
+            <>
+              <Field label="Add Image URL">
+                <div className="flex gap-2">
+                  <DarkInput
+                    type="url"
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addImageUrl();
+                      }
+                    }}
+                    placeholder="https://..."
+                  />
+                  <button onClick={addImageUrl} className="rounded-md px-4 text-[12px] font-semibold" style={{ background: "#C8A86B", color: "#1a1a1a" }}>Add</button>
+                </div>
+              </Field>
+              <Field label="Upload Product Images">
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={(e) => uploadImages(e.currentTarget.files)}
+                  className="block w-full text-[12px] file:mr-4 file:rounded-md file:border-0 file:px-4 file:py-2 file:text-[12px] file:font-semibold"
+                  style={{ color: "#888899" }}
+                />
+                {uploading === "images" && <p className="text-[11px] mt-2" style={{ color: "#C8A86B" }}>Uploading images…</p>}
+              </Field>
+              {images.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {images.map((img, i) => (
+                    <div key={`${img}-${i}`} className="relative group rounded-xl overflow-hidden aspect-[4/3]" style={{ background: "#16161D" }}>
+                      <img src={img} alt={`Product ${i + 1}`} className="w-full h-full object-cover" />
+                      {i === 0 && <span className="absolute top-2 left-2 rounded px-2 py-0.5 text-[10px] font-bold" style={{ background: "#C8A86B", color: "#1a1a1a" }}>MAIN</span>}
+                      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {i > 0 && <button onClick={() => setImages((cur) => [img, ...cur.filter((_, j) => j !== i)])} className="rounded px-2 py-1 text-[10px]" style={{ background: "#C8A86B", color: "#1a1a1a" }}>Main</button>}
+                        <button onClick={() => setImages((cur) => cur.filter((_, j) => j !== i))} className="rounded px-2 py-1 text-[10px]" style={{ background: "#E05050", color: "#fff" }}>Remove</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-xl p-10 text-center text-[13px]" style={{ background: "#16161D", color: "#888899" }}>No product images added yet.</div>
+              )}
+            </>
+          )}
+
+          {tab === 2 && (
+            <>
+              <Field label="Short Description (card)">
+                <DarkTextarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Brief description shown on product cards…" />
+              </Field>
+              <Field label="Long Description (product page)">
+                <DarkTextarea rows={5} value={fullDescription} onChange={(e) => setFullDescription(e.target.value)} placeholder="Full detailed description for the product page…" />
+              </Field>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-[11px] uppercase tracking-[0.08em]" style={{ color: "#888899" }}>Specifications</label>
+                  <button onClick={() => setSpecs((cur) => [...cur, { key: "", val: "" }])} className="text-[12px]" style={{ color: "#C8A86B" }}>+ Add row</button>
+                </div>
+                <div className="space-y-2">
+                  {specs.map((s, i) => (
+                    <div key={i} className="grid sm:grid-cols-[1fr_1fr_auto] gap-2">
+                      <DarkInput value={s.key} onChange={(e) => setSpec(i, { key: e.target.value })} placeholder="Key (e.g. Frame)" />
+                      <DarkInput value={s.val} onChange={(e) => setSpec(i, { val: e.target.value })} placeholder="Value (e.g. Sheesham)" />
+                      <button onClick={() => setSpecs((cur) => cur.filter((_, j) => j !== i))} className="rounded-md px-3 text-[12px]" style={{ border: "1px solid #2A2A38", color: "#E05050" }}>Delete</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-[11px] uppercase tracking-[0.08em]" style={{ color: "#888899" }}>Features</label>
+                  <button onClick={() => setFeatures((cur) => [...cur, ""])} className="text-[12px]" style={{ color: "#C8A86B" }}>+ Add</button>
+                </div>
+                <div className="space-y-2">
+                  {features.map((feature, i) => (
+                    <div key={i} className="grid grid-cols-[1fr_auto] gap-2">
+                      <DarkInput value={feature} onChange={(e) => setFeatures((cur) => cur.map((f, j) => (j === i ? e.target.value : f)))} placeholder={`Feature ${i + 1}`} />
+                      <button onClick={() => setFeatures((cur) => cur.filter((_, j) => j !== i))} className="rounded-md px-3 text-[12px]" style={{ border: "1px solid #2A2A38", color: "#E05050" }}>Delete</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {tab === 3 && (
+            <>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-[11px] uppercase tracking-[0.08em]" style={{ color: "#888899" }}>Sizes & Pricing</label>
+                  <button onClick={() => setSizes((cur) => [...cur, { label: "", price: "", dimensions: "", seating: "" }])} className="text-[12px]" style={{ color: "#C8A86B" }}>+ Add size</button>
+                </div>
+                <div className="space-y-2">
+                  {sizes.map((s, i) => (
+                    <div key={i} className="grid sm:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2">
+                      <DarkInput value={s.label} onChange={(e) => setSize(i, { label: e.target.value })} placeholder="3-Seater" />
+                      <DarkInput type="number" value={s.price} onChange={(e) => setSize(i, { price: e.target.value })} placeholder="Price ₹" />
+                      <DarkInput value={s.dimensions} onChange={(e) => setSize(i, { dimensions: e.target.value })} placeholder="220×90×85 cm" />
+                      <DarkInput value={s.seating} onChange={(e) => setSize(i, { seating: e.target.value })} placeholder="Seating" />
+                      <button onClick={() => setSizes((cur) => cur.filter((_, j) => j !== i))} className="rounded-md px-3 text-[12px]" style={{ border: "1px solid #2A2A38", color: "#E05050" }}>Delete</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <Field label="Colours">
+                <div className="flex flex-wrap gap-2">
+                  {DEFAULT_COLOURS.map((c) => {
+                    const selected = colours.some((x) => x.hex === c.hex);
+                    return (
+                      <button
+                        key={c.hex}
+                        title={c.label}
+                        onClick={() => setColours((cur) => selected ? cur.filter((x) => x.hex !== c.hex) : [...cur, c])}
+                        className="size-9 rounded-full border-2 transition-transform hover:scale-105"
+                        style={{ background: c.hex, borderColor: selected ? "#C8A86B" : "#2A2A38", boxShadow: selected ? "0 0 0 2px rgba(200,168,107,0.35)" : "none" }}
+                      />
+                    );
+                  })}
+                </div>
+                <p className="text-[11px] mt-2" style={{ color: "#888899" }}>{colours.length} colour options selected</p>
+              </Field>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-[11px] uppercase tracking-[0.08em]" style={{ color: "#888899" }}>Fabrics with Price Adjustment</label>
+                  <button onClick={() => setFabrics((cur) => [...cur, { name: "", priceAdjust: 0 }])} className="text-[12px]" style={{ color: "#C8A86B" }}>+ Add fabric</button>
+                </div>
+                <div className="space-y-2">
+                  {fabrics.map((f, i) => (
+                    <div key={i} className="grid grid-cols-[1fr_140px_auto] gap-2">
+                      <DarkInput value={f.name} onChange={(e) => setFabric(i, { name: e.target.value })} placeholder="Bouclé" />
+                      <DarkInput type="number" value={String(f.priceAdjust)} onChange={(e) => setFabric(i, { priceAdjust: Number(e.target.value) || 0 })} placeholder="+₹" />
+                      <button onClick={() => setFabrics((cur) => cur.filter((_, j) => j !== i))} className="rounded-md px-3 text-[12px]" style={{ border: "1px solid #2A2A38", color: "#E05050" }}>Delete</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <Field label="Cushion Fill Options">
+                <div className="flex flex-wrap gap-2">
+                  {DEFAULT_CUSHIONS.map((fill) => {
+                    const selected = cushionFill.includes(fill);
+                    return (
+                      <button
+                        key={fill}
+                        onClick={() => setCushionFill((cur) => selected ? cur.filter((x) => x !== fill) : [...cur, fill])}
+                        className="rounded-full px-3 py-1.5 text-[12px] border transition-colors"
+                        style={{ background: selected ? "#C8A86B" : "#16161D", color: selected ? "#1a1a1a" : "#888899", borderColor: selected ? "#C8A86B" : "#2A2A38" }}
+                      >
+                        {fill}
+                      </button>
+                    );
+                  })}
+                </div>
+              </Field>
+            </>
+          )}
+
+          {tab === 4 && (
+            <div className="space-y-5">
+              <div className="text-center rounded-2xl p-8" style={{ background: "#16161D", border: "1px dashed #2A2A38" }}>
+                <span className="text-5xl block mb-4">🧊</span>
+                <p className="text-sm font-semibold mb-1">3D Model Upload</p>
+                <p className="text-xs mb-5" style={{ color: "#888899" }}>Upload .glb, .gltf, or .obj. If none is uploaded, the live canvas sofa preview still works automatically.</p>
+                <input
+                  type="file"
+                  accept=".glb,.gltf,.obj,model/gltf-binary,model/gltf+json"
+                  onChange={(e) => uploadModel(e.currentTarget.files?.[0])}
+                  className="block mx-auto text-[12px] file:mr-4 file:rounded-md file:border-0 file:px-4 file:py-2 file:text-[12px] file:font-semibold"
+                  style={{ color: "#888899" }}
+                />
+                {uploading === "model" && <p className="text-[11px] mt-3" style={{ color: "#C8A86B" }}>Uploading 3D model…</p>}
+              </div>
+              <Field label="3D Model URL">
+                <DarkInput value={modelUrl} onChange={(e) => setModelUrl(e.target.value)} placeholder="https://.../model.glb" />
+              </Field>
+              {modelUrl && (
+                <div className="rounded-xl p-4" style={{ background: "#16161D", border: "1px solid #2A2A38" }}>
+                  <div className="text-[13px] font-semibold" style={{ color: "#C8A86B" }}>Model connected</div>
+                  <div className="text-[11px] mt-1 break-all" style={{ color: "#888899" }}>{modelFileName || modelUrl}</div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-3 px-5 sm:px-6 py-4 border-t" style={{ borderColor: "#2A2A38" }}>
           <button
             onClick={onClose}
             className="rounded-md px-5 py-2.5 text-[13px]"
@@ -1152,11 +1576,11 @@ function ProductModal({
           </button>
           <button
             onClick={save}
-            disabled={saving}
+            disabled={saving || Boolean(uploading)}
             className="flex-1 rounded-md py-2.5 text-[13px] font-semibold disabled:opacity-60"
             style={{ background: "#C8A86B", color: "#1a1a1a" }}
           >
-            {saving ? "Saving…" : isEdit ? "Save Changes" : "Create Product"}
+            {saving ? "Saving…" : isEdit ? "Save Changes" : "Add Product"}
           </button>
         </div>
       </div>
