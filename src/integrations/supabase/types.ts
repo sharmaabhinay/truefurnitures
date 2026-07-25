@@ -202,6 +202,60 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_admin_notes: {
+        Row: {
+          author_id: string | null
+          body: string
+          created_at: string
+          customer_id: string
+          id: string
+        }
+        Insert: {
+          author_id?: string | null
+          body: string
+          created_at?: string
+          customer_id: string
+          id?: string
+        }
+        Update: {
+          author_id?: string | null
+          body?: string
+          created_at?: string
+          customer_id?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      customer_messages: {
+        Row: {
+          body: string
+          created_at: string
+          customer_id: string
+          id: string
+          read_at: string | null
+          sender_id: string | null
+          sender_role: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          customer_id: string
+          id?: string
+          read_at?: string | null
+          sender_id?: string | null
+          sender_role: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          customer_id?: string
+          id?: string
+          read_at?: string | null
+          sender_id?: string | null
+          sender_role?: string
+        }
+        Relationships: []
+      }
       fabrics: {
         Row: {
           created_at: string
@@ -301,6 +355,7 @@ export type Database = {
         Row: {
           addons_snapshot: Json | null
           admin_notes: string | null
+          assigned_craftsman: string | null
           balance_due: number
           created_at: string
           customer_notes: string | null
@@ -313,6 +368,7 @@ export type Database = {
           fabric_snapshot: Json | null
           id: string
           order_number: string
+          order_source: string | null
           phone: string | null
           size_snapshot: Json | null
           sofa_id: string | null
@@ -326,6 +382,7 @@ export type Database = {
         Insert: {
           addons_snapshot?: Json | null
           admin_notes?: string | null
+          assigned_craftsman?: string | null
           balance_due?: number
           created_at?: string
           customer_notes?: string | null
@@ -338,6 +395,7 @@ export type Database = {
           fabric_snapshot?: Json | null
           id?: string
           order_number?: string
+          order_source?: string | null
           phone?: string | null
           size_snapshot?: Json | null
           sofa_id?: string | null
@@ -351,6 +409,7 @@ export type Database = {
         Update: {
           addons_snapshot?: Json | null
           admin_notes?: string | null
+          assigned_craftsman?: string | null
           balance_due?: number
           created_at?: string
           customer_notes?: string | null
@@ -363,6 +422,7 @@ export type Database = {
           fabric_snapshot?: Json | null
           id?: string
           order_number?: string
+          order_source?: string | null
           phone?: string | null
           size_snapshot?: Json | null
           sofa_id?: string | null

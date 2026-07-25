@@ -699,7 +699,9 @@ function Orders() {
                   style={{ borderColor: "rgba(42,42,56,0.5)" }}
                 >
                   <td className="px-3 py-2.5">
-                    <div className="font-semibold">{o.order_number}</div>
+                    <Link to="/admin/orders/$id" params={{ id: o.id }} className="font-semibold hover:underline" style={{ color: "#C8A86B" }}>
+                      {o.order_number}
+                    </Link>
                     <div className="text-[10px]" style={{ color: "#888899" }}>{formatDate(o.created_at)}</div>
                     {o.discount_code && (
                       <div className="text-[10px]" style={{ color: "#C8A86B" }}>✓ {o.discount_code}</div>
@@ -783,7 +785,11 @@ function Customers() {
             className="border-b last:border-b-0"
             style={{ borderColor: "rgba(42,42,56,0.5)" }}
           >
-            <td className="px-3 py-2.5">{c.full_name ?? "—"}</td>
+            <td className="px-3 py-2.5">
+              <Link to="/admin/customers/$id" params={{ id: c.id }} className="hover:underline" style={{ color: "#C8A86B" }}>
+                {c.full_name ?? "Unnamed"}
+              </Link>
+            </td>
             <td className="px-3 py-2.5">
               <a href={`https://wa.me/91${c.phone ?? ""}`} target="_blank" rel="noreferrer" style={{ color: "#C8A86B" }}>
                 {c.phone ?? "—"}
