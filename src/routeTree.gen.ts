@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as ShowroomsRouteImport } from './routes/showrooms'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as FaqRouteImport } from './routes/faq'
@@ -48,6 +49,11 @@ const TermsRoute = TermsRouteImport.update({
 const ShowroomsRoute = ShowroomsRouteImport.update({
   id: '/showrooms',
   path: '/showrooms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -208,6 +214,7 @@ export interface FileRoutesByFullPath {
   '/faq': typeof FaqRoute
   '/gallery': typeof GalleryRoute
   '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/showrooms': typeof ShowroomsRoute
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
@@ -239,6 +246,7 @@ export interface FileRoutesByTo {
   '/faq': typeof FaqRoute
   '/gallery': typeof GalleryRoute
   '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/showrooms': typeof ShowroomsRoute
   '/terms': typeof TermsRoute
   '/checkout': typeof AuthenticatedCheckoutRoute
@@ -271,6 +279,7 @@ export interface FileRoutesById {
   '/faq': typeof FaqRoute
   '/gallery': typeof GalleryRoute
   '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/showrooms': typeof ShowroomsRoute
   '/terms': typeof TermsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
@@ -304,6 +313,7 @@ export interface FileRouteTypes {
     | '/faq'
     | '/gallery'
     | '/privacy'
+    | '/reset-password'
     | '/showrooms'
     | '/terms'
     | '/admin'
@@ -335,6 +345,7 @@ export interface FileRouteTypes {
     | '/faq'
     | '/gallery'
     | '/privacy'
+    | '/reset-password'
     | '/showrooms'
     | '/terms'
     | '/checkout'
@@ -366,6 +377,7 @@ export interface FileRouteTypes {
     | '/faq'
     | '/gallery'
     | '/privacy'
+    | '/reset-password'
     | '/showrooms'
     | '/terms'
     | '/_authenticated/admin'
@@ -399,6 +411,7 @@ export interface RootRouteChildren {
   FaqRoute: typeof FaqRoute
   GalleryRoute: typeof GalleryRoute
   PrivacyRoute: typeof PrivacyRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   ShowroomsRoute: typeof ShowroomsRoute
   TermsRoute: typeof TermsRoute
   ConfigureSlugRoute: typeof ConfigureSlugRoute
@@ -421,6 +434,13 @@ declare module '@tanstack/react-router' {
       path: '/showrooms'
       fullPath: '/showrooms'
       preLoaderRoute: typeof ShowroomsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -683,6 +703,7 @@ const rootRouteChildren: RootRouteChildren = {
   FaqRoute: FaqRoute,
   GalleryRoute: GalleryRoute,
   PrivacyRoute: PrivacyRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   ShowroomsRoute: ShowroomsRoute,
   TermsRoute: TermsRoute,
   ConfigureSlugRoute: ConfigureSlugRoute,
