@@ -17,10 +17,10 @@ import simulatorPreview from "@/assets/simulator-preview.jpg";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Avant-Garde Atelier — Custom Sofas designed in 3D | Indore & Ujjain" },
-      { name: "description", content: "Bespoke luxury sofas tailored for Central India's most distinguished homes. Design your own in 3D — fabric, colour, size, finish." },
-      { property: "og:title", content: "Avant-Garde Atelier — Bespoke Custom Sofas" },
-      { property: "og:description", content: "Design your sofa in 3D. Hand-tailored in Indore, delivered across Madhya Pradesh." },
+      { title: "True Furniture's — Fully Customizable Furniture | Indore & Ujjain" },
+      { name: "description", content: "Fully customizable sofas designed in 3D. Choose fabric, colour, size and finish — hand-tailored in Indore & Ujjain." },
+      { property: "og:title", content: "True Furniture's — Fully Customizable Furniture" },
+      { property: "og:description", content: "Fully customizable sofas — designed in 3D, hand-tailored in Central India." },
     ],
   }),
   component: Home,
@@ -47,17 +47,17 @@ function Home() {
       {/* HERO */}
       <section className="relative min-h-[88vh] flex items-center px-6 md:px-20 overflow-hidden">
         <div className="relative z-10 max-w-2xl py-16">
-          <span className="text-[color:var(--brand-accent)] font-semibold tracking-[0.3em] uppercase text-xs block mb-6">
-            Bespoke Furniture · Indore &amp; Ujjain
+          <span className="text-[color:var(--brand-accent)] font-semibold tracking-[0.3em] uppercase text-xs block mb-6 animate-fade-up">
+            Fully Customizable Furniture · Indore &amp; Ujjain
           </span>
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-display leading-[0.9] mb-8">
-            Your Vision <br />
-            <span className="italic font-normal">Hand-Carved</span>
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-display leading-[0.9] mb-8 animate-fade-up delay-100">
+            Every Inch, <br />
+            <span className="italic font-normal">Yours to Design.</span>
           </h1>
-          <p className="text-lg text-[color:var(--brand-dark)]/70 mb-10 max-w-md font-light leading-relaxed">
-            Custom-tailored luxury seating designed for Central India's most distinguished homes. Every stitch, every curve, strictly by your rules.
+          <p className="text-lg text-[color:var(--brand-dark)]/70 mb-10 max-w-md font-light leading-relaxed animate-fade-up delay-200">
+            True Furniture&apos;s builds fully customizable sofas — fabric, colour, size, legs, add-ons. Every stitch, every curve, strictly by your rules.
           </p>
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-4 animate-fade-up delay-300">
             <Link to="/collections" className="px-8 py-4 bg-[color:var(--brand-dark)] text-white text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors">
               Start 3D Design
             </Link>
@@ -66,8 +66,8 @@ function Home() {
             </Link>
           </div>
         </div>
-        <div className="absolute right-0 top-0 w-1/2 h-full hidden lg:block">
-          <img src={heroSofa} alt="Signature Avant-Garde bouclé sofa in a sunlit modern living room" width={1200} height={1600} className="w-full h-full object-cover" />
+        <div className="absolute right-0 top-0 w-1/2 h-full hidden lg:block animate-fade-in-slow delay-200">
+          <img src={heroSofa} alt="Signature True Furniture's bouclé sofa in a sunlit modern living room" width={1200} height={1600} className="w-full h-full object-cover" />
         </div>
       </section>
 
@@ -85,8 +85,8 @@ function Home() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-12">
-          {featured.map((s) => (
-            <Link key={s.slug} to="/collections" className="group cursor-pointer block">
+          {featured.map((s, i) => (
+            <Link key={s.slug} to="/collections" className={`group cursor-pointer block hover-lift animate-fade-up delay-${(i + 1) * 100}`}>
               <div className="aspect-[4/5] bg-[color:var(--brand-muted)] mb-6 overflow-hidden">
                 <img src={s.image} alt={s.name} loading="lazy" width={1000} height={1200} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700" />
               </div>
