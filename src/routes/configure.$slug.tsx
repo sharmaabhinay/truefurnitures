@@ -4,6 +4,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import { formatINR, estimatedDelivery } from "@/lib/format";
 import { useCart } from "@/lib/cart";
 import { toast } from "sonner";
@@ -19,7 +20,33 @@ type Sofa = {
   sale_price: number | null;
   delivery_days: number | null;
   hero_image: string | null;
+  model_url: string | null;
+  product_options: Json | null;
 };
+
+type SizeVariant = { label: string; price: string; dimensions: string; seating: string };
+type FabricVariant = { name: string; priceAdjust: number };
+type ColourOption = { label: string; hex: string };
+type ProductOptions = {
+  sizes?: SizeVariant[];
+  fabrics?: FabricVariant[];
+  colours?: ColourOption[];
+};
+type ConfigSize = { key: string; label: string; seats: number; mult: number; sectional: boolean };
+type ConfigFabric = { key: string; label: string; up: number };
+type ConfigColor = { key: string; label: string; hex: string };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function parseProductOptions(value: Json | null | undefined): ProductOptions {
+  return isRecord(value) ? (value as unknown as ProductOptions) : {};
+}
+
+function slugify(value: string) {
+  return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
 
 const sofaQuery = (slug: string) =>
   queryOptions({
@@ -27,7 +54,7 @@ const sofaQuery = (slug: string) =>
     queryFn: async (): Promise<Sofa | null> => {
       const { data, error } = await supabase
         .from("sofas")
-        .select("id, slug, name, tagline, base_price, sale_price, delivery_days, hero_image")
+        .select("id, slug, name, tagline, base_price, sale_price, delivery_days, hero_image, model_url, product_options")
         .eq("slug", slug)
         .eq("is_published", true)
         .maybeSingle();
@@ -96,6 +123,45 @@ type SizeKey = (typeof SIZES)[number]["key"];
 type ColorKey = (typeof COLORS)[number]["key"];
 type AddonKey = (typeof ADDONS)[number]["key"];
 
+function getColorOptions(options: ProductOptions): ConfigColor[] {
+  if (Array.isArray(options.colours) && options.colours.length > 0) {
+    return options.colours
+      .filter((c) => typeof c.label === "string" && typeof c.hex === "string" && c.hex.trim())
+      .map((c) => ({ key: slugify(c.label || c.hex), label: c.label || c.hex, hex: c.hex }));
+  }
+  return COLORS.map((c) => ({ ...c }));
+}
+
+function getFabricOptions(options: ProductOptions): ConfigFabric[] {
+  if (Array.isArray(options.fabrics) && options.fabrics.length > 0) {
+    return options.fabrics
+      .filter((f) => typeof f.name === "string" && f.name.trim())
+      .map((f) => ({ key: slugify(f.name), label: f.name, up: Number(f.priceAdjust) || 0 }));
+  }
+  return FABRICS.map((f) => ({ ...f }));
+}
+
+function getSizeOptions(options: ProductOptions, basePrice: number): ConfigSize[] {
+  if (Array.isArray(options.sizes) && options.sizes.length > 0) {
+    const safeBase = basePrice > 0 ? basePrice : 1;
+    return options.sizes
+      .filter((s) => typeof s.label === "string" && s.label.trim())
+      .map((s, index) => {
+        const price = Number(s.price);
+        const label = s.label.trim();
+        const seats = Math.max(1, Number.parseInt(s.seating, 10) || Number.parseInt(label, 10) || 3);
+        return {
+          key: `${slugify(label)}-${index}`,
+          label,
+          seats,
+          mult: price > 0 ? price / safeBase : 1,
+          sectional: /sectional|l-shape|chaise/i.test(label),
+        };
+      });
+  }
+  return SIZES.map((s) => ({ ...s }));
+}
+
 function ConfigurePage() {
   const { slug } = Route.useParams();
   const { data: sofa } = useQuery(sofaQuery(slug));
@@ -105,9 +171,9 @@ function ConfigurePage() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const [color, setColor] = useState<ColorKey>("sand");
-  const [fabric, setFabric] = useState<FabricKey>("boucle");
-  const [size, setSize] = useState<SizeKey>("3-seater");
+  const [color, setColor] = useState<string>("sand");
+  const [fabric, setFabric] = useState<string>("boucle");
+  const [size, setSize] = useState<string>("3-seater");
   const [addons, setAddons] = useState<Record<AddonKey, boolean>>({
     cupHolder: false,
     footrest: false,
@@ -115,9 +181,27 @@ function ConfigurePage() {
     storage: false,
   });
 
-  const colorDef = COLORS.find((c) => c.key === color)!;
-  const fabricDef = FABRICS.find((f) => f.key === fabric)!;
-  const sizeDef = SIZES.find((s) => s.key === size)!;
+  const productOptions = useMemo(() => parseProductOptions(sofa?.product_options), [sofa?.product_options]);
+  const baseForOptions = Number(sofa?.sale_price ?? sofa?.base_price ?? 0);
+  const colorOptions = useMemo(() => getColorOptions(productOptions), [productOptions]);
+  const fabricOptions = useMemo(() => getFabricOptions(productOptions), [productOptions]);
+  const sizeOptions = useMemo(() => getSizeOptions(productOptions, baseForOptions), [productOptions, baseForOptions]);
+
+  useEffect(() => {
+    if (colorOptions.length > 0 && !colorOptions.some((c) => c.key === color)) setColor(colorOptions[0].key);
+  }, [color, colorOptions]);
+
+  useEffect(() => {
+    if (fabricOptions.length > 0 && !fabricOptions.some((f) => f.key === fabric)) setFabric(fabricOptions[0].key);
+  }, [fabric, fabricOptions]);
+
+  useEffect(() => {
+    if (sizeOptions.length > 0 && !sizeOptions.some((s) => s.key === size)) setSize(sizeOptions[0].key);
+  }, [size, sizeOptions]);
+
+  const colorDef = colorOptions.find((c) => c.key === color) ?? colorOptions[0] ?? COLORS[0];
+  const fabricDef = fabricOptions.find((f) => f.key === fabric) ?? fabricOptions[0] ?? FABRICS[0];
+  const sizeDef = sizeOptions.find((s) => s.key === size) ?? sizeOptions[0] ?? SIZES[1];
 
   const price = useMemo(() => {
     if (!sofa) return 0;
@@ -193,6 +277,7 @@ function ConfigurePage() {
                   isSectional={sizeDef.sectional}
                   fabric={fabric}
                   addons={addons}
+                  modelUrl={sofa.model_url}
                 />
               </Suspense>
             ) : (
@@ -200,7 +285,9 @@ function ConfigurePage() {
                 Preparing 3D preview…
               </div>
             )}
-            <div className="absolute bottom-3 left-3 tf-chip bg-white/85 backdrop-blur">Drag to rotate · Scroll to zoom</div>
+            <div className="absolute bottom-3 left-3 tf-chip bg-white/85 backdrop-blur">
+              {sofa.model_url ? "Uploaded 3D model · Drag to rotate" : "Drag to rotate · Scroll to zoom"}
+            </div>
           </div>
 
           <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] uppercase tracking-widest text-[color:var(--brand-dark)]/60">
@@ -221,7 +308,7 @@ function ConfigurePage() {
           <div className="mb-8">
             <p className="text-[10px] font-black uppercase tracking-widest mb-3">Size</p>
             <div className="grid grid-cols-2 gap-2">
-              {SIZES.map((s) => (
+              {sizeOptions.map((s) => (
                 <button
                   key={s.key}
                   onClick={() => setSize(s.key)}
@@ -237,7 +324,7 @@ function ConfigurePage() {
           <div className="mb-8">
             <p className="text-[10px] font-black uppercase tracking-widest mb-3">Fabric</p>
             <div className="grid grid-cols-2 gap-2">
-              {FABRICS.map((f) => (
+              {fabricOptions.map((f) => (
                 <button
                   key={f.key}
                   onClick={() => setFabric(f.key)}
@@ -254,7 +341,7 @@ function ConfigurePage() {
           <div className="mb-8">
             <p className="text-[10px] font-black uppercase tracking-widest mb-3">Color</p>
             <div className="flex flex-wrap gap-3">
-              {COLORS.map((c) => (
+              {colorOptions.map((c) => (
                 <button
                   key={c.key}
                   onClick={() => setColor(c.key)}

@@ -33,6 +33,7 @@ import { Route as AuthenticatedMyDesignsRouteImport } from './routes/_authentica
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCheckoutRouteImport } from './routes/_authenticated/checkout'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedAdminOrdersIdRouteImport } from './routes/_authenticated/admin.orders.$id'
 import { Route as AuthenticatedAdminCustomersIdRouteImport } from './routes/_authenticated/admin.customers.$id'
 
@@ -155,6 +156,11 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
 const AuthenticatedAdminOrdersIdRoute =
   AuthenticatedAdminOrdersIdRouteImport.update({
     id: '/orders/$id',
@@ -192,6 +198,7 @@ export interface FileRoutesByFullPath {
   '/configure/$slug': typeof ConfigureSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/shared-design/$token': typeof SharedDesignTokenRoute
+  '/admin/': typeof AuthenticatedAdminIndexRoute
   '/admin/customers/$id': typeof AuthenticatedAdminCustomersIdRoute
   '/admin/orders/$id': typeof AuthenticatedAdminOrdersIdRoute
 }
@@ -211,7 +218,6 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/showrooms': typeof ShowroomsRoute
   '/terms': typeof TermsRoute
-  '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/checkout': typeof AuthenticatedCheckoutRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/my-designs': typeof AuthenticatedMyDesignsRoute
@@ -219,6 +225,7 @@ export interface FileRoutesByTo {
   '/configure/$slug': typeof ConfigureSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/shared-design/$token': typeof SharedDesignTokenRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
   '/admin/customers/$id': typeof AuthenticatedAdminCustomersIdRoute
   '/admin/orders/$id': typeof AuthenticatedAdminOrdersIdRoute
 }
@@ -248,6 +255,7 @@ export interface FileRoutesById {
   '/configure/$slug': typeof ConfigureSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/shared-design/$token': typeof SharedDesignTokenRoute
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/admin/customers/$id': typeof AuthenticatedAdminCustomersIdRoute
   '/_authenticated/admin/orders/$id': typeof AuthenticatedAdminOrdersIdRoute
 }
@@ -277,6 +285,7 @@ export interface FileRouteTypes {
     | '/configure/$slug'
     | '/products/$slug'
     | '/shared-design/$token'
+    | '/admin/'
     | '/admin/customers/$id'
     | '/admin/orders/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -296,7 +305,6 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/showrooms'
     | '/terms'
-    | '/admin'
     | '/checkout'
     | '/dashboard'
     | '/my-designs'
@@ -304,6 +312,7 @@ export interface FileRouteTypes {
     | '/configure/$slug'
     | '/products/$slug'
     | '/shared-design/$token'
+    | '/admin'
     | '/admin/customers/$id'
     | '/admin/orders/$id'
   id:
@@ -332,6 +341,7 @@ export interface FileRouteTypes {
     | '/configure/$slug'
     | '/products/$slug'
     | '/shared-design/$token'
+    | '/_authenticated/admin/'
     | '/_authenticated/admin/customers/$id'
     | '/_authenticated/admin/orders/$id'
   fileRoutesById: FileRoutesById
@@ -528,6 +538,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/orders/$id': {
       id: '/_authenticated/admin/orders/$id'
       path: '/orders/$id'
@@ -546,11 +563,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAdminCustomersIdRoute: typeof AuthenticatedAdminCustomersIdRoute
   AuthenticatedAdminOrdersIdRoute: typeof AuthenticatedAdminOrdersIdRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedAdminCustomersIdRoute: AuthenticatedAdminCustomersIdRoute,
   AuthenticatedAdminOrdersIdRoute: AuthenticatedAdminOrdersIdRoute,
 }

@@ -20,18 +20,23 @@ describe("admin route navigation smoke", () => {
   });
 
   it("admin dashboard navigates customer rows to /admin/customers/$id", () => {
-    const src = read("src/routes/_authenticated/admin.tsx");
+    const src = read("src/routes/_authenticated/admin.index.tsx");
     expect(src).toMatch(
       /navigate\(\{\s*to:\s*["']\/admin\/customers\/\$id["'],\s*params:\s*\{\s*id:\s*[^}]+\}\s*\}\)/
     );
   });
 
   it("admin dashboard navigates order rows to /admin/orders/$id", () => {
-    const src = read("src/routes/_authenticated/admin.tsx");
+    const src = read("src/routes/_authenticated/admin.index.tsx");
     const matches = src.match(
       /navigate\(\{\s*to:\s*["']\/admin\/orders\/\$id["'],\s*params:\s*\{\s*id:\s*[^}]+\}\s*\}\)/g
     );
     expect(matches && matches.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("admin parent renders an Outlet so nested detail pages can mount", () => {
+    const src = read("src/routes/_authenticated/admin.tsx");
+    expect(src).toContain("<Outlet />");
   });
 
   it("generated route tree registers admin detail routes", () => {

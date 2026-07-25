@@ -819,6 +819,7 @@ export type Database = {
           max_concurrent_builds: number
           model_url: string | null
           name: string
+          product_options: Json
           sale_price: number | null
           seo_description: string | null
           seo_title: string | null
@@ -848,6 +849,7 @@ export type Database = {
           max_concurrent_builds?: number
           model_url?: string | null
           name: string
+          product_options?: Json
           sale_price?: number | null
           seo_description?: string | null
           seo_title?: string | null
@@ -877,6 +879,7 @@ export type Database = {
           max_concurrent_builds?: number
           model_url?: string | null
           name?: string
+          product_options?: Json
           sale_price?: number | null
           seo_description?: string | null
           seo_title?: string | null

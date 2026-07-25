@@ -1,9 +1,10 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useQuery, queryOptions } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import { formatINR, estimatedDelivery } from "@/lib/format";
 import { useCart } from "@/lib/cart";
 import { toast } from "sonner";
@@ -149,6 +150,8 @@ type Sofa = {
   base_price: number;
   sale_price: number | null;
   hero_image: string | null;
+  gallery: string[] | null;
+  model_url: string | null;
   full_description: string | null;
   description: string | null;
   features: string[] | null;
@@ -157,7 +160,34 @@ type Sofa = {
   delivery_days: number | null;
   seo_title: string | null;
   seo_description: string | null;
+  product_options: Json | null;
 };
+
+type SpecRow = { key: string; val: string };
+type FabricVariant = { name: string; priceAdjust: number };
+type ProductOptions = {
+  badge?: string;
+  collection?: string;
+  warranty?: string;
+  specs?: SpecRow[];
+  fabrics?: FabricVariant[];
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function parseProductOptions(value: Json | null | undefined): ProductOptions {
+  return isRecord(value) ? (value as unknown as ProductOptions) : {};
+}
+
+function slugify(value: string) {
+  return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+function uniqueImages(images: Array<string | null | undefined>) {
+  return Array.from(new Set(images.filter((src): src is string => Boolean(src))));
+}
 
 const sofaQuery = (slug: string) =>
   queryOptions({
@@ -165,7 +195,7 @@ const sofaQuery = (slug: string) =>
     queryFn: async (): Promise<Sofa | null> => {
       const { data, error } = await supabase
         .from("sofas")
-        .select("id, slug, name, tagline, base_price, sale_price, hero_image, full_description, description, features, dimensions, materials, delivery_days, seo_title, seo_description")
+        .select("id, slug, name, tagline, base_price, sale_price, hero_image, gallery, model_url, full_description, description, features, dimensions, materials, delivery_days, seo_title, seo_description, product_options")
         .eq("slug", slug)
         .eq("is_published", true)
         .maybeSingle();
@@ -249,14 +279,16 @@ function ProductPage() {
   const navigate = useNavigate();
   const { data: sofa } = useQuery(sofaQuery(slug));
   const { data: related } = useQuery(relatedQuery(slug));
+  const sofaId = sofa?.id;
   const { data: reviews } = useQuery({
-    queryKey: ["sofa-reviews", sofa?.id],
-    enabled: !!sofa?.id,
+    queryKey: ["sofa-reviews", sofaId],
+    enabled: Boolean(sofaId),
     queryFn: async (): Promise<Review[]> => {
+      if (!sofaId) return [];
       const { data, error } = await supabase
         .from("reviews")
         .select("id, rating, title, body, city, created_at, images")
-        .eq("sofa_id", sofa!.id)
+        .eq("sofa_id", sofaId)
         .eq("approved", true)
         .order("created_at", { ascending: false })
         .limit(6);
@@ -266,25 +298,66 @@ function ProductPage() {
   });
   const cart = useCart();
   const [activeImage, setActiveImage] = useState(0);
-  const [fabric, setFabric] = useState<keyof typeof fabricSwatches>("boucle");
+  const [fabric, setFabric] = useState("boucle");
+  const options = useMemo(() => parseProductOptions(sofa?.product_options), [sofa?.product_options]);
+  const fabricOptions = useMemo(() => {
+    if (Array.isArray(options.fabrics) && options.fabrics.length > 0) {
+      return options.fabrics
+        .filter((f) => typeof f.name === "string" && f.name.trim())
+        .map((f) => {
+          const key = slugify(f.name);
+          return {
+            key,
+            label: f.name,
+            priceAdjust: Number(f.priceAdjust) || 0,
+            swatch: fabricSwatches[key] ?? null,
+          };
+        });
+    }
+    return (Object.keys(fabricSwatches) as Array<keyof typeof fabricSwatches>).map((key) => ({
+      key,
+      label: key.charAt(0).toUpperCase() + key.slice(1),
+      priceAdjust: 0,
+      swatch: fabricSwatches[key],
+    }));
+  }, [options]);
+
+  useEffect(() => {
+    if (fabricOptions.length > 0 && !fabricOptions.some((f) => f.key === fabric)) {
+      setFabric(fabricOptions[0].key);
+    }
+  }, [fabric, fabricOptions]);
 
   if (!sofa) return null;
 
-  const hero = heroImages[sofa.slug] ?? sofa.hero_image ?? sofaMalwa;
+  const uploadedImages = uniqueImages([sofa.hero_image, ...(sofa.gallery ?? [])]);
+  const hero = uploadedImages[0] ?? heroImages[sofa.slug] ?? sofaMalwa;
   const otherAngles = Object.entries(heroImages)
     .filter(([k]) => k !== sofa.slug)
     .map(([, v]) => v)
     .slice(0, 2);
-  const gallery = [
-    { src: hero, label: "Studio" },
-    { src: showroomIndore, label: "In showroom" },
-    { src: fabricSwatches[fabric], label: `${fabric} detail` },
-    ...otherAngles.map((s, i) => ({ src: s, label: `Styled ${i + 1}` })),
-  ];
+  const activeFabric = fabricOptions.find((f) => f.key === fabric) ?? fabricOptions[0];
+  const gallery = uniqueImages([
+    hero,
+    ...uploadedImages.slice(1),
+    showroomIndore,
+    activeFabric?.swatch,
+    ...(uploadedImages.length > 1 ? [] : otherAngles),
+  ]).map((src, i) => ({
+    src,
+    label: i === 0 ? "Main" : src === activeFabric?.swatch ? `${activeFabric?.label ?? "Fabric"} detail` : `Gallery ${i + 1}`,
+  }));
   const price = Number(sofa.base_price);
   const sale = sofa.sale_price ? Number(sofa.sale_price) : null;
-  const deposit = Math.round((sale ?? price) * 0.2);
+  const configuredPrice = (sale ?? price) + (activeFabric?.priceAdjust ?? 0);
+  const deposit = Math.round(configuredPrice * 0.2);
   const eta = estimatedDelivery(sofa.delivery_days ?? 30);
+  const specRows = Array.isArray(options.specs) && options.specs.length > 0
+    ? options.specs.filter((s) => s.key?.trim() || s.val?.trim())
+    : [
+        sofa.dimensions ? { key: "Dimensions", val: sofa.dimensions } : null,
+        sofa.materials ? { key: "Materials", val: sofa.materials } : null,
+      ].filter((s): s is SpecRow => Boolean(s));
 
   return (
     <div className="min-h-screen bg-[color:var(--brand-cream)] text-[color:var(--brand-dark)]">
@@ -315,12 +388,12 @@ function ProductPage() {
           <div className="flex items-baseline gap-3 mb-6">
             {sale ? (
               <>
-                <span className="text-3xl font-display">{formatINR(sale)}</span>
+                <span className="text-3xl font-display">{formatINR(configuredPrice)}</span>
                 <span className="text-lg text-[color:var(--brand-dark)]/40 line-through">{formatINR(price)}</span>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-accent)]">Save {formatINR(price - sale)}</span>
               </>
             ) : (
-              <span className="text-3xl font-display">{formatINR(price)}</span>
+              <span className="text-3xl font-display">{formatINR(configuredPrice)}</span>
             )}
             <span className="text-xs text-[color:var(--brand-dark)]/50">· incl. GST</span>
           </div>
@@ -333,18 +406,26 @@ function ProductPage() {
           <div className="mb-8">
             <p className="text-[10px] font-black uppercase tracking-widest mb-3">Choose Fabric</p>
             <div className="flex gap-3">
-              {(Object.keys(fabricSwatches) as Array<keyof typeof fabricSwatches>).map((f) => (
+              {fabricOptions.map((f) => (
                 <button
-                  key={f}
-                  onClick={() => setFabric(f)}
-                  aria-label={f}
-                  className={`size-12 sm:size-14 overflow-hidden border-2 transition-transform hover:scale-105 ${fabric === f ? "border-[color:var(--brand-dark)]" : "border-transparent"}`}
+                  key={f.key}
+                  onClick={() => setFabric(f.key)}
+                  aria-label={f.label}
+                  className={`size-12 sm:size-14 overflow-hidden border-2 transition-transform hover:scale-105 ${fabric === f.key ? "border-[color:var(--brand-dark)]" : "border-transparent"}`}
                 >
-                  <img src={fabricSwatches[f]} alt={f} className="w-full h-full object-cover" />
+                  {f.swatch ? (
+                    <img src={f.swatch} alt={f.label} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="w-full h-full grid place-items-center bg-[color:var(--brand-muted)] text-[10px] font-bold uppercase">
+                      {f.label.slice(0, 2)}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
-            <p className="text-xs text-[color:var(--brand-dark)]/50 mt-2 capitalize">{fabric} · included in base price</p>
+            <p className="text-xs text-[color:var(--brand-dark)]/50 mt-2 capitalize">
+              {activeFabric?.label ?? fabric} · {activeFabric?.priceAdjust ? `+ ${formatINR(activeFabric.priceAdjust)}` : "included in base price"}
+            </p>
           </div>
 
           {/* Delivery card */}
@@ -366,8 +447,8 @@ function ProductPage() {
                   slug: sofa.slug,
                   name: sofa.name,
                   image: hero,
-                  unitPrice: sale ?? price,
-                  fabric,
+                  unitPrice: configuredPrice,
+                  fabric: activeFabric?.label ?? fabric,
                 });
                 toast.success(`${sofa.name} added to cart`);
                 navigate({ to: "/cart" });
@@ -398,21 +479,15 @@ function ProductPage() {
 
           {/* Specs */}
           <div className="border-t border-[color:var(--brand-dark)]/10 pt-6 space-y-4 text-sm">
-            {sofa.dimensions && (
-              <div className="grid grid-cols-3 gap-3">
-                <span className="text-[10px] font-black uppercase tracking-widest text-[color:var(--brand-dark)]/50">Dimensions</span>
-                <span className="col-span-2">{sofa.dimensions}</span>
+            {specRows.map((row) => (
+              <div key={`${row.key}-${row.val}`} className="grid grid-cols-3 gap-3">
+                <span className="text-[10px] font-black uppercase tracking-widest text-[color:var(--brand-dark)]/50">{row.key}</span>
+                <span className="col-span-2">{row.val}</span>
               </div>
-            )}
-            {sofa.materials && (
-              <div className="grid grid-cols-3 gap-3">
-                <span className="text-[10px] font-black uppercase tracking-widest text-[color:var(--brand-dark)]/50">Materials</span>
-                <span className="col-span-2">{sofa.materials}</span>
-              </div>
-            )}
+            ))}
             <div className="grid grid-cols-3 gap-3">
               <span className="text-[10px] font-black uppercase tracking-widest text-[color:var(--brand-dark)]/50">Warranty</span>
-              <span className="col-span-2">5-year frame warranty · 1-year upholstery</span>
+              <span className="col-span-2">{options.warranty ?? "5-year frame warranty · 1-year upholstery"}</span>
             </div>
           </div>
         </div>
