@@ -4,6 +4,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { supabase } from "@/integrations/supabase/client";
+import { sendWelcomeEmail } from "@/lib/email.functions";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -63,6 +64,10 @@ function Auth() {
           },
         });
         if (error) throw error;
+        // Fire-and-forget welcome email
+        sendWelcomeEmail({ data: { email, name: fullName } }).catch((e) =>
+          console.error("welcome email failed", e),
+        );
         if (!data.session) {
           setInfo("Account created. Please sign in.");
           setMode("signin");
