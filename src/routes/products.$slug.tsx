@@ -19,6 +19,112 @@ import fabricLinen from "@/assets/fabric-linen.jpg";
 import fabricLeather from "@/assets/fabric-leather.jpg";
 import showroomIndore from "@/assets/showroom-indore.jpg";
 
+type GalleryImage = { src: string; label: string };
+
+function ProductGallery({
+  images,
+  activeImage,
+  setActiveImage,
+  sofaName,
+  sofaSlug,
+}: {
+  images: GalleryImage[];
+  activeImage: number;
+  setActiveImage: (i: number) => void;
+  sofaName: string;
+  sofaSlug: string;
+}) {
+  const [paused, setPaused] = useState(false);
+  useEffect(() => {
+    if (paused) return;
+    const t = setInterval(() => {
+      setActiveImage((activeImage + 1) % images.length);
+    }, 4500);
+    return () => clearInterval(t);
+  }, [paused, activeImage, images.length, setActiveImage]);
+
+  const go = (dir: -1 | 1) => {
+    const next = (activeImage + dir + images.length) % images.length;
+    setActiveImage(next);
+  };
+
+  return (
+    <div
+      className="animate-fade-up"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      <div className="relative aspect-[4/5] bg-[color:var(--brand-muted)] overflow-hidden mb-3 group">
+        {images.map((g, i) => (
+          <img
+            key={i}
+            src={g.src}
+            alt={`${sofaName} — ${g.label}`}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${activeImage === i ? "opacity-100" : "opacity-0"}`}
+          />
+        ))}
+
+        {/* Prev / next */}
+        <button
+          type="button"
+          onClick={() => go(-1)}
+          aria-label="Previous image"
+          className="absolute left-3 top-1/2 -translate-y-1/2 size-10 grid place-items-center bg-white/85 backdrop-blur border border-[color:var(--brand-dark)]/10 hover:bg-white transition opacity-0 group-hover:opacity-100"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <button
+          type="button"
+          onClick={() => go(1)}
+          aria-label="Next image"
+          className="absolute right-3 top-1/2 -translate-y-1/2 size-10 grid place-items-center bg-white/85 backdrop-blur border border-[color:var(--brand-dark)]/10 hover:bg-white transition opacity-0 group-hover:opacity-100"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+
+        {/* Label */}
+        <span className="absolute bottom-3 left-3 tf-chip bg-white/85 backdrop-blur">{images[activeImage].label}</span>
+
+        {/* 3D experience button */}
+        <Link
+          to="/configure/$slug"
+          params={{ slug: sofaSlug }}
+          className="absolute top-3 right-3 flex items-center gap-2 px-4 py-2.5 bg-[color:var(--brand-dark)] text-white text-[10px] font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors shadow-lg"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 22V12"/><path d="M21 7l-9 5-9-5"/></svg>
+          View in 3D
+        </Link>
+
+        {/* Dots */}
+        <div className="absolute bottom-3 right-3 flex gap-1.5">
+          {images.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setActiveImage(i)}
+              aria-label={`Go to image ${i + 1}`}
+              className={`h-1.5 rounded-full transition-all ${activeImage === i ? "w-6 bg-white" : "w-1.5 bg-white/50"}`}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Thumbnails */}
+      <div className="grid grid-cols-5 gap-2 sm:gap-3">
+        {images.map((g, i) => (
+          <button
+            key={i}
+            onClick={() => setActiveImage(i)}
+            aria-label={`View ${g.label}`}
+            className={`aspect-square bg-[color:var(--brand-muted)] overflow-hidden border-2 transition-colors ${activeImage === i ? "border-[color:var(--brand-dark)]" : "border-transparent hover:border-[color:var(--brand-dark)]/30"}`}
+          >
+            <img src={g.src} alt="" className="w-full h-full object-cover" />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const heroImages: Record<string, string> = {
   "malwa-modular": sofaMalwa,
   "ujjain-arch": sofaUjjain,
