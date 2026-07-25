@@ -7,26 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/lib/cart";
 import { formatINR, estimatedDelivery } from "@/lib/format";
 import { toast } from "sonner";
-import { useServerFn } from "@tanstack/react-start";
-import { createRazorpayOrder, verifyRazorpayPayment } from "@/lib/razorpay.functions";
-
-declare global {
-  interface Window {
-    Razorpay?: any;
-  }
-}
-
-function loadRazorpayScript(): Promise<boolean> {
-  return new Promise((resolve) => {
-    if (typeof window === "undefined") return resolve(false);
-    if (window.Razorpay) return resolve(true);
-    const s = document.createElement("script");
-    s.src = "https://checkout.razorpay.com/v1/checkout.js";
-    s.onload = () => resolve(true);
-    s.onerror = () => resolve(false);
-    document.body.appendChild(s);
-  });
-}
+import { PaymentMethods } from "@/components/payment-methods";
 
 export const Route = createFileRoute("/_authenticated/checkout")({
   head: () => ({
@@ -59,8 +40,6 @@ type FormState = z.infer<typeof schema>;
 function Checkout() {
   const { items, subtotal, discount, total, coupon, clear } = useCart();
   const navigate = useNavigate();
-  const createRzp = useServerFn(createRazorpayOrder);
-  const verifyRzp = useServerFn(verifyRazorpayPayment);
   const [form, setForm] = useState<FormState>({
     full_name: "",
     phone: "",
@@ -158,60 +137,10 @@ function Checkout() {
       const orderIds = (inserted ?? []).map((r: { id: string }) => r.id);
       if (orderIds.length === 0) throw new Error("Could not create order");
 
-      // Create Razorpay order for the total deposit
-      const scriptOk = await loadRazorpayScript();
-      if (!scriptOk) throw new Error("Could not load payment gateway");
-
-      const rp = await createRzp({ data: { orderIds } });
-
-      const options = {
-        key: rp.keyId,
-        amount: rp.amount,
-        currency: rp.currency,
-        name: "True Furniture's",
-        description: `Booking deposit (20%) · ${orderIds.length} item${orderIds.length > 1 ? "s" : ""}`,
-        order_id: rp.razorpayOrderId,
-        prefill: { name: data.full_name, email: data.email, contact: data.phone },
-        notes: { city: data.city },
-        theme: { color: "#111111" },
-        handler: async (resp: {
-          razorpay_payment_id: string;
-          razorpay_order_id: string;
-          razorpay_signature: string;
-        }) => {
-          try {
-            await verifyRzp({
-              data: {
-                razorpay_order_id: resp.razorpay_order_id,
-                razorpay_payment_id: resp.razorpay_payment_id,
-                razorpay_signature: resp.razorpay_signature,
-                orderIds,
-              },
-            });
-            clear();
-            toast.success("Payment received! Your order is confirmed.");
-            navigate({ to: "/dashboard" });
-          } catch (err) {
-            console.error(err);
-            toast.error(err instanceof Error ? err.message : "Payment verification failed");
-          }
-        },
-        modal: {
-          ondismiss: () => {
-            toast.info("Payment cancelled. Your order is saved as pending — you can complete payment from your dashboard.");
-            setSubmitting(false);
-          },
-        },
-      };
-
-      const rz = new window.Razorpay!(options);
-      rz.on("payment.failed", (resp: any) => {
-        console.error("Razorpay payment failed", resp?.error);
-        toast.error(resp?.error?.description || "Payment failed");
-        setSubmitting(false);
-      });
-      rz.open();
-      return; // don't fall through to finally-reset while modal is open
+      clear();
+      toast.success("Order saved. Complete your deposit to confirm.");
+      navigate({ to: "/payment", search: { orders: orderIds.join(",") } });
+      return;
     } catch (err) {
       console.error(err);
       toast.error(err instanceof Error ? err.message : "Could not place your order");
@@ -288,6 +217,8 @@ function Checkout() {
                 Pay a 20% booking deposit to lock in your build slot. The balance is due on delivery. Our team will contact you within 24 hours to confirm the deposit and fabric choices.
               </p>
             </section>
+
+            <PaymentMethods />
           </div>
 
           <aside className="bg-white border border-[color:var(--brand-dark)]/10 p-6 h-fit lg:sticky lg:top-24">
@@ -325,8 +256,9 @@ function Checkout() {
               </div>
               <div className="text-[10px] text-[color:var(--brand-dark)]/60 pt-1">Estimated delivery by {estimatedDelivery(30)}.</div>
             </div>
-            <button type="submit" disabled={submitting} className="mt-6 w-full px-6 py-4 bg-[color:var(--brand-dark)] text-white text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-              {submitting ? "Processing…" : `Pay ${formatINR(deposit)} Deposit`}
+            <button type="submit" disabled={submitting} className="mt-6 w-full px-6 py-4 bg-[color:var(--brand-dark)] text-white text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2">
+              <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 10V7a6 6 0 1112 0v3"/><rect x="4" y="10" width="16" height="11" rx="2"/></svg>
+              {submitting ? "Processing…" : `Continue to Payment · ${formatINR(deposit)}`}
             </button>
             <Link to="/cart" className="mt-3 block text-center text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-dark)]/60 hover:text-[color:var(--brand-accent)]">
               ← Back to Cart
