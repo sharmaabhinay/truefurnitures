@@ -143,6 +143,21 @@ function ProductPage() {
   const navigate = useNavigate();
   const { data: sofa } = useQuery(sofaQuery(slug));
   const { data: related } = useQuery(relatedQuery(slug));
+  const { data: reviews } = useQuery({
+    queryKey: ["sofa-reviews", sofa?.id],
+    enabled: !!sofa?.id,
+    queryFn: async (): Promise<Review[]> => {
+      const { data, error } = await supabase
+        .from("reviews")
+        .select("id, rating, title, body, author_name, created_at, photo_url")
+        .eq("sofa_id", sofa!.id)
+        .eq("status", "approved")
+        .order("created_at", { ascending: false })
+        .limit(6);
+      if (error) return [];
+      return (data ?? []) as Review[];
+    },
+  });
   const cart = useCart();
   const [activeImage, setActiveImage] = useState(0);
   const [fabric, setFabric] = useState<keyof typeof fabricSwatches>("boucle");
