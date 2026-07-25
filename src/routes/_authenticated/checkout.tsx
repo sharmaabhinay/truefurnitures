@@ -7,6 +7,26 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/lib/cart";
 import { formatINR, estimatedDelivery } from "@/lib/format";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { createRazorpayOrder, verifyRazorpayPayment } from "@/lib/razorpay.functions";
+
+declare global {
+  interface Window {
+    Razorpay?: any;
+  }
+}
+
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined") return resolve(false);
+    if (window.Razorpay) return resolve(true);
+    const s = document.createElement("script");
+    s.src = "https://checkout.razorpay.com/v1/checkout.js";
+    s.onload = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.body.appendChild(s);
+  });
+}
 
 export const Route = createFileRoute("/_authenticated/checkout")({
   head: () => ({
@@ -39,6 +59,8 @@ type FormState = z.infer<typeof schema>;
 function Checkout() {
   const { items, subtotal, discount, total, coupon, clear } = useCart();
   const navigate = useNavigate();
+  const createRzp = useServerFn(createRazorpayOrder);
+  const verifyRzp = useServerFn(verifyRazorpayPayment);
   const [form, setForm] = useState<FormState>({
     full_name: "",
     phone: "",
@@ -128,17 +150,75 @@ function Checkout() {
         };
       });
 
-      const { error } = await supabase.from("orders").insert(rows);
+      const { data: inserted, error } = await supabase
+        .from("orders")
+        .insert(rows)
+        .select("id");
       if (error) throw error;
+      const orderIds = (inserted ?? []).map((r: { id: string }) => r.id);
+      if (orderIds.length === 0) throw new Error("Could not create order");
 
-      clear();
-      toast.success("Order placed! Redirecting to your dashboard…");
-      navigate({ to: "/dashboard" });
+      // Create Razorpay order for the total deposit
+      const scriptOk = await loadRazorpayScript();
+      if (!scriptOk) throw new Error("Could not load payment gateway");
+
+      const rp = await createRzp({ data: { orderIds } });
+
+      const options = {
+        key: rp.keyId,
+        amount: rp.amount,
+        currency: rp.currency,
+        name: "True Furniture's",
+        description: `Booking deposit (20%) · ${orderIds.length} item${orderIds.length > 1 ? "s" : ""}`,
+        order_id: rp.razorpayOrderId,
+        prefill: { name: data.full_name, email: data.email, contact: data.phone },
+        notes: { city: data.city },
+        theme: { color: "#111111" },
+        handler: async (resp: {
+          razorpay_payment_id: string;
+          razorpay_order_id: string;
+          razorpay_signature: string;
+        }) => {
+          try {
+            await verifyRzp({
+              data: {
+                razorpay_order_id: resp.razorpay_order_id,
+                razorpay_payment_id: resp.razorpay_payment_id,
+                razorpay_signature: resp.razorpay_signature,
+                orderIds,
+              },
+            });
+            clear();
+            toast.success("Payment received! Your order is confirmed.");
+            navigate({ to: "/dashboard" });
+          } catch (err) {
+            console.error(err);
+            toast.error(err instanceof Error ? err.message : "Payment verification failed");
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            toast.info("Payment cancelled. Your order is saved as pending — you can complete payment from your dashboard.");
+            setSubmitting(false);
+          },
+        },
+      };
+
+      const rz = new window.Razorpay!(options);
+      rz.on("payment.failed", (resp: any) => {
+        console.error("Razorpay payment failed", resp?.error);
+        toast.error(resp?.error?.description || "Payment failed");
+        setSubmitting(false);
+      });
+      rz.open();
+      return; // don't fall through to finally-reset while modal is open
     } catch (err) {
       console.error(err);
       toast.error(err instanceof Error ? err.message : "Could not place your order");
-    } finally {
       setSubmitting(false);
+      return;
+    } finally {
+      // no-op; state is managed above based on modal lifecycle
     }
   };
 
@@ -246,7 +326,7 @@ function Checkout() {
               <div className="text-[10px] text-[color:var(--brand-dark)]/60 pt-1">Estimated delivery by {estimatedDelivery(30)}.</div>
             </div>
             <button type="submit" disabled={submitting} className="mt-6 w-full px-6 py-4 bg-[color:var(--brand-dark)] text-white text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-              {submitting ? "Placing Order…" : "Place Order"}
+              {submitting ? "Processing…" : `Pay ${formatINR(deposit)} Deposit`}
             </button>
             <Link to="/cart" className="mt-3 block text-center text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-dark)]/60 hover:text-[color:var(--brand-accent)]">
               ← Back to Cart

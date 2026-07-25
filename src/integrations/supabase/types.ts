@@ -369,7 +369,11 @@ export type Database = {
           id: string
           order_number: string
           order_source: string | null
+          paid_at: string | null
           phone: string | null
+          razorpay_order_id: string | null
+          razorpay_payment_id: string | null
+          razorpay_signature: string | null
           size_snapshot: Json | null
           sofa_id: string | null
           sofa_snapshot: Json
@@ -396,7 +400,11 @@ export type Database = {
           id?: string
           order_number?: string
           order_source?: string | null
+          paid_at?: string | null
           phone?: string | null
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          razorpay_signature?: string | null
           size_snapshot?: Json | null
           sofa_id?: string | null
           sofa_snapshot?: Json
@@ -423,7 +431,11 @@ export type Database = {
           id?: string
           order_number?: string
           order_source?: string | null
+          paid_at?: string | null
           phone?: string | null
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          razorpay_signature?: string | null
           size_snapshot?: Json | null
           sofa_id?: string | null
           sofa_snapshot?: Json
