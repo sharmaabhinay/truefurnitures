@@ -112,7 +112,7 @@ function OrderDetail() {
   const fabric = (order.fabric_snapshot ?? {}) as { name?: string };
   const size = (order.size_snapshot ?? {}) as { label?: string };
   const addons = ((order.addons_snapshot ?? []) as Array<{ name?: string; price?: number }>) ?? [];
-  const currentIdx = order.status === "cancelled" ? -1 : statusIndex(order.status as string);
+  const currentIdx = (order.status as string) === "cancelled" ? -1 : statusIndex(order.status as string);
 
   return (
     <div style={{ background: dark.bg, color: dark.text, minHeight: "100vh" }} className="pb-20">
