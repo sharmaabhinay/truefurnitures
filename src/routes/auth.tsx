@@ -24,6 +24,7 @@ function Auth() {
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -34,10 +35,11 @@ function Auth() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setInfo(null);
     setLoading(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -46,9 +48,20 @@ function Auth() {
           },
         });
         if (error) throw error;
+        if (!data.session) {
+          setInfo("Account created. Please sign in.");
+          setMode("signin");
+          setLoading(false);
+          return;
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        if (error) {
+          if (error.message.toLowerCase().includes("invalid")) {
+            throw new Error("Invalid email or password. If you just signed up, try again in a moment.");
+          }
+          throw error;
+        }
       }
       navigate({ to: "/" });
     } catch (err) {
@@ -86,6 +99,7 @@ function Auth() {
               <input required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} type="password" className="w-full border-b border-[color:var(--brand-dark)]/20 pb-2 focus:outline-none focus:border-[color:var(--brand-accent)] bg-transparent" />
             </div>
             {error && <p className="text-xs text-red-600">{error}</p>}
+            {info && <p className="text-xs text-green-700">{info}</p>}
             <button disabled={loading} type="submit" className="w-full mt-4 px-6 py-4 bg-[color:var(--brand-dark)] text-white text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors disabled:opacity-60">
               {loading ? "Please wait…" : mode === "signin" ? "Sign in" : "Create Account"}
             </button>
