@@ -36,6 +36,7 @@ import { Route as AuthenticatedCheckoutRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as ApiPublicWebhooksRazorpayRouteImport } from './routes/api/public/webhooks/razorpay'
+import { Route as AuthenticatedOrdersIdReceiptRouteImport } from './routes/_authenticated/orders.$id.receipt'
 import { Route as AuthenticatedAdminOrdersIdRouteImport } from './routes/_authenticated/admin.orders.$id'
 import { Route as AuthenticatedAdminCustomersIdRouteImport } from './routes/_authenticated/admin.customers.$id'
 
@@ -174,6 +175,12 @@ const ApiPublicWebhooksRazorpayRoute =
     path: '/api/public/webhooks/razorpay',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedOrdersIdReceiptRoute =
+  AuthenticatedOrdersIdReceiptRouteImport.update({
+    id: '/orders/$id/receipt',
+    path: '/orders/$id/receipt',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminOrdersIdRoute =
   AuthenticatedAdminOrdersIdRouteImport.update({
     id: '/orders/$id',
@@ -215,6 +222,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/admin/customers/$id': typeof AuthenticatedAdminCustomersIdRoute
   '/admin/orders/$id': typeof AuthenticatedAdminOrdersIdRoute
+  '/orders/$id/receipt': typeof AuthenticatedOrdersIdReceiptRoute
   '/api/public/webhooks/razorpay': typeof ApiPublicWebhooksRazorpayRoute
 }
 export interface FileRoutesByTo {
@@ -244,6 +252,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/admin/customers/$id': typeof AuthenticatedAdminCustomersIdRoute
   '/admin/orders/$id': typeof AuthenticatedAdminOrdersIdRoute
+  '/orders/$id/receipt': typeof AuthenticatedOrdersIdReceiptRoute
   '/api/public/webhooks/razorpay': typeof ApiPublicWebhooksRazorpayRoute
 }
 export interface FileRoutesById {
@@ -276,6 +285,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/admin/customers/$id': typeof AuthenticatedAdminCustomersIdRoute
   '/_authenticated/admin/orders/$id': typeof AuthenticatedAdminOrdersIdRoute
+  '/_authenticated/orders/$id/receipt': typeof AuthenticatedOrdersIdReceiptRoute
   '/api/public/webhooks/razorpay': typeof ApiPublicWebhooksRazorpayRoute
 }
 export interface FileRouteTypes {
@@ -308,6 +318,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/admin/customers/$id'
     | '/admin/orders/$id'
+    | '/orders/$id/receipt'
     | '/api/public/webhooks/razorpay'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -337,6 +348,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin/customers/$id'
     | '/admin/orders/$id'
+    | '/orders/$id/receipt'
     | '/api/public/webhooks/razorpay'
   id:
     | '__root__'
@@ -368,6 +380,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/'
     | '/_authenticated/admin/customers/$id'
     | '/_authenticated/admin/orders/$id'
+    | '/_authenticated/orders/$id/receipt'
     | '/api/public/webhooks/razorpay'
   fileRoutesById: FileRoutesById
 }
@@ -585,6 +598,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicWebhooksRazorpayRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/orders/$id/receipt': {
+      id: '/_authenticated/orders/$id/receipt'
+      path: '/orders/$id/receipt'
+      fullPath: '/orders/$id/receipt'
+      preLoaderRoute: typeof AuthenticatedOrdersIdReceiptRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/orders/$id': {
       id: '/_authenticated/admin/orders/$id'
       path: '/orders/$id'
@@ -623,6 +643,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedMyDesignsRoute: typeof AuthenticatedMyDesignsRoute
   AuthenticatedPaymentRoute: typeof AuthenticatedPaymentRoute
+  AuthenticatedOrdersIdReceiptRoute: typeof AuthenticatedOrdersIdReceiptRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -631,6 +652,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedMyDesignsRoute: AuthenticatedMyDesignsRoute,
   AuthenticatedPaymentRoute: AuthenticatedPaymentRoute,
+  AuthenticatedOrdersIdReceiptRoute: AuthenticatedOrdersIdReceiptRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

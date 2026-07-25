@@ -105,6 +105,32 @@ function OrderDetail() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const approveCancel = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("orders").update({
+        status: "cancelled",
+        cancelled_at: new Date().toISOString(),
+      } as any).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Cancellation approved"); qc.invalidateQueries({ queryKey: ["admin-order", id] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const markRefunded = useMutation({
+    mutationFn: async (amount: number) => {
+      const { error } = await supabase.from("orders").update({
+        status: "refunded",
+        refund_amount: amount,
+        refunded_at: new Date().toISOString(),
+        balance_due: 0,
+      } as any).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Marked as refunded"); qc.invalidateQueries({ queryKey: ["admin-order", id] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   if (isLoading) return <div style={{ background: dark.bg, color: dark.mute, minHeight: "100vh" }} className="p-10 text-center">Loading…</div>;
   if (!order) return <div style={{ background: dark.bg, color: dark.text, minHeight: "100vh" }} className="p-10 text-center">Order not found. <Link to="/admin" style={{ color: dark.accent }}>Back</Link></div>;
 
@@ -186,7 +212,10 @@ function OrderDetail() {
                   {ORDER_STATUS_STEPS.map((s) => (
                     <option key={s.key} value={s.key}>{s.label}</option>
                   ))}
+                  <option value="cancellation_requested">Cancellation Requested</option>
                   <option value="cancelled">Cancelled</option>
+                  <option value="refund_requested">Refund Requested</option>
+                  <option value="refunded">Refunded</option>
                 </select>
                 <input
                   value={statusNote}
@@ -196,6 +225,46 @@ function OrderDetail() {
                   style={{ background: dark.bg, border: `1px solid ${dark.border}`, color: dark.text }}
                 />
               </div>
+
+              {(order.status === "cancellation_requested" || order.status === "refund_requested" || order.cancellation_reason || order.refund_reason) && (
+                <div className="mb-4 p-3 rounded" style={{ background: "rgba(200,168,107,0.08)", border: `1px solid ${dark.border}` }}>
+                  {order.status === "cancellation_requested" && (
+                    <p className="text-[11px] uppercase tracking-widest mb-1" style={{ color: dark.accent }}>Customer requested cancellation</p>
+                  )}
+                  {order.status === "refund_requested" && (
+                    <p className="text-[11px] uppercase tracking-widest mb-1" style={{ color: dark.accent }}>Customer requested refund</p>
+                  )}
+                  {order.cancellation_reason && <p className="text-sm mb-1"><span style={{ color: dark.mute }}>Cancellation reason:</span> {order.cancellation_reason}</p>}
+                  {order.refund_reason && <p className="text-sm mb-1"><span style={{ color: dark.mute }}>Refund reason:</span> {order.refund_reason}</p>}
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {order.status === "cancellation_requested" && (
+                      <button
+                        type="button"
+                        onClick={() => approveCancel.mutate()}
+                        disabled={approveCancel.isPending}
+                        className="px-3 py-2 text-[11px] font-bold uppercase tracking-widest rounded"
+                        style={{ background: "#e5484d", color: "white" }}
+                      >Approve cancellation</button>
+                    )}
+                    {order.status === "refund_requested" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const raw = window.prompt("Refund amount (INR):", String(Number(order.deposit_paid) || 0));
+                          if (!raw) return;
+                          const n = Number(raw);
+                          if (!Number.isFinite(n) || n < 0) { toast.error("Invalid amount"); return; }
+                          markRefunded.mutate(n);
+                        }}
+                        disabled={markRefunded.isPending}
+                        className="px-3 py-2 text-[11px] font-bold uppercase tracking-widest rounded"
+                        style={{ background: dark.accent, color: dark.bg }}
+                      >Mark refunded…</button>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <ol className="relative">
                 {ORDER_STATUS_STEPS.map((step, idx) => {
                   const done = idx <= currentIdx;

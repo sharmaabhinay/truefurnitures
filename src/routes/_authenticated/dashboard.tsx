@@ -1,9 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { toast } from "sonner";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { supabase } from "@/integrations/supabase/client";
-import { formatINR, formatDate, ORDER_STATUS_STEPS, statusIndex } from "@/lib/format";
+import {
+  formatINR,
+  formatDate,
+  ORDER_STATUS_STEPS,
+  statusIndex,
+  STATUS_META,
+  canUserCancel,
+  canUserRequestRefund,
+} from "@/lib/format";
 
 type Order = {
   id: string;
@@ -18,6 +28,9 @@ type Order = {
   expected_delivery_date: string | null;
   delivery_city: string | null;
   created_at: string;
+  cancellation_reason?: string | null;
+  refund_reason?: string | null;
+  refund_amount?: number | null;
 };
 
 type HistoryRow = { id: string; order_id: string; status: string; note: string | null; created_at: string };
@@ -39,7 +52,7 @@ function Dashboard() {
     queryFn: async (): Promise<Order[]> => {
       const { data, error } = await supabase
         .from("orders")
-        .select("id, order_number, sofa_snapshot, fabric_snapshot, size_snapshot, total, deposit_paid, balance_due, status, expected_delivery_date, delivery_city, created_at")
+        .select("id, order_number, sofa_snapshot, fabric_snapshot, size_snapshot, total, deposit_paid, balance_due, status, expected_delivery_date, delivery_city, created_at, cancellation_reason, refund_reason, refund_amount")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Order[];
@@ -59,6 +72,23 @@ function Dashboard() {
       if (error) throw error;
       return (data ?? []) as HistoryRow[];
     },
+  });
+
+  const qc = useQueryClient();
+  const requestAction = useMutation({
+    mutationFn: async ({ orderId, action, reason }: { orderId: string; action: "cancel" | "refund"; reason: string }) => {
+      const { error } = await supabase.rpc("request_order_action", {
+        _order_id: orderId,
+        _action: action,
+        _reason: reason,
+      });
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => {
+      toast.success(vars.action === "cancel" ? "Cancellation submitted." : "Refund request submitted.");
+      qc.invalidateQueries({ queryKey: ["my-orders"] });
+    },
+    onError: (e: Error) => toast.error(e.message || "Could not submit request"),
   });
 
   return (
@@ -100,6 +130,7 @@ function Dashboard() {
                       </p>
                     </div>
                     <div className="text-right">
+                      <StatusBadge status={o.status} />
                       <p className="font-display text-lg">{formatINR(Number(o.total))}</p>
                       <p className="text-xs text-[color:var(--brand-dark)]/50">
                         Balance due {formatINR(Number(o.balance_due))}
@@ -132,7 +163,15 @@ function Dashboard() {
                   )}
 
                   {o.status === "cancelled" ? (
-                    <div className="bg-red-50 text-red-800 p-4 text-sm">This order was cancelled.</div>
+                    <div className="bg-red-50 text-red-800 p-4 text-sm">
+                      This order was cancelled.
+                      {o.cancellation_reason && <div className="mt-1 italic">Reason: {o.cancellation_reason}</div>}
+                    </div>
+                  ) : o.status === "refunded" ? (
+                    <div className="bg-red-50 text-red-800 p-4 text-sm">
+                      Refunded {o.refund_amount ? `· ${formatINR(Number(o.refund_amount))}` : ""}
+                      {o.refund_reason && <div className="mt-1 italic">Reason: {o.refund_reason}</div>}
+                    </div>
                   ) : (
                     <ol className="relative">
                       {ORDER_STATUS_STEPS.map((step, idx) => {
@@ -162,6 +201,47 @@ function Dashboard() {
                       })}
                     </ol>
                   )}
+
+                  {(o.status === "cancellation_requested" || o.status === "refund_requested") && (
+                    <div className="mt-6 bg-amber-50 border border-amber-200 p-4 text-sm text-amber-900">
+                      {o.status === "cancellation_requested" ? "Cancellation requested — our team will confirm shortly." : "Refund request received — our team will review and get back within 2 business days."}
+                      {(o.cancellation_reason || o.refund_reason) && (
+                        <div className="mt-1 italic">Reason: {o.cancellation_reason || o.refund_reason}</div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="mt-6 pt-6 border-t border-[color:var(--brand-dark)]/10 flex flex-wrap gap-3">
+                    <Link
+                      to="/orders/$id/receipt"
+                      params={{ id: o.id }}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 border border-[color:var(--brand-dark)]/20 text-[10px] font-bold uppercase tracking-widest hover:bg-[color:var(--brand-dark)] hover:text-white transition-colors"
+                    >
+                      <svg viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      View Receipt
+                    </Link>
+                    {canUserCancel(o.status) && (
+                      <ActionButton
+                        label="Cancel Order"
+                        prompt="Tell us why you're cancelling (optional):"
+                        confirm="Cancel this order? This cannot be undone."
+                        pending={requestAction.isPending}
+                        onSubmit={(reason) => requestAction.mutate({ orderId: o.id, action: "cancel", reason })}
+                        tone="danger"
+                      />
+                    )}
+                    {canUserRequestRefund(o.status) && (
+                      <ActionButton
+                        label="Request Refund"
+                        prompt="Please share the reason for your refund request:"
+                        confirm=""
+                        pending={requestAction.isPending}
+                        onSubmit={(reason) => requestAction.mutate({ orderId: o.id, action: "refund", reason })}
+                        tone="warning"
+                        requireReason
+                      />
+                    )}
+                  </div>
                 </article>
               );
             })}
@@ -170,5 +250,82 @@ function Dashboard() {
       </main>
       <SiteFooter />
     </div>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const meta = STATUS_META[status] ?? { label: status, tone: "neutral" as const };
+  const toneClass = {
+    neutral: "bg-neutral-100 text-neutral-700",
+    positive: "bg-emerald-100 text-emerald-800",
+    warning: "bg-amber-100 text-amber-900",
+    danger: "bg-red-100 text-red-800",
+    info: "bg-blue-100 text-blue-800",
+  }[meta.tone];
+  return (
+    <span className={`inline-block mb-2 px-2 py-1 text-[10px] font-bold uppercase tracking-widest ${toneClass}`}>{meta.label}</span>
+  );
+}
+
+function ActionButton({
+  label,
+  prompt,
+  confirm,
+  pending,
+  onSubmit,
+  tone,
+  requireReason,
+}: {
+  label: string;
+  prompt: string;
+  confirm: string;
+  pending: boolean;
+  onSubmit: (reason: string) => void;
+  tone: "danger" | "warning";
+  requireReason?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const toneClass = tone === "danger"
+    ? "border-red-300 text-red-700 hover:bg-red-600 hover:text-white hover:border-red-600"
+    : "border-amber-300 text-amber-800 hover:bg-amber-600 hover:text-white hover:border-amber-600";
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        disabled={pending}
+        className={`inline-flex items-center gap-2 px-4 py-2.5 border text-[10px] font-bold uppercase tracking-widest transition-colors disabled:opacity-60 ${toneClass}`}
+      >
+        {label}
+      </button>
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setOpen(false)}>
+          <div className="bg-white max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-display text-lg mb-2">{label}</h3>
+            {confirm && <p className="text-sm text-neutral-600 mb-3">{confirm}</p>}
+            <label className="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-2">{prompt}</label>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={3}
+              className="w-full border border-neutral-300 p-2 text-sm"
+              placeholder="Reason…"
+            />
+            <div className="flex justify-end gap-2 mt-4">
+              <button type="button" onClick={() => setOpen(false)} className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-neutral-600">Back</button>
+              <button
+                type="button"
+                disabled={pending || (requireReason && !reason.trim())}
+                onClick={() => { onSubmit(reason.trim()); setOpen(false); setReason(""); }}
+                className={`px-4 py-2 text-xs font-bold uppercase tracking-widest text-white disabled:opacity-60 ${tone === "danger" ? "bg-red-600" : "bg-amber-600"}`}
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
