@@ -1,4 +1,4 @@
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -626,6 +626,7 @@ function Dashboard({ onGo }: { onGo: (p: PanelKey) => void }) {
 
 function Orders() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [q, setQ] = useState("");
   const { data: orders, isLoading } = useQuery({
@@ -687,7 +688,7 @@ function Orders() {
           <div className="p-10 text-center text-[13px]" style={{ color: "#888899" }}>Loading…</div>
         ) : (
           <DataTable
-            head={["Order", "Product", "City / Phone", "Amount", "Status", "ETA"]}
+            head={["Order", "Product", "City / Phone", "Amount", "Status", "ETA", ""]}
             empty={filtered.length === 0}
           >
             {filtered.map((o) => {
@@ -699,9 +700,14 @@ function Orders() {
                   style={{ borderColor: "rgba(42,42,56,0.5)" }}
                 >
                   <td className="px-3 py-2.5">
-                    <Link to="/admin/orders/$id" params={{ id: o.id }} className="font-semibold hover:underline" style={{ color: "#C8A86B" }}>
+                    <button
+                      type="button"
+                      onClick={() => navigate({ to: "/admin/orders/$id", params: { id: o.id } })}
+                      className="font-semibold hover:underline text-left"
+                      style={{ color: "#C8A86B", background: "transparent" }}
+                    >
                       {o.order_number}
-                    </Link>
+                    </button>
                     <div className="text-[10px]" style={{ color: "#888899" }}>{formatDate(o.created_at)}</div>
                     {o.discount_code && (
                       <div className="text-[10px]" style={{ color: "#C8A86B" }}>✓ {o.discount_code}</div>
@@ -743,6 +749,16 @@ function Orders() {
                       style={{ background: "#16161D", border: "1px solid #2A2A38", color: "#E8E8F0" }}
                     />
                   </td>
+                  <td className="px-3 py-2.5 text-right">
+                    <button
+                      type="button"
+                      onClick={() => navigate({ to: "/admin/orders/$id", params: { id: o.id } })}
+                      className="text-[11px] underline"
+                      style={{ color: "#C8A86B", background: "transparent" }}
+                    >
+                      View →
+                    </button>
+                  </td>
                 </tr>
               );
             })}
@@ -756,6 +772,7 @@ function Orders() {
 /* ================= CUSTOMERS ================= */
 
 function Customers() {
+  const navigate = useNavigate();
   const { data } = useQuery({
     queryKey: ["admin-customers"],
     queryFn: async () => {
@@ -776,21 +793,22 @@ function Customers() {
   return (
     <Card className="!p-0">
       <DataTable
-        head={["Name", "Phone", "City", "Orders", "Lifetime", "Joined"]}
+        head={["Name", "Phone", "City", "Orders", "Lifetime", "Joined", ""]}
         empty={(data ?? []).length === 0}
       >
         {(data ?? []).map((c) => (
           <tr
             key={c.id}
-            className="border-b last:border-b-0"
+            className="border-b last:border-b-0 cursor-pointer hover:bg-white/[0.02]"
             style={{ borderColor: "rgba(42,42,56,0.5)" }}
+            onClick={() => navigate({ to: "/admin/customers/$id", params: { id: c.id } })}
           >
             <td className="px-3 py-2.5">
-              <Link to="/admin/customers/$id" params={{ id: c.id }} className="hover:underline" style={{ color: "#C8A86B" }}>
+              <span className="hover:underline font-medium" style={{ color: "#C8A86B" }}>
                 {c.full_name ?? "Unnamed"}
-              </Link>
+              </span>
             </td>
-            <td className="px-3 py-2.5">
+            <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
               <a href={`https://wa.me/91${c.phone ?? ""}`} target="_blank" rel="noreferrer" style={{ color: "#C8A86B" }}>
                 {c.phone ?? "—"}
               </a>
@@ -800,6 +818,9 @@ function Customers() {
             <td className="px-3 py-2.5">{formatINR(c.sum)}</td>
             <td className="px-3 py-2.5 text-[11px]" style={{ color: "#888899" }}>
               {formatDate(c.created_at)}
+            </td>
+            <td className="px-3 py-2.5 text-right">
+              <span className="text-[11px] underline" style={{ color: "#C8A86B" }}>View →</span>
             </td>
           </tr>
         ))}
