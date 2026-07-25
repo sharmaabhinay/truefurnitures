@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { HeroCarousel } from "@/components/hero-carousel";
+import { VideoShowcase } from "@/components/video-showcase";
 import { formatINR } from "@/lib/format";
-import heroSofa from "@/assets/hero-sofa.jpg";
 import sofaMalwa from "@/assets/sofa-malwa.jpg";
 import sofaUjjain from "@/assets/sofa-ujjain.jpg";
 import sofaIndore from "@/assets/sofa-indore.jpg";
@@ -27,9 +28,9 @@ export const Route = createFileRoute("/")({
 });
 
 const featured = [
-  { slug: "malwa-modular", name: "The Malwa Modular", tagline: "Infinite Configurations", price: 68000, image: sofaMalwa },
-  { slug: "ujjain-arch", name: "Ujjain Arch Settee", tagline: "Solid Teak Frame", price: 82000, image: sofaUjjain },
-  { slug: "indore-slimline", name: "The Indore Slim-Line", tagline: "Top Grain Leather", price: 145000, image: sofaIndore },
+  { slug: "malwa-modular" as const, name: "The Malwa Modular", tagline: "Infinite Configurations", price: 68000, image: sofaMalwa },
+  { slug: "ujjain-arch" as const, name: "Ujjain Arch Settee", tagline: "Solid Teak Frame", price: 82000, image: sofaUjjain },
+  { slug: "indore-slimline" as const, name: "The Indore Slim-Line", tagline: "Top Grain Leather", price: 145000, image: sofaIndore },
 ];
 
 const fabrics = [
@@ -44,49 +45,24 @@ function Home() {
     <div className="bg-[color:var(--brand-cream)] text-[color:var(--brand-dark)]">
       <SiteHeader />
 
-      {/* HERO */}
-      <section className="relative min-h-[88vh] flex items-center px-6 md:px-20 overflow-hidden">
-        <div className="relative z-10 max-w-2xl py-16">
-          <span className="text-[color:var(--brand-accent)] font-semibold tracking-[0.3em] uppercase text-xs block mb-6 animate-fade-up">
-            Fully Customizable Furniture · Indore &amp; Ujjain
-          </span>
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-display leading-[0.9] mb-8 animate-fade-up delay-100">
-            Every Inch, <br />
-            <span className="italic font-normal">Yours to Design.</span>
-          </h1>
-          <p className="text-lg text-[color:var(--brand-dark)]/70 mb-10 max-w-md font-light leading-relaxed animate-fade-up delay-200">
-            True Furniture&apos;s builds fully customizable sofas — fabric, colour, size, legs, add-ons. Every stitch, every curve, strictly by your rules.
-          </p>
-          <div className="flex flex-wrap gap-4 animate-fade-up delay-300">
-            <Link to="/collections" className="px-8 py-4 bg-[color:var(--brand-dark)] text-white text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors">
-              Start 3D Design
-            </Link>
-            <Link to="/collections" className="px-8 py-4 border border-[color:var(--brand-dark)]/20 text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-dark)] hover:text-white transition-all">
-              View Catalog
-            </Link>
-          </div>
-        </div>
-        <div className="absolute right-0 top-0 w-1/2 h-full hidden lg:block animate-fade-in-slow delay-200">
-          <img src={heroSofa} alt="Signature True Furniture's bouclé sofa in a sunlit modern living room" width={1200} height={1600} className="w-full h-full object-cover" />
-        </div>
-      </section>
+      <HeroCarousel />
 
       {/* FEATURED COLLECTION */}
-      <section className="py-24 px-6 md:px-10 max-w-7xl mx-auto">
-        <div className="flex flex-wrap justify-between items-end gap-6 mb-16">
+      <section className="py-16 sm:py-24 px-6 md:px-10 max-w-7xl mx-auto">
+        <div className="flex flex-wrap justify-between items-end gap-6 mb-10 sm:mb-16">
           <div>
-            <h2 className="text-3xl md:text-4xl font-display">Signature Silhouettes</h2>
+            <span className="tf-chip mb-3">Signature Silhouettes</span>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-display mt-3">Priced honestly, built once.</h2>
             <p className="text-[color:var(--brand-dark)]/50 mt-2">Available for full material customization.</p>
           </div>
-          <div className="h-px flex-grow mx-8 bg-[color:var(--brand-dark)]/10 mb-4 hidden md:block"></div>
           <Link to="/collections" className="text-xs font-bold uppercase tracking-widest border-b border-[color:var(--brand-dark)] pb-1">
             Explore All
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 sm:gap-10 md:gap-12">
           {featured.map((s, i) => (
-            <Link key={s.slug} to="/collections" className={`group cursor-pointer block hover-lift animate-fade-up delay-${(i + 1) * 100}`}>
+            <Link key={s.slug} to="/products/$slug" params={{ slug: s.slug }} className={`group cursor-pointer block hover-lift animate-fade-up`} style={{ animationDelay: `${(i + 1) * 100}ms` }}>
               <div className="aspect-[4/5] bg-[color:var(--brand-muted)] mb-6 overflow-hidden">
                 <img src={s.image} alt={s.name} loading="lazy" width={1000} height={1200} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700" />
               </div>
@@ -95,19 +71,21 @@ function Home() {
                   <h3 className="text-xl font-display">{s.name}</h3>
                   <p className="text-[10px] uppercase tracking-widest text-[color:var(--brand-dark)]/40 mt-1">{s.tagline}</p>
                 </div>
-                <span className="text-sm font-medium">{formatINR(s.price)}</span>
+                <span className="text-sm font-medium whitespace-nowrap">{formatINR(s.price)}</span>
               </div>
             </Link>
           ))}
         </div>
       </section>
 
+      <VideoShowcase />
+
       {/* 3D CTA */}
-      <section className="bg-[color:var(--brand-dark)] py-24 text-white overflow-hidden">
-        <div className="max-w-6xl mx-auto px-6 md:px-10 grid md:grid-cols-2 gap-16 items-center">
+      <section className="bg-[color:var(--brand-dark)] py-16 sm:py-24 text-white overflow-hidden">
+        <div className="max-w-6xl mx-auto px-6 md:px-10 grid md:grid-cols-2 gap-12 md:gap-16 items-center">
           <div className="relative">
-            <div className="absolute -left-6 -top-14 text-[10rem] font-display text-white/5 pointer-events-none select-none leading-none">3D</div>
-            <h2 className="text-4xl md:text-5xl font-display mb-6 leading-tight relative">
+            <div className="absolute -left-6 -top-14 text-[8rem] md:text-[10rem] font-display text-white/5 pointer-events-none select-none leading-none">3D</div>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-display mb-6 leading-tight relative">
               The Digital <br />Atelier Experience
             </h2>
             <p className="text-white/60 mb-8 leading-relaxed">
@@ -135,9 +113,9 @@ function Home() {
       </section>
 
       {/* MATERIALS */}
-      <section className="py-24 px-6 md:px-10 max-w-7xl mx-auto">
+      <section className="py-16 sm:py-24 px-6 md:px-10 max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-display mb-4">Tactile Excellence</h2>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-display mb-4">Tactile Excellence</h2>
           <p className="text-[color:var(--brand-dark)]/60 uppercase text-[10px] tracking-[0.3em]">Sourced globally, crafted locally</p>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -153,11 +131,11 @@ function Home() {
       </section>
 
       {/* SHOWROOMS */}
-      <section className="py-24 bg-[color:var(--brand-muted)]/30 border-t border-[color:var(--brand-dark)]/5">
+      <section className="py-16 sm:py-24 bg-[color:var(--brand-muted)]/30 border-t border-[color:var(--brand-dark)]/5">
         <div className="max-w-6xl mx-auto px-6 md:px-10">
-          <div className="grid md:grid-cols-2 gap-16">
+          <div className="grid md:grid-cols-2 gap-12 md:gap-16">
             <div className="space-y-8">
-              <h2 className="text-3xl md:text-4xl font-display">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-display">
                 Visit the <br /><span className="italic">Showrooms</span>
               </h2>
               <p className="text-[color:var(--brand-dark)]/60 font-light">
@@ -192,12 +170,12 @@ function Home() {
       </section>
 
       {/* TESTIMONIAL */}
-      <section className="py-24 px-6 md:px-10 bg-[color:var(--brand-cream)]">
+      <section className="py-16 sm:py-24 px-6 md:px-10 bg-[color:var(--brand-cream)]">
         <div className="max-w-3xl mx-auto text-center">
           <div className="flex justify-center gap-1 mb-8">
             <span className="text-[color:var(--brand-accent)] text-xl">★★★★★</span>
           </div>
-          <blockquote className="text-2xl md:text-3xl font-display leading-relaxed mb-8 italic">
+          <blockquote className="text-xl sm:text-2xl md:text-3xl font-display leading-relaxed mb-8 italic text-balance">
             &ldquo;The ability to customize every dimension was the deciding factor for our Ujjain bungalow. The finish is impeccable, and the service was world-class.&rdquo;
           </blockquote>
           <p className="font-bold uppercase tracking-widest text-[10px]">Ananya Singh — Indore</p>
