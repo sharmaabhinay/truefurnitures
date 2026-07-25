@@ -69,7 +69,7 @@ const sofaQuery = (slug: string) =>
   });
 
 type RelatedSofa = { id: string; slug: string; name: string; tagline: string | null; base_price: number };
-type Review = { id: string; rating: number; title: string | null; body: string | null; author_name: string | null; created_at: string; photo_url: string | null };
+type Review = { id: string; rating: number; title: string | null; body: string; city: string | null; created_at: string; images: unknown };
 
 const relatedQuery = (slug: string) =>
   queryOptions({
@@ -149,13 +149,13 @@ function ProductPage() {
     queryFn: async (): Promise<Review[]> => {
       const { data, error } = await supabase
         .from("reviews")
-        .select("id, rating, title, body, author_name, created_at, photo_url")
+        .select("id, rating, title, body, city, created_at, images")
         .eq("sofa_id", sofa!.id)
-        .eq("status", "approved")
+        .eq("approved", true)
         .order("created_at", { ascending: false })
         .limit(6);
       if (error) return [];
-      return (data ?? []) as Review[];
+      return (data ?? []) as unknown as Review[];
     },
   });
   const cart = useCart();
