@@ -28,11 +28,15 @@ function Contact() {
           <div className="mt-12 space-y-8">
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest mb-2 text-[color:var(--brand-dark)]/40">WhatsApp</p>
-              <a href="https://wa.me/919999999999" className="text-lg font-display hover:text-[color:var(--brand-accent)]">+91 99999 99999</a>
+              <a href="https://wa.me/917773896496" className="text-lg font-display hover:text-[color:var(--brand-accent)]">+91 77738 96496</a>
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest mb-2 text-[color:var(--brand-dark)]/40">Phone</p>
+              <a href="tel:+917773896496" className="text-lg font-display hover:text-[color:var(--brand-accent)]">+91 77738 96496</a>
             </div>
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest mb-2 text-[color:var(--brand-dark)]/40">Email</p>
-              <a href="mailto:studio@avantgarde.in" className="text-lg font-display hover:text-[color:var(--brand-accent)]">studio@avantgarde.in</a>
+              <a href="mailto:hello@truefurnitures.in" className="text-lg font-display hover:text-[color:var(--brand-accent)]">hello@truefurnitures.in</a>
             </div>
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest mb-2 text-[color:var(--brand-dark)]/40">Studio Hours</p>
