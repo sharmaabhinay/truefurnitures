@@ -626,6 +626,7 @@ function Dashboard({ onGo }: { onGo: (p: PanelKey) => void }) {
 
 function Orders() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [q, setQ] = useState("");
   const { data: orders, isLoading } = useQuery({
@@ -687,7 +688,7 @@ function Orders() {
           <div className="p-10 text-center text-[13px]" style={{ color: "#888899" }}>Loading…</div>
         ) : (
           <DataTable
-            head={["Order", "Product", "City / Phone", "Amount", "Status", "ETA"]}
+            head={["Order", "Product", "City / Phone", "Amount", "Status", "ETA", ""]}
             empty={filtered.length === 0}
           >
             {filtered.map((o) => {
@@ -699,9 +700,14 @@ function Orders() {
                   style={{ borderColor: "rgba(42,42,56,0.5)" }}
                 >
                   <td className="px-3 py-2.5">
-                    <Link to="/admin/orders/$id" params={{ id: o.id }} className="font-semibold hover:underline" style={{ color: "#C8A86B" }}>
+                    <button
+                      type="button"
+                      onClick={() => navigate({ to: "/admin/orders/$id", params: { id: o.id } })}
+                      className="font-semibold hover:underline text-left"
+                      style={{ color: "#C8A86B", background: "transparent" }}
+                    >
                       {o.order_number}
-                    </Link>
+                    </button>
                     <div className="text-[10px]" style={{ color: "#888899" }}>{formatDate(o.created_at)}</div>
                     {o.discount_code && (
                       <div className="text-[10px]" style={{ color: "#C8A86B" }}>✓ {o.discount_code}</div>
@@ -742,6 +748,16 @@ function Orders() {
                       className="rounded-md px-2 py-1 text-[12px]"
                       style={{ background: "#16161D", border: "1px solid #2A2A38", color: "#E8E8F0" }}
                     />
+                  </td>
+                  <td className="px-3 py-2.5 text-right">
+                    <button
+                      type="button"
+                      onClick={() => navigate({ to: "/admin/orders/$id", params: { id: o.id } })}
+                      className="text-[11px] underline"
+                      style={{ color: "#C8A86B", background: "transparent" }}
+                    >
+                      View →
+                    </button>
                   </td>
                 </tr>
               );
