@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -59,14 +58,6 @@ function Auth() {
     }
   }
 
-  async function handleGoogle() {
-    setError(null);
-    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
-    if (result.error) {
-      setError(result.error.message ?? "Google sign-in failed");
-    }
-  }
-
   return (
     <div className="min-h-screen bg-[color:var(--brand-cream)] text-[color:var(--brand-dark)] flex flex-col">
       <SiteHeader />
@@ -78,20 +69,6 @@ function Auth() {
           <h1 className="text-3xl font-display mt-3 mb-8">
             {mode === "signin" ? "Sign in" : "Join the Atelier"}
           </h1>
-
-          <button
-            type="button"
-            onClick={handleGoogle}
-            className="w-full py-3 border border-[color:var(--brand-dark)]/15 text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-dark)] hover:text-white transition-colors"
-          >
-            Continue with Google
-          </button>
-
-          <div className="flex items-center gap-4 my-6 text-[10px] uppercase tracking-widest text-[color:var(--brand-dark)]/40">
-            <div className="flex-1 h-px bg-[color:var(--brand-dark)]/10" />
-            or
-            <div className="flex-1 h-px bg-[color:var(--brand-dark)]/10" />
-          </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {mode === "signup" && (
