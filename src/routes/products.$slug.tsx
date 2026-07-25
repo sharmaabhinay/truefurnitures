@@ -69,6 +69,7 @@ const sofaQuery = (slug: string) =>
   });
 
 type RelatedSofa = { id: string; slug: string; name: string; tagline: string | null; base_price: number };
+type Review = { id: string; rating: number; title: string | null; body: string | null; author_name: string | null; created_at: string; photo_url: string | null };
 
 const relatedQuery = (slug: string) =>
   queryOptions({
