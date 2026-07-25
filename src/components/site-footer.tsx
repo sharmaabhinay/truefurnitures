@@ -33,7 +33,7 @@ export function SiteFooter() {
           <p className="text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-accent)] mb-5">Connect</p>
           <ul className="space-y-3 text-sm text-white/60 font-light">
             <li><a href="https://instagram.com" className="hover:text-white transition-colors">Instagram</a></li>
-            <li><a href="https://wa.me/919999999999" className="hover:text-white transition-colors">WhatsApp</a></li>
+            <li><a href="https://wa.me/917773896496" className="hover:text-white transition-colors">WhatsApp · +91 77738 96496</a></li>
             <li><Link to="/contact" className="hover:text-white transition-colors">Contact</Link></li>
             <li><a href="mailto:hello@truefurnitures.in" className="hover:text-white transition-colors">hello@truefurnitures.in</a></li>
           </ul>
