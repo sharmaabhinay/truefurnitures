@@ -27,6 +27,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 type PanelKey =
   | "dashboard"
+  | "visitors"
   | "orders"
   | "products"
   | "bookings"
@@ -46,6 +47,12 @@ const NAV: NavGroup[] = [
     title: "Overview",
     items: [
       { key: "dashboard", label: "Dashboard", icon: "📊" },
+    ],
+  },
+  {
+    title: "",
+    items: [
+      { key: "visitors", label: "Visitor Analytics", icon: "👁️" },
       { key: "orders", label: "Orders", icon: "📦" },
       { key: "customers", label: "Customers", icon: "👥" },
     ],
@@ -54,28 +61,34 @@ const NAV: NavGroup[] = [
     title: "Store",
     items: [
       { key: "products", label: "Products", icon: "🛋️" },
-      { key: "bookings", label: "Bookings", icon: "💬" },
-      { key: "reviews", label: "Reviews", icon: "⭐" },
-      { key: "coupons", label: "Coupons", icon: "🏷️" },
-      { key: "designs", label: "Saved Designs", icon: "🎨" },
+      { key: "bookings", label: "Quote Requests", icon: "💬" },
     ],
   },
   {
-    title: "Content",
+    title: "Settings",
     items: [
+      { key: "settings", label: "Settings", icon: "⚙️" },
+    ],
+  },
+  {
+    title: "Extras",
+    items: [
+      { key: "reviews", label: "Reviews", icon: "⭐" },
+      { key: "coupons", label: "Coupons", icon: "🏷️" },
+      { key: "designs", label: "Saved Designs", icon: "🎨" },
       { key: "blog", label: "Blog", icon: "📝" },
       { key: "showrooms", label: "Showrooms", icon: "📍" },
-      { key: "settings", label: "Settings", icon: "⚙️" },
     ],
   },
 ];
 
 const TITLES: Record<PanelKey, string> = {
   dashboard: "Dashboard",
+  visitors: "Visitor Analytics",
   orders: "Orders",
   customers: "Customers",
   products: "Product Manager",
-  bookings: "Showroom Bookings",
+  bookings: "Quote Requests",
   reviews: "Reviews",
   coupons: "Coupons",
   blog: "Blog",
