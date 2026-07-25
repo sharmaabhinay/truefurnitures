@@ -1,0 +1,155 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
+import { supabase } from "@/integrations/supabase/client";
+import { formatINR, formatDate, ORDER_STATUS_STEPS, statusIndex } from "@/lib/format";
+
+type Order = {
+  id: string;
+  order_number: string;
+  sofa_snapshot: { name?: string; slug?: string } | null;
+  fabric_snapshot: { name?: string } | null;
+  size_snapshot: { label?: string } | null;
+  total: number;
+  deposit_paid: number;
+  balance_due: number;
+  status: string;
+  expected_delivery_date: string | null;
+  delivery_city: string | null;
+  created_at: string;
+};
+
+type HistoryRow = { id: string; order_id: string; status: string; note: string | null; created_at: string };
+
+export const Route = createFileRoute("/_authenticated/dashboard")({
+  head: () => ({
+    meta: [
+      { title: "My Orders — True Furniture's" },
+      { name: "description", content: "Track your bespoke sofa order from production to delivery." },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
+  component: Dashboard,
+});
+
+function Dashboard() {
+  const { data: orders, isLoading } = useQuery({
+    queryKey: ["my-orders"],
+    queryFn: async (): Promise<Order[]> => {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("id, order_number, sofa_snapshot, fabric_snapshot, size_snapshot, total, deposit_paid, balance_due, status, expected_delivery_date, delivery_city, created_at")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Order[];
+    },
+  });
+
+  const orderIds = orders?.map((o) => o.id) ?? [];
+  const { data: history } = useQuery({
+    queryKey: ["order-history", orderIds.join(",")],
+    enabled: orderIds.length > 0,
+    queryFn: async (): Promise<HistoryRow[]> => {
+      const { data, error } = await supabase
+        .from("order_status_history")
+        .select("id, order_id, status, note, created_at")
+        .in("order_id", orderIds)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as HistoryRow[];
+    },
+  });
+
+  return (
+    <div className="min-h-screen bg-[color:var(--brand-cream)] text-[color:var(--brand-dark)] flex flex-col">
+      <SiteHeader />
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 md:px-10 py-12 sm:py-16">
+        <div className="mb-10">
+          <span className="tf-chip mb-4">Your Atelier</span>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-display mt-4 text-balance">Track every stitch.</h1>
+          <p className="text-[color:var(--brand-dark)]/60 mt-2">Follow your bespoke pieces from confirmation to delivery.</p>
+        </div>
+
+        {isLoading ? (
+          <div className="space-y-6">
+            {[0, 1].map((i) => <div key={i} className="tf-skeleton h-48" />)}
+          </div>
+        ) : !orders || orders.length === 0 ? (
+          <div className="border border-[color:var(--brand-dark)]/10 p-10 text-center">
+            <p className="text-[color:var(--brand-dark)]/60 mb-6">You don't have any orders yet.</p>
+            <Link to="/collections" className="inline-block px-6 py-4 bg-[color:var(--brand-dark)] text-white text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors">
+              Browse Collections
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {orders.map((o) => {
+              const currentIdx = o.status === "cancelled" ? -1 : statusIndex(o.status);
+              const rows = (history ?? []).filter((h) => h.order_id === o.id);
+              return (
+                <article key={o.id} className="bg-white border border-[color:var(--brand-dark)]/10 p-6 sm:p-8 animate-fade-up">
+                  <header className="flex flex-wrap justify-between items-start gap-4 mb-6 pb-6 border-b border-[color:var(--brand-dark)]/10">
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-[color:var(--brand-dark)]/50">Order {o.order_number}</p>
+                      <h2 className="font-display text-xl sm:text-2xl mt-1">{o.sofa_snapshot?.name ?? "Custom Piece"}</h2>
+                      <p className="text-xs text-[color:var(--brand-dark)]/50 mt-1">
+                        Placed {formatDate(o.created_at)}
+                        {o.delivery_city && ` · ${o.delivery_city}`}
+                        {o.fabric_snapshot?.name && ` · ${o.fabric_snapshot.name}`}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-display text-lg">{formatINR(Number(o.total))}</p>
+                      <p className="text-xs text-[color:var(--brand-dark)]/50">
+                        Balance due {formatINR(Number(o.balance_due))}
+                      </p>
+                      {o.expected_delivery_date && (
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-accent)] mt-2">
+                          ETA {formatDate(o.expected_delivery_date)}
+                        </p>
+                      )}
+                    </div>
+                  </header>
+
+                  {o.status === "cancelled" ? (
+                    <div className="bg-red-50 text-red-800 p-4 text-sm">This order was cancelled.</div>
+                  ) : (
+                    <ol className="relative">
+                      {ORDER_STATUS_STEPS.map((step, idx) => {
+                        const done = idx <= currentIdx;
+                        const active = idx === currentIdx;
+                        const rec = rows.find((r) => r.status === step.key);
+                        return (
+                          <li key={step.key} className="grid grid-cols-[24px_1fr] gap-4 pb-6 last:pb-0 relative">
+                            {idx < ORDER_STATUS_STEPS.length - 1 && (
+                              <span className={`absolute left-[11px] top-6 bottom-0 w-px ${done ? "bg-[color:var(--brand-accent)]" : "bg-[color:var(--brand-dark)]/15"}`} />
+                            )}
+                            <div className="relative">
+                              <span className={`block size-6 rounded-full border-2 ${done ? "bg-[color:var(--brand-accent)] border-[color:var(--brand-accent)]" : "border-[color:var(--brand-dark)]/20 bg-white"}`}>
+                                {done && <svg viewBox="0 0 24 24" className="size-full p-1 text-[color:var(--brand-dark)]" fill="none" stroke="currentColor" strokeWidth="3"><path d="M5 12l5 5L20 7"/></svg>}
+                              </span>
+                            </div>
+                            <div className={`min-w-0 ${active ? "" : done ? "" : "opacity-50"}`}>
+                              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                                <p className="text-sm font-semibold">{step.label}</p>
+                                {rec && <time className="text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-dark)]/50">{formatDate(rec.created_at)}</time>}
+                              </div>
+                              <p className="text-xs text-[color:var(--brand-dark)]/60 mt-1">{step.description}</p>
+                              {rec?.note && <p className="text-xs italic text-[color:var(--brand-dark)]/50 mt-1">"{rec.note}"</p>}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </main>
+      <SiteFooter />
+    </div>
+  );
+}
