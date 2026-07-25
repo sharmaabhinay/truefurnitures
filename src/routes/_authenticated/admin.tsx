@@ -756,6 +756,7 @@ function Orders() {
 /* ================= CUSTOMERS ================= */
 
 function Customers() {
+  const navigate = useNavigate();
   const { data } = useQuery({
     queryKey: ["admin-customers"],
     queryFn: async () => {
@@ -776,21 +777,22 @@ function Customers() {
   return (
     <Card className="!p-0">
       <DataTable
-        head={["Name", "Phone", "City", "Orders", "Lifetime", "Joined"]}
+        head={["Name", "Phone", "City", "Orders", "Lifetime", "Joined", ""]}
         empty={(data ?? []).length === 0}
       >
         {(data ?? []).map((c) => (
           <tr
             key={c.id}
-            className="border-b last:border-b-0"
+            className="border-b last:border-b-0 cursor-pointer hover:bg-white/[0.02]"
             style={{ borderColor: "rgba(42,42,56,0.5)" }}
+            onClick={() => navigate({ to: "/admin/customers/$id", params: { id: c.id } })}
           >
             <td className="px-3 py-2.5">
-              <Link to="/admin/customers/$id" params={{ id: c.id }} className="hover:underline" style={{ color: "#C8A86B" }}>
+              <span className="hover:underline font-medium" style={{ color: "#C8A86B" }}>
                 {c.full_name ?? "Unnamed"}
-              </Link>
+              </span>
             </td>
-            <td className="px-3 py-2.5">
+            <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
               <a href={`https://wa.me/91${c.phone ?? ""}`} target="_blank" rel="noreferrer" style={{ color: "#C8A86B" }}>
                 {c.phone ?? "—"}
               </a>
@@ -800,6 +802,9 @@ function Customers() {
             <td className="px-3 py-2.5">{formatINR(c.sum)}</td>
             <td className="px-3 py-2.5 text-[11px]" style={{ color: "#888899" }}>
               {formatDate(c.created_at)}
+            </td>
+            <td className="px-3 py-2.5 text-right">
+              <span className="text-[11px] underline" style={{ color: "#C8A86B" }}>View →</span>
             </td>
           </tr>
         ))}
