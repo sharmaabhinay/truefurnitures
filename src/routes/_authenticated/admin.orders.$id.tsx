@@ -76,7 +76,7 @@ function OrderDetail() {
 
   const update = useMutation({
     mutationFn: async (patch: Record<string, unknown>) => {
-      const { error } = await supabase.from("orders").update(patch).eq("id", id);
+      const { error } = await supabase.from("orders").update(patch as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -90,10 +90,10 @@ function OrderDetail() {
   const [statusNote, setStatusNote] = useState("");
   const advanceStatus = useMutation({
     mutationFn: async (newStatus: string) => {
-      const { error } = await supabase.from("orders").update({ status: newStatus }).eq("id", id);
+      const { error } = await supabase.from("orders").update({ status: newStatus } as any).eq("id", id);
       if (error) throw error;
       if (statusNote.trim()) {
-        await supabase.from("order_status_history").insert({ order_id: id, status: newStatus, note: statusNote.trim() });
+        await supabase.from("order_status_history").insert({ order_id: id, status: newStatus, note: statusNote.trim() } as any);
       }
     },
     onSuccess: () => {
@@ -112,7 +112,7 @@ function OrderDetail() {
   const fabric = (order.fabric_snapshot ?? {}) as { name?: string };
   const size = (order.size_snapshot ?? {}) as { label?: string };
   const addons = ((order.addons_snapshot ?? []) as Array<{ name?: string; price?: number }>) ?? [];
-  const currentIdx = order.status === "cancelled" ? -1 : statusIndex(order.status);
+  const currentIdx = order.status === "cancelled" ? -1 : statusIndex(order.status as string);
 
   return (
     <div style={{ background: dark.bg, color: dark.text, minHeight: "100vh" }} className="pb-20">
@@ -317,7 +317,7 @@ function OrderDetail() {
             <Panel title="Order meta">
               <Kv k="Source" v={order.order_source ?? "website"} />
               <Kv k="Order ID" v={<span className="font-mono text-[10px]">{order.id}</span>} />
-              <Kv k="Last updated" v={new Date(order.updated_at).toLocaleString("en-IN")} />
+              <Kv k="Last updated" v={order.updated_at ? new Date(order.updated_at).toLocaleString("en-IN") : "—"} />
             </Panel>
           </aside>
         </div>
