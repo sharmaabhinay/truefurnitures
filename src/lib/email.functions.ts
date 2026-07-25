@@ -77,21 +77,27 @@ export const sendOrderConfirmationEmail = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: order, error } = await supabaseAdmin
       .from("orders")
-      .select("id, total, deposit_paid, balance_due, customer_email, customer_name")
+      .select("id, total, deposit_paid, balance_due, user_id")
       .eq("id", data.orderId)
       .maybeSingle();
-    if (error || !order || !order.customer_email) {
+    if (error || !order) {
       return { sent: false as const, error: "order_not_found" };
     }
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("email, full_name")
+      .eq("id", order.user_id)
+      .maybeSingle();
+    if (!profile?.email) return { sent: false as const, error: "no_email" };
     return sendResend(
-      order.customer_email,
+      profile.email,
       `Order confirmed — #${order.id.slice(0, 8).toUpperCase()}`,
       orderHtml({
         id: order.id,
         total: Number(order.total) || 0,
         deposit_paid: Number(order.deposit_paid) || 0,
         balance_due: Number(order.balance_due) || 0,
-        name: order.customer_name,
+        name: profile.full_name,
       }),
     );
   });
