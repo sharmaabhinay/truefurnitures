@@ -44,6 +44,57 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_posts: {
+        Row: {
+          author: string | null
+          content: string
+          cover_image: string | null
+          created_at: string
+          excerpt: string | null
+          id: string
+          is_published: boolean
+          published_at: string | null
+          reading_minutes: number | null
+          seo_description: string | null
+          seo_title: string | null
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author?: string | null
+          content: string
+          cover_image?: string | null
+          created_at?: string
+          excerpt?: string | null
+          id?: string
+          is_published?: boolean
+          published_at?: string | null
+          reading_minutes?: number | null
+          seo_description?: string | null
+          seo_title?: string | null
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author?: string | null
+          content?: string
+          cover_image?: string | null
+          created_at?: string
+          excerpt?: string | null
+          id?: string
+          is_published?: boolean
+          published_at?: string | null
+          reading_minutes?: number | null
+          seo_description?: string | null
+          seo_title?: string | null
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -135,6 +186,151 @@ export type Database = {
           texture_url?: string | null
         }
         Relationships: []
+      }
+      newsletter_subscribers: {
+        Row: {
+          city: string | null
+          created_at: string
+          discount_code: string | null
+          email: string
+          id: string
+          source: string | null
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string
+          discount_code?: string | null
+          email: string
+          id?: string
+          source?: string | null
+        }
+        Update: {
+          city?: string | null
+          created_at?: string
+          discount_code?: string | null
+          email?: string
+          id?: string
+          source?: string | null
+        }
+        Relationships: []
+      }
+      order_status_history: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          id: string
+          note: string | null
+          order_id: string
+          status: Database["public"]["Enums"]["order_status"]
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          order_id: string
+          status: Database["public"]["Enums"]["order_status"]
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          order_id?: string
+          status?: Database["public"]["Enums"]["order_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_status_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          addons_snapshot: Json | null
+          admin_notes: string | null
+          balance_due: number
+          created_at: string
+          customer_notes: string | null
+          delivery_address: string | null
+          delivery_city: string | null
+          deposit_paid: number
+          discount: number
+          expected_delivery_date: string | null
+          fabric_snapshot: Json | null
+          id: string
+          order_number: string
+          phone: string | null
+          size_snapshot: Json | null
+          sofa_id: string | null
+          sofa_snapshot: Json
+          status: Database["public"]["Enums"]["order_status"]
+          subtotal: number
+          total: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          addons_snapshot?: Json | null
+          admin_notes?: string | null
+          balance_due?: number
+          created_at?: string
+          customer_notes?: string | null
+          delivery_address?: string | null
+          delivery_city?: string | null
+          deposit_paid?: number
+          discount?: number
+          expected_delivery_date?: string | null
+          fabric_snapshot?: Json | null
+          id?: string
+          order_number?: string
+          phone?: string | null
+          size_snapshot?: Json | null
+          sofa_id?: string | null
+          sofa_snapshot?: Json
+          status?: Database["public"]["Enums"]["order_status"]
+          subtotal?: number
+          total?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          addons_snapshot?: Json | null
+          admin_notes?: string | null
+          balance_due?: number
+          created_at?: string
+          customer_notes?: string | null
+          delivery_address?: string | null
+          delivery_city?: string | null
+          deposit_paid?: number
+          discount?: number
+          expected_delivery_date?: string | null
+          fabric_snapshot?: Json | null
+          id?: string
+          order_number?: string
+          phone?: string | null
+          size_snapshot?: Json | null
+          sofa_id?: string | null
+          sofa_snapshot?: Json
+          status?: Database["public"]["Enums"]["order_status"]
+          subtotal?: number
+          total?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_sofa_id_fkey"
+            columns: ["sofa_id"]
+            isOneToOne: false
+            referencedRelation: "sofas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -336,52 +532,79 @@ export type Database = {
           base_price: number
           category_id: string | null
           created_at: string
+          delivery_days: number | null
           description: string | null
+          dimensions: string | null
+          features: string[] | null
+          full_description: string | null
           gallery: string[] | null
           hero_image: string | null
           id: string
           is_featured: boolean
           is_published: boolean
+          materials: string | null
           model_url: string | null
           name: string
+          sale_price: number | null
+          seo_description: string | null
+          seo_title: string | null
           slug: string
           sort_order: number
           tagline: string | null
           updated_at: string
+          video_url: string | null
         }
         Insert: {
           base_price: number
           category_id?: string | null
           created_at?: string
+          delivery_days?: number | null
           description?: string | null
+          dimensions?: string | null
+          features?: string[] | null
+          full_description?: string | null
           gallery?: string[] | null
           hero_image?: string | null
           id?: string
           is_featured?: boolean
           is_published?: boolean
+          materials?: string | null
           model_url?: string | null
           name: string
+          sale_price?: number | null
+          seo_description?: string | null
+          seo_title?: string | null
           slug: string
           sort_order?: number
           tagline?: string | null
           updated_at?: string
+          video_url?: string | null
         }
         Update: {
           base_price?: number
           category_id?: string | null
           created_at?: string
+          delivery_days?: number | null
           description?: string | null
+          dimensions?: string | null
+          features?: string[] | null
+          full_description?: string | null
           gallery?: string[] | null
           hero_image?: string | null
           id?: string
           is_featured?: boolean
           is_published?: boolean
+          materials?: string | null
           model_url?: string | null
           name?: string
+          sale_price?: number | null
+          seo_description?: string | null
+          seo_title?: string | null
           slug?: string
           sort_order?: number
           tagline?: string | null
           updated_at?: string
+          video_url?: string | null
         }
         Relationships: [
           {
@@ -429,6 +652,15 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "staff" | "customer"
+      order_status:
+        | "pending_deposit"
+        | "confirmed"
+        | "in_production"
+        | "quality_check"
+        | "shipped"
+        | "out_for_delivery"
+        | "delivered"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -557,6 +789,16 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "staff", "customer"],
+      order_status: [
+        "pending_deposit",
+        "confirmed",
+        "in_production",
+        "quality_check",
+        "shipped",
+        "out_for_delivery",
+        "delivered",
+        "cancelled",
+      ],
     },
   },
 } as const

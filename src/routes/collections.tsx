@@ -73,7 +73,7 @@ function Collections() {
             {sofas.map((s, i) => {
               const img = sofaImages[s.slug] ?? s.hero_image ?? undefined;
               return (
-                <Link key={s.id} to="/collections" className={`group cursor-pointer block hover-lift animate-fade-up`} style={{ animationDelay: `${i * 80}ms` }}>
+                <Link key={s.id} to="/products/$slug" params={{ slug: s.slug }} className={`group cursor-pointer block hover-lift animate-fade-up`} style={{ animationDelay: `${i * 80}ms` }}>
                   <div className="aspect-[4/5] bg-[color:var(--brand-muted)] mb-6 overflow-hidden">
                     {img ? (
                       <img src={img} alt={s.name} loading="lazy" className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700" />
@@ -88,7 +88,7 @@ function Collections() {
                     </div>
                     <span className="text-sm font-medium whitespace-nowrap">{formatINR(Number(s.base_price))}</span>
                   </div>
-                  <span className="mt-3 inline-block text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-accent)] opacity-0 group-hover:opacity-100 transition-opacity">Customize →</span>
+                  <span className="mt-3 inline-block text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-accent)] opacity-0 group-hover:opacity-100 transition-opacity">View Piece →</span>
                 </Link>
               );
             })}
