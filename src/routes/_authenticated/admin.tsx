@@ -247,11 +247,19 @@ function AdminHome() {
             >
               View Store ↗
             </Link>
+            <button
+              onClick={() => window.location.reload()}
+              className="rounded-md px-3 py-1.5 text-[12px] font-medium"
+              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid #2A2A38", color: "#E8E8F0" }}
+            >
+              ↺ Refresh
+            </button>
           </div>
         </header>
 
         <main className="flex-1 p-4 sm:p-8 overflow-x-hidden">
           {panel === "dashboard" && <Dashboard onGo={setPanel} />}
+          {panel === "visitors" && <Visitors />}
           {panel === "orders" && <Orders />}
           {panel === "customers" && <Customers />}
           {panel === "products" && <Products />}
