@@ -1,5 +1,12 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
+export type AppliedCoupon = {
+  code: string;
+  discount_type: "percent" | "flat";
+  discount_value: number;
+  min_order_amount: number;
+};
+
 export type CartItem = {
   id: string; // client-side line id
   sofaId: string;
@@ -23,19 +30,28 @@ type CartContextValue = {
   clear: () => void;
   count: number;
   subtotal: number;
+  coupon: AppliedCoupon | null;
+  applyCoupon: (c: AppliedCoupon) => void;
+  removeCoupon: () => void;
+  discount: number;
+  total: number;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
 const STORAGE_KEY = "tf_cart_v1";
+const COUPON_KEY = "tf_coupon_v1";
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [coupon, setCoupon] = useState<AppliedCoupon | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) setItems(JSON.parse(raw));
+      const rawC = localStorage.getItem(COUPON_KEY);
+      if (rawC) setCoupon(JSON.parse(rawC));
     } catch {}
     setHydrated(true);
   }, []);
@@ -44,10 +60,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (!hydrated) return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      if (coupon) localStorage.setItem(COUPON_KEY, JSON.stringify(coupon));
+      else localStorage.removeItem(COUPON_KEY);
     } catch {}
-  }, [items, hydrated]);
+  }, [items, coupon, hydrated]);
 
   const value = useMemo<CartContextValue>(() => {
+    const subtotal = items.reduce((n, i) => n + i.quantity * i.unitPrice, 0);
+    let discount = 0;
+    if (coupon && subtotal >= coupon.min_order_amount) {
+      discount = coupon.discount_type === "percent"
+        ? Math.round((subtotal * coupon.discount_value) / 100)
+        : Math.min(subtotal, coupon.discount_value);
+    }
     return {
       items,
       add: (input) => {
@@ -89,11 +114,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
         setItems((cur) =>
           cur.map((i) => (i.id === id ? { ...i, quantity: Math.max(1, qty) } : i)),
         ),
-      clear: () => setItems([]),
+      clear: () => { setItems([]); setCoupon(null); },
       count: items.reduce((n, i) => n + i.quantity, 0),
-      subtotal: items.reduce((n, i) => n + i.quantity * i.unitPrice, 0),
+      subtotal,
+      coupon,
+      applyCoupon: (c) => setCoupon(c),
+      removeCoupon: () => setCoupon(null),
+      discount,
+      total: Math.max(0, subtotal - discount),
     };
-  }, [items, hydrated]);
+  }, [items, coupon, hydrated]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

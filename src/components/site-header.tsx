@@ -49,6 +49,7 @@ const STATIC_SUGGESTIONS = [
 
 export function SiteHeader() {
   const [signedIn, setSignedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -58,9 +59,21 @@ export function SiteHeader() {
   const { data: searchItems } = useQuery(searchQuery);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSignedIn(!!data.session));
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+    const check = async (session: { user?: { id: string } } | null) => {
       setSignedIn(!!session);
+      if (session?.user?.id) {
+        const [{ data: a }, { data: s }] = await Promise.all([
+          supabase.rpc("has_role", { _user_id: session.user.id, _role: "admin" }),
+          supabase.rpc("has_role", { _user_id: session.user.id, _role: "staff" }),
+        ]);
+        setIsAdmin(!!a || !!s);
+      } else {
+        setIsAdmin(false);
+      }
+    };
+    supabase.auth.getSession().then(({ data }) => check(data.session));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      check(session);
     });
     return () => sub.subscription.unsubscribe();
   }, []);
@@ -80,6 +93,8 @@ export function SiteHeader() {
     { to: "/design", label: "Design 3D" },
     { to: "/about", label: "The Atelier" },
     { to: "/showrooms", label: "Showrooms" },
+    { to: "/gallery", label: "Gallery" },
+    { to: "/book-visit", label: "Book Visit" },
     { to: "/blog", label: "Journal" },
     { to: "/faq", label: "FAQ" },
     { to: "/careers", label: "Careers" },
@@ -184,6 +199,11 @@ export function SiteHeader() {
           </Link>
           {signedIn ? (
             <>
+              {isAdmin && (
+                <Link to="/admin" className="hidden sm:inline-block px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-accent)] hover:text-[color:var(--brand-dark)] transition-colors">
+                  Admin
+                </Link>
+              )}
               <Link to="/dashboard" className="hidden sm:inline-block px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-dark)] hover:text-[color:var(--brand-accent)] transition-colors">
                 My Orders
               </Link>
@@ -257,7 +277,9 @@ export function SiteHeader() {
               ))}
               {signedIn ? (
                 <>
+                  {isAdmin && <Link to="/admin" onClick={() => setOpen(false)} className="py-3 border-b border-[color:var(--brand-dark)]/10 text-sm font-semibold uppercase tracking-widest text-[color:var(--brand-accent)]">Admin</Link>}
                   <Link to="/dashboard" onClick={() => setOpen(false)} className="py-3 border-b border-[color:var(--brand-dark)]/10 text-sm font-semibold uppercase tracking-widest">My Orders</Link>
+                  <Link to="/my-designs" onClick={() => setOpen(false)} className="py-3 border-b border-[color:var(--brand-dark)]/10 text-sm font-semibold uppercase tracking-widest">Saved Designs</Link>
                   <button onClick={async () => { await supabase.auth.signOut(); setOpen(false); }} className="py-3 border-b border-[color:var(--brand-dark)]/10 text-left text-sm font-semibold uppercase tracking-widest text-[color:var(--brand-dark)]/60">Sign out</button>
                 </>
               ) : (

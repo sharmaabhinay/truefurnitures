@@ -37,7 +37,7 @@ const schema = z.object({
 type FormState = z.infer<typeof schema>;
 
 function Checkout() {
-  const { items, subtotal, clear } = useCart();
+  const { items, subtotal, discount, total, coupon, clear } = useCart();
   const navigate = useNavigate();
   const [form, setForm] = useState<FormState>({
     full_name: "",
@@ -52,8 +52,8 @@ function Checkout() {
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [submitting, setSubmitting] = useState(false);
 
-  const deposit = Math.round(subtotal * 0.2);
-  const balance = subtotal - deposit;
+  const deposit = Math.round(total * 0.2);
+  const balance = total - deposit;
 
   if (items.length === 0) {
     return (
@@ -102,19 +102,23 @@ function Checkout() {
 
       const rows = items.map((i) => {
         const lineSubtotal = i.unitPrice * i.quantity;
-        const lineDeposit = Math.round(lineSubtotal * 0.2);
+        // proportionally distribute discount across lines
+        const lineDiscount = subtotal > 0 ? Math.round((discount * lineSubtotal) / subtotal) : 0;
+        const lineTotal = lineSubtotal - lineDiscount;
+        const lineDeposit = Math.round(lineTotal * 0.2);
         return {
           user_id: userId,
           sofa_id: i.sofaId,
           sofa_snapshot: { name: i.name, slug: i.slug, image: i.image, unit_price: i.unitPrice, quantity: i.quantity },
           fabric_snapshot: { name: i.fabric },
-          size_snapshot: {},
-          addons_snapshot: [],
+          size_snapshot: { label: i.size ?? null, color: i.color ?? null },
+          addons_snapshot: i.addons ?? [],
           subtotal: lineSubtotal,
-          discount: 0,
-          total: lineSubtotal,
+          discount: lineDiscount,
+          total: lineTotal,
+          discount_code: coupon?.code ?? null,
           deposit_paid: 0,
-          balance_due: lineSubtotal - lineDeposit,
+          balance_due: lineTotal - lineDeposit,
           status: "pending_deposit" as const,
           delivery_city: data.city,
           delivery_address: addressBlob,

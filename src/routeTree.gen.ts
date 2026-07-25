@@ -12,22 +12,27 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as ShowroomsRouteImport } from './routes/showrooms'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as FaqRouteImport } from './routes/faq'
 import { Route as DesignRouteImport } from './routes/design'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CollectionsRouteImport } from './routes/collections'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as CareersRouteImport } from './routes/careers'
+import { Route as BookVisitRouteImport } from './routes/book-visit'
 import { Route as BlogRouteImport } from './routes/blog'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SharedDesignTokenRouteImport } from './routes/shared-design.$token'
 import { Route as ProductsSlugRouteImport } from './routes/products.$slug'
 import { Route as ConfigureSlugRouteImport } from './routes/configure.$slug'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
+import { Route as AuthenticatedMyDesignsRouteImport } from './routes/_authenticated/my-designs'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCheckoutRouteImport } from './routes/_authenticated/checkout'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -42,6 +47,11 @@ const ShowroomsRoute = ShowroomsRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GalleryRoute = GalleryRouteImport.update({
+  id: '/gallery',
+  path: '/gallery',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FaqRoute = FaqRouteImport.update({
@@ -74,6 +84,11 @@ const CareersRoute = CareersRouteImport.update({
   path: '/careers',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BookVisitRoute = BookVisitRouteImport.update({
+  id: '/book-visit',
+  path: '/book-visit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BlogRoute = BlogRouteImport.update({
   id: '/blog',
   path: '/blog',
@@ -98,6 +113,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SharedDesignTokenRoute = SharedDesignTokenRouteImport.update({
+  id: '/shared-design/$token',
+  path: '/shared-design/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProductsSlugRoute = ProductsSlugRouteImport.update({
   id: '/products/$slug',
   path: '/products/$slug',
@@ -113,6 +133,11 @@ const BlogSlugRoute = BlogSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => BlogRoute,
 } as any)
+const AuthenticatedMyDesignsRoute = AuthenticatedMyDesignsRouteImport.update({
+  id: '/my-designs',
+  path: '/my-designs',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -123,46 +148,61 @@ const AuthenticatedCheckoutRoute = AuthenticatedCheckoutRouteImport.update({
   path: '/checkout',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/blog': typeof BlogRouteWithChildren
+  '/book-visit': typeof BookVisitRoute
   '/careers': typeof CareersRoute
   '/cart': typeof CartRoute
   '/collections': typeof CollectionsRoute
   '/contact': typeof ContactRoute
   '/design': typeof DesignRoute
   '/faq': typeof FaqRoute
+  '/gallery': typeof GalleryRoute
   '/privacy': typeof PrivacyRoute
   '/showrooms': typeof ShowroomsRoute
   '/terms': typeof TermsRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/checkout': typeof AuthenticatedCheckoutRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/my-designs': typeof AuthenticatedMyDesignsRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/configure/$slug': typeof ConfigureSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
+  '/shared-design/$token': typeof SharedDesignTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/blog': typeof BlogRouteWithChildren
+  '/book-visit': typeof BookVisitRoute
   '/careers': typeof CareersRoute
   '/cart': typeof CartRoute
   '/collections': typeof CollectionsRoute
   '/contact': typeof ContactRoute
   '/design': typeof DesignRoute
   '/faq': typeof FaqRoute
+  '/gallery': typeof GalleryRoute
   '/privacy': typeof PrivacyRoute
   '/showrooms': typeof ShowroomsRoute
   '/terms': typeof TermsRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/checkout': typeof AuthenticatedCheckoutRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/my-designs': typeof AuthenticatedMyDesignsRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/configure/$slug': typeof ConfigureSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
+  '/shared-design/$token': typeof SharedDesignTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -171,20 +211,25 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/blog': typeof BlogRouteWithChildren
+  '/book-visit': typeof BookVisitRoute
   '/careers': typeof CareersRoute
   '/cart': typeof CartRoute
   '/collections': typeof CollectionsRoute
   '/contact': typeof ContactRoute
   '/design': typeof DesignRoute
   '/faq': typeof FaqRoute
+  '/gallery': typeof GalleryRoute
   '/privacy': typeof PrivacyRoute
   '/showrooms': typeof ShowroomsRoute
   '/terms': typeof TermsRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/checkout': typeof AuthenticatedCheckoutRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/my-designs': typeof AuthenticatedMyDesignsRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/configure/$slug': typeof ConfigureSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
+  '/shared-design/$token': typeof SharedDesignTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -193,40 +238,50 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/blog'
+    | '/book-visit'
     | '/careers'
     | '/cart'
     | '/collections'
     | '/contact'
     | '/design'
     | '/faq'
+    | '/gallery'
     | '/privacy'
     | '/showrooms'
     | '/terms'
+    | '/admin'
     | '/checkout'
     | '/dashboard'
+    | '/my-designs'
     | '/blog/$slug'
     | '/configure/$slug'
     | '/products/$slug'
+    | '/shared-design/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
     | '/auth'
     | '/blog'
+    | '/book-visit'
     | '/careers'
     | '/cart'
     | '/collections'
     | '/contact'
     | '/design'
     | '/faq'
+    | '/gallery'
     | '/privacy'
     | '/showrooms'
     | '/terms'
+    | '/admin'
     | '/checkout'
     | '/dashboard'
+    | '/my-designs'
     | '/blog/$slug'
     | '/configure/$slug'
     | '/products/$slug'
+    | '/shared-design/$token'
   id:
     | '__root__'
     | '/'
@@ -234,20 +289,25 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/blog'
+    | '/book-visit'
     | '/careers'
     | '/cart'
     | '/collections'
     | '/contact'
     | '/design'
     | '/faq'
+    | '/gallery'
     | '/privacy'
     | '/showrooms'
     | '/terms'
+    | '/_authenticated/admin'
     | '/_authenticated/checkout'
     | '/_authenticated/dashboard'
+    | '/_authenticated/my-designs'
     | '/blog/$slug'
     | '/configure/$slug'
     | '/products/$slug'
+    | '/shared-design/$token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -256,17 +316,20 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AuthRoute: typeof AuthRoute
   BlogRoute: typeof BlogRouteWithChildren
+  BookVisitRoute: typeof BookVisitRoute
   CareersRoute: typeof CareersRoute
   CartRoute: typeof CartRoute
   CollectionsRoute: typeof CollectionsRoute
   ContactRoute: typeof ContactRoute
   DesignRoute: typeof DesignRoute
   FaqRoute: typeof FaqRoute
+  GalleryRoute: typeof GalleryRoute
   PrivacyRoute: typeof PrivacyRoute
   ShowroomsRoute: typeof ShowroomsRoute
   TermsRoute: typeof TermsRoute
   ConfigureSlugRoute: typeof ConfigureSlugRoute
   ProductsSlugRoute: typeof ProductsSlugRoute
+  SharedDesignTokenRoute: typeof SharedDesignTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -290,6 +353,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gallery': {
+      id: '/gallery'
+      path: '/gallery'
+      fullPath: '/gallery'
+      preLoaderRoute: typeof GalleryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/faq': {
@@ -334,6 +404,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CareersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/book-visit': {
+      id: '/book-visit'
+      path: '/book-visit'
+      fullPath: '/book-visit'
+      preLoaderRoute: typeof BookVisitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/blog': {
       id: '/blog'
       path: '/blog'
@@ -369,6 +446,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/shared-design/$token': {
+      id: '/shared-design/$token'
+      path: '/shared-design/$token'
+      fullPath: '/shared-design/$token'
+      preLoaderRoute: typeof SharedDesignTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/products/$slug': {
       id: '/products/$slug'
       path: '/products/$slug'
@@ -390,6 +474,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogSlugRouteImport
       parentRoute: typeof BlogRoute
     }
+    '/_authenticated/my-designs': {
+      id: '/_authenticated/my-designs'
+      path: '/my-designs'
+      fullPath: '/my-designs'
+      preLoaderRoute: typeof AuthenticatedMyDesignsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -404,17 +495,28 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCheckoutRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedCheckoutRoute: typeof AuthenticatedCheckoutRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedMyDesignsRoute: typeof AuthenticatedMyDesignsRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedCheckoutRoute: AuthenticatedCheckoutRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedMyDesignsRoute: AuthenticatedMyDesignsRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -436,17 +538,20 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   AuthRoute: AuthRoute,
   BlogRoute: BlogRouteWithChildren,
+  BookVisitRoute: BookVisitRoute,
   CareersRoute: CareersRoute,
   CartRoute: CartRoute,
   CollectionsRoute: CollectionsRoute,
   ContactRoute: ContactRoute,
   DesignRoute: DesignRoute,
   FaqRoute: FaqRoute,
+  GalleryRoute: GalleryRoute,
   PrivacyRoute: PrivacyRoute,
   ShowroomsRoute: ShowroomsRoute,
   TermsRoute: TermsRoute,
   ConfigureSlugRoute: ConfigureSlugRoute,
   ProductsSlugRoute: ProductsSlugRoute,
+  SharedDesignTokenRoute: SharedDesignTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

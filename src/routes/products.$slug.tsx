@@ -69,6 +69,7 @@ const sofaQuery = (slug: string) =>
   });
 
 type RelatedSofa = { id: string; slug: string; name: string; tagline: string | null; base_price: number };
+type Review = { id: string; rating: number; title: string | null; body: string; city: string | null; created_at: string; images: unknown };
 
 const relatedQuery = (slug: string) =>
   queryOptions({
@@ -142,6 +143,21 @@ function ProductPage() {
   const navigate = useNavigate();
   const { data: sofa } = useQuery(sofaQuery(slug));
   const { data: related } = useQuery(relatedQuery(slug));
+  const { data: reviews } = useQuery({
+    queryKey: ["sofa-reviews", sofa?.id],
+    enabled: !!sofa?.id,
+    queryFn: async (): Promise<Review[]> => {
+      const { data, error } = await supabase
+        .from("reviews")
+        .select("id, rating, title, body, city, created_at, images")
+        .eq("sofa_id", sofa!.id)
+        .eq("approved", true)
+        .order("created_at", { ascending: false })
+        .limit(6);
+      if (error) return [];
+      return (data ?? []) as unknown as Review[];
+    },
+  });
   const cart = useCart();
   const [activeImage, setActiveImage] = useState(0);
   const [fabric, setFabric] = useState<keyof typeof fabricSwatches>("boucle");
@@ -310,6 +326,34 @@ function ProductPage() {
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+      )}
+
+      {/* Reviews */}
+      {reviews && reviews.length > 0 && (
+        <section className="py-16 sm:py-20 max-w-6xl mx-auto px-4 sm:px-6 md:px-10">
+          <div className="mb-8">
+            <span className="tf-chip mb-2">From Real Homes</span>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-display mt-3 text-balance">What owners are saying.</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {reviews.map((r) => {
+              const imgs = Array.isArray(r.images) ? (r.images as string[]) : [];
+              return (
+                <article key={r.id} className="bg-white border border-[color:var(--brand-dark)]/10 p-6">
+                  <div className="text-[color:var(--brand-accent)] mb-2 tracking-widest">{"★".repeat(r.rating)}<span className="text-[color:var(--brand-dark)]/20">{"★".repeat(5 - r.rating)}</span></div>
+                  {r.title && <h3 className="font-display text-lg mb-1">{r.title}</h3>}
+                  <p className="text-sm text-[color:var(--brand-dark)]/70 leading-relaxed">{r.body}</p>
+                  {imgs.length > 0 && (
+                    <div className="flex gap-2 mt-3">
+                      {imgs.slice(0, 3).map((u) => <img key={u} src={u} alt="" className="size-16 object-cover" />)}
+                    </div>
+                  )}
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-dark)]/50 mt-4">{r.city ?? "Verified owner"}</p>
+                </article>
+              );
+            })}
           </div>
         </section>
       )}
