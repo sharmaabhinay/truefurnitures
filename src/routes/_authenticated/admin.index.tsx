@@ -747,13 +747,17 @@ function Orders() {
               return (
                 <tr
                   key={o.id}
-                  className="border-b last:border-b-0"
+                  className="border-b last:border-b-0 cursor-pointer hover:bg-white/[0.02]"
                   style={{ borderColor: "rgba(42,42,56,0.5)" }}
+                  onClick={() => navigate({ to: "/admin/orders/$id", params: { id: o.id } })}
                 >
                   <td className="px-3 py-2.5">
                     <button
                       type="button"
-                      onClick={() => navigate({ to: "/admin/orders/$id", params: { id: o.id } })}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate({ to: "/admin/orders/$id", params: { id: o.id } });
+                      }}
                       className="font-semibold hover:underline text-left"
                       style={{ color: "#C8A86B", background: "transparent" }}
                     >
@@ -765,7 +769,7 @@ function Orders() {
                     )}
                   </td>
                   <td className="px-3 py-2.5">{snap.name ?? "Custom"}</td>
-                  <td className="px-3 py-2.5">
+                  <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
                     <div>{o.delivery_city ?? "—"}</div>
                     <a href={`tel:${o.phone}`} className="text-[11px]" style={{ color: "#888899" }}>
                       {o.phone}
@@ -777,7 +781,7 @@ function Orders() {
                       Bal {formatINR(Number(o.balance_due))}
                     </div>
                   </td>
-                  <td className="px-3 py-2.5">
+                  <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
                     <DarkSelect
                       value={o.status}
                       onChange={(e) => update(o.id, { status: e.target.value })}
@@ -788,7 +792,7 @@ function Orders() {
                       <option value="cancelled">Cancelled</option>
                     </DarkSelect>
                   </td>
-                  <td className="px-3 py-2.5">
+                  <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="date"
                       defaultValue={o.expected_delivery_date ?? ""}
@@ -803,7 +807,10 @@ function Orders() {
                   <td className="px-3 py-2.5 text-right">
                     <button
                       type="button"
-                      onClick={() => navigate({ to: "/admin/orders/$id", params: { id: o.id } })}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate({ to: "/admin/orders/$id", params: { id: o.id } });
+                      }}
                       className="text-[11px] underline"
                       style={{ color: "#C8A86B", background: "transparent" }}
                     >
