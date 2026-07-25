@@ -1,4 +1,4 @@
-import { Suspense, useMemo, useRef } from "react";
+import { Suspense, useMemo, useRef, type ReactNode } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, ContactShadows, Environment } from "@react-three/drei";
 import type { Mesh, Group } from "three";
@@ -38,7 +38,7 @@ function SofaModel({ colorHex, seats, isSectional, fabric, addons }: Sofa3DProps
   const height = 0.55;
 
   const seatCushions = useMemo(() => {
-    const cushions: JSX.Element[] = [];
+    const cushions: ReactNode[] = [];
     const cw = seatWidth / seats;
     for (let i = 0; i < seats; i++) {
       const x = -seatWidth / 2 + cw / 2 + i * cw;
@@ -56,7 +56,7 @@ function SofaModel({ colorHex, seats, isSectional, fabric, addons }: Sofa3DProps
   }, [seatWidth, seats, height, depth, colorHex, roughness]);
 
   const backCushions = useMemo(() => {
-    const cushions: JSX.Element[] = [];
+    const cushions: ReactNode[] = [];
     const cw = seatWidth / seats;
     for (let i = 0; i < seats; i++) {
       const x = -seatWidth / 2 + cw / 2 + i * cw;
