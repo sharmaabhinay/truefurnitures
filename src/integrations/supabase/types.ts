@@ -154,6 +154,54 @@ export type Database = {
           },
         ]
       }
+      coupons: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          description: string | null
+          discount_type: string
+          discount_value: number
+          id: string
+          max_uses: number | null
+          min_order_amount: number
+          updated_at: string
+          uses_count: number
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          max_uses?: number | null
+          min_order_amount?: number
+          updated_at?: string
+          uses_count?: number
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          max_uses?: number | null
+          min_order_amount?: number
+          updated_at?: string
+          uses_count?: number
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
       fabrics: {
         Row: {
           created_at: string
@@ -260,6 +308,7 @@ export type Database = {
           delivery_city: string | null
           deposit_paid: number
           discount: number
+          discount_code: string | null
           expected_delivery_date: string | null
           fabric_snapshot: Json | null
           id: string
@@ -284,6 +333,7 @@ export type Database = {
           delivery_city?: string | null
           deposit_paid?: number
           discount?: number
+          discount_code?: string | null
           expected_delivery_date?: string | null
           fabric_snapshot?: Json | null
           id?: string
@@ -308,6 +358,7 @@ export type Database = {
           delivery_city?: string | null
           deposit_paid?: number
           discount?: number
+          discount_code?: string | null
           expected_delivery_date?: string | null
           fabric_snapshot?: Json | null
           id?: string
@@ -358,6 +409,166 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      reviews: {
+        Row: {
+          approved: boolean
+          body: string
+          city: string | null
+          created_at: string
+          id: string
+          images: Json
+          order_id: string | null
+          rating: number
+          sofa_id: string | null
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          approved?: boolean
+          body: string
+          city?: string | null
+          created_at?: string
+          id?: string
+          images?: Json
+          order_id?: string | null
+          rating: number
+          sofa_id?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          approved?: boolean
+          body?: string
+          city?: string | null
+          created_at?: string
+          id?: string
+          images?: Json
+          order_id?: string | null
+          rating?: number
+          sofa_id?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_sofa_id_fkey"
+            columns: ["sofa_id"]
+            isOneToOne: false
+            referencedRelation: "sofas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saved_designs: {
+        Row: {
+          config: Json
+          created_at: string
+          id: string
+          name: string
+          share_token: string
+          sofa_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          id?: string
+          name?: string
+          share_token?: string
+          sofa_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          id?: string
+          name?: string
+          share_token?: string
+          sofa_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_designs_sofa_id_fkey"
+            columns: ["sofa_id"]
+            isOneToOne: false
+            referencedRelation: "sofas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      showroom_bookings: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          notes: string | null
+          party_size: number
+          phone: string
+          preferred_date: string
+          preferred_time: string
+          showroom_id: string | null
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          notes?: string | null
+          party_size?: number
+          phone: string
+          preferred_date: string
+          preferred_time: string
+          showroom_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          notes?: string | null
+          party_size?: number
+          phone?: string
+          preferred_date?: string
+          preferred_time?: string
+          showroom_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "showroom_bookings_showroom_id_fkey"
+            columns: ["showroom_id"]
+            isOneToOne: false
+            referencedRelation: "showrooms"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       showrooms: {
         Row: {
@@ -529,6 +740,7 @@ export type Database = {
       }
       sofas: {
         Row: {
+          active_build_slots: number
           base_price: number
           category_id: string | null
           created_at: string
@@ -542,7 +754,9 @@ export type Database = {
           id: string
           is_featured: boolean
           is_published: boolean
+          lead_time_days: number
           materials: string | null
+          max_concurrent_builds: number
           model_url: string | null
           name: string
           sale_price: number | null
@@ -555,6 +769,7 @@ export type Database = {
           video_url: string | null
         }
         Insert: {
+          active_build_slots?: number
           base_price: number
           category_id?: string | null
           created_at?: string
@@ -568,7 +783,9 @@ export type Database = {
           id?: string
           is_featured?: boolean
           is_published?: boolean
+          lead_time_days?: number
           materials?: string | null
+          max_concurrent_builds?: number
           model_url?: string | null
           name: string
           sale_price?: number | null
@@ -581,6 +798,7 @@ export type Database = {
           video_url?: string | null
         }
         Update: {
+          active_build_slots?: number
           base_price?: number
           category_id?: string | null
           created_at?: string
@@ -594,7 +812,9 @@ export type Database = {
           id?: string
           is_featured?: boolean
           is_published?: boolean
+          lead_time_days?: number
           materials?: string | null
+          max_concurrent_builds?: number
           model_url?: string | null
           name?: string
           sale_price?: number | null
