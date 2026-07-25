@@ -357,6 +357,9 @@ export type Database = {
           admin_notes: string | null
           assigned_craftsman: string | null
           balance_due: number
+          cancellation_reason: string | null
+          cancellation_requested_at: string | null
+          cancelled_at: string | null
           created_at: string
           customer_notes: string | null
           delivery_address: string | null
@@ -374,6 +377,10 @@ export type Database = {
           razorpay_order_id: string | null
           razorpay_payment_id: string | null
           razorpay_signature: string | null
+          refund_amount: number | null
+          refund_reason: string | null
+          refund_requested_at: string | null
+          refunded_at: string | null
           size_snapshot: Json | null
           sofa_id: string | null
           sofa_snapshot: Json
@@ -388,6 +395,9 @@ export type Database = {
           admin_notes?: string | null
           assigned_craftsman?: string | null
           balance_due?: number
+          cancellation_reason?: string | null
+          cancellation_requested_at?: string | null
+          cancelled_at?: string | null
           created_at?: string
           customer_notes?: string | null
           delivery_address?: string | null
@@ -405,6 +415,10 @@ export type Database = {
           razorpay_order_id?: string | null
           razorpay_payment_id?: string | null
           razorpay_signature?: string | null
+          refund_amount?: number | null
+          refund_reason?: string | null
+          refund_requested_at?: string | null
+          refunded_at?: string | null
           size_snapshot?: Json | null
           sofa_id?: string | null
           sofa_snapshot?: Json
@@ -419,6 +433,9 @@ export type Database = {
           admin_notes?: string | null
           assigned_craftsman?: string | null
           balance_due?: number
+          cancellation_reason?: string | null
+          cancellation_requested_at?: string | null
+          cancelled_at?: string | null
           created_at?: string
           customer_notes?: string | null
           delivery_address?: string | null
@@ -436,6 +453,10 @@ export type Database = {
           razorpay_order_id?: string | null
           razorpay_payment_id?: string | null
           razorpay_signature?: string | null
+          refund_amount?: number | null
+          refund_reason?: string | null
+          refund_requested_at?: string | null
+          refunded_at?: string | null
           size_snapshot?: Json | null
           sofa_id?: string | null
           sofa_snapshot?: Json
@@ -944,6 +965,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      request_order_action: {
+        Args: { _action: string; _order_id: string; _reason: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "staff" | "customer"
@@ -956,6 +981,9 @@ export type Database = {
         | "out_for_delivery"
         | "delivered"
         | "cancelled"
+        | "cancellation_requested"
+        | "refund_requested"
+        | "refunded"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1093,6 +1121,9 @@ export const Constants = {
         "out_for_delivery",
         "delivered",
         "cancelled",
+        "cancellation_requested",
+        "refund_requested",
+        "refunded",
       ],
     },
   },
