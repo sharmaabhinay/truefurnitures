@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useQuery, queryOptions } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { supabase } from "@/integrations/supabase/client";
@@ -165,7 +165,16 @@ function ProductPage() {
   if (!sofa) return null;
 
   const hero = heroImages[sofa.slug] ?? sofa.hero_image ?? sofaMalwa;
-  const gallery = [hero, fabricSwatches[fabric], showroomIndore, hero];
+  const otherAngles = Object.entries(heroImages)
+    .filter(([k]) => k !== sofa.slug)
+    .map(([, v]) => v)
+    .slice(0, 2);
+  const gallery = [
+    { src: hero, label: "Studio" },
+    { src: showroomIndore, label: "In showroom" },
+    { src: fabricSwatches[fabric], label: `${fabric} detail` },
+    ...otherAngles.map((s, i) => ({ src: s, label: `Styled ${i + 1}` })),
+  ];
   const price = Number(sofa.base_price);
   const sale = sofa.sale_price ? Number(sofa.sale_price) : null;
   const deposit = Math.round((sale ?? price) * 0.2);
@@ -183,24 +192,14 @@ function ProductPage() {
       </div>
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-8 md:py-12 grid gap-8 md:gap-12 lg:grid-cols-2">
-        {/* Gallery */}
-        <div className="animate-fade-up">
-          <div className="aspect-[4/5] bg-[color:var(--brand-muted)] overflow-hidden mb-3">
-            <img src={gallery[activeImage]} alt={sofa.name} className="w-full h-full object-cover" />
-          </div>
-          <div className="grid grid-cols-4 gap-2 sm:gap-3">
-            {gallery.map((g, i) => (
-              <button
-                key={i}
-                onClick={() => setActiveImage(i)}
-                aria-label={`View image ${i + 1}`}
-                className={`aspect-square bg-[color:var(--brand-muted)] overflow-hidden border-2 transition-colors ${activeImage === i ? "border-[color:var(--brand-dark)]" : "border-transparent"}`}
-              >
-                <img src={g} alt="" className="w-full h-full object-cover" />
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Gallery carousel */}
+        <ProductGallery
+          images={gallery}
+          activeImage={activeImage}
+          setActiveImage={setActiveImage}
+          sofaName={sofa.name}
+          sofaSlug={sofa.slug}
+        />
 
         {/* Details */}
         <div className="animate-fade-up delay-100">
