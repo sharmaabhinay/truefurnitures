@@ -1,9 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { useCart } from "@/lib/cart";
 import { formatINR } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
@@ -21,9 +23,29 @@ export const Route = createFileRoute("/cart")({
 });
 
 function CartPage() {
-  const { items, remove, setQty, subtotal, count } = useCart();
+  const { items, remove, setQty, subtotal, discount, total, count, coupon, applyCoupon, removeCoupon } = useCart();
   const navigate = useNavigate();
-  const deposit = Math.round(subtotal * 0.2);
+  const deposit = Math.round(total * 0.2);
+  const [code, setCode] = useState("");
+  const [checking, setChecking] = useState(false);
+
+  const applyCode = async () => {
+    const c = code.trim().toUpperCase();
+    if (!c) return;
+    setChecking(true);
+    try {
+      const { data, error } = await supabase.from("coupons").select("code, discount_type, discount_value, min_order_amount, active, valid_until").eq("code", c).maybeSingle();
+      if (error) throw error;
+      if (!data || !data.active) return toast.error("Invalid or inactive coupon");
+      if (data.valid_until && new Date(data.valid_until) < new Date()) return toast.error("This coupon has expired");
+      if (subtotal < Number(data.min_order_amount)) return toast.error(`Minimum order ${formatINR(Number(data.min_order_amount))} required`);
+      applyCoupon({ code: data.code, discount_type: data.discount_type as "percent" | "flat", discount_value: Number(data.discount_value), min_order_amount: Number(data.min_order_amount) });
+      toast.success(`Coupon ${data.code} applied!`);
+      setCode("");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not apply");
+    } finally { setChecking(false); }
+  };
 
   const onCheckout = async () => {
     const { data } = await supabase.auth.getSession();
@@ -99,16 +121,31 @@ function CartPage() {
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between"><span className="text-[color:var(--brand-dark)]/60">Items ({count})</span><span>{formatINR(subtotal)}</span></div>
                 <div className="flex justify-between"><span className="text-[color:var(--brand-dark)]/60">Delivery (Indore / Ujjain)</span><span>Free</span></div>
+                {coupon && (
+                  <div className="flex justify-between items-center text-[color:var(--brand-accent)]">
+                    <span className="flex items-center gap-2 text-xs"><span className="font-mono font-bold">{coupon.code}</span><button onClick={removeCoupon} className="text-[10px] text-[color:var(--brand-dark)]/50 hover:text-red-600">Remove</button></span>
+                    <span>− {formatINR(discount)}</span>
+                  </div>
+                )}
                 <div className="border-t border-[color:var(--brand-dark)]/10 pt-3 flex justify-between items-baseline">
                   <span className="text-xs font-bold uppercase tracking-widest">Total</span>
-                  <span className="font-display text-2xl">{formatINR(subtotal)}</span>
+                  <span className="font-display text-2xl">{formatINR(total)}</span>
                 </div>
+                {!coupon && (
+                  <div className="pt-2">
+                    <div className="flex gap-2">
+                      <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="Coupon code" className="flex-1 px-3 py-2 text-xs border border-[color:var(--brand-dark)]/15 focus:border-[color:var(--brand-dark)] focus:outline-none" />
+                      <button onClick={applyCode} disabled={checking || !code} className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest border border-[color:var(--brand-dark)] hover:bg-[color:var(--brand-dark)] hover:text-white disabled:opacity-50">Apply</button>
+                    </div>
+                    <p className="text-[10px] text-[color:var(--brand-dark)]/50 mt-2">Try TF5-WELCOME for 5% off orders over ₹20,000.</p>
+                  </div>
+                )}
                 <div className="bg-[color:var(--brand-muted)]/60 p-3 mt-3">
                   <div className="flex justify-between text-xs">
                     <span className="font-bold uppercase tracking-widest">Deposit today (20%)</span>
                     <span className="font-display text-base">{formatINR(deposit)}</span>
                   </div>
-                  <p className="text-[10px] text-[color:var(--brand-dark)]/60 mt-1">Balance {formatINR(subtotal - deposit)} due on delivery.</p>
+                  <p className="text-[10px] text-[color:var(--brand-dark)]/60 mt-1">Balance {formatINR(total - deposit)} due on delivery.</p>
                 </div>
               </div>
               <button onClick={onCheckout} className="mt-6 w-full px-6 py-4 bg-[color:var(--brand-dark)] text-white text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors">
