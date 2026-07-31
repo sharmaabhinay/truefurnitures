@@ -23,13 +23,20 @@ const FALLBACK_BRAND: Brand = {
 /** Brand details come from the admin CMS (site_settings) so one edit updates every email. */
 export async function getBrand(): Promise<Brand> {
   try {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data } = await supabaseAdmin
-      .from("site_settings")
-      .select("brand_name, tagline, cities, phone, whatsapp, email, address")
-      .eq("id", "default")
-      .maybeSingle();
-    return { ...FALLBACK_BRAND, ...(data ?? {}) } as Brand;
+    const { adminGetDoc } = await import("@/lib/firebase-admin.server");
+    const data = await adminGetDoc("site_settings", "default");
+    if (!data) return FALLBACK_BRAND;
+    const pick = (k: keyof Brand) =>
+      typeof data[k] === "string" && data[k] ? (data[k] as string) : FALLBACK_BRAND[k];
+    return {
+      brand_name: pick("brand_name"),
+      tagline: pick("tagline"),
+      cities: pick("cities"),
+      phone: pick("phone"),
+      whatsapp: pick("whatsapp"),
+      email: pick("email"),
+      address: pick("address"),
+    };
   } catch {
     return FALLBACK_BRAND;
   }
