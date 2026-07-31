@@ -4,7 +4,7 @@ import { z } from "zod";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { useAuth } from "@/lib/auth/auth-context";
-import { COL, fsAdd, fsFindOne, fsList, fsUpdate, orderBy, where } from "@/lib/db/firestore";
+import { COL, fsAdd, fsList, fsUpdate, orderBy, where } from "@/lib/db/firestore";
 import { useCart } from "@/lib/cart";
 import { formatINR, estimatedDelivery } from "@/lib/format";
 import { toast } from "sonner";

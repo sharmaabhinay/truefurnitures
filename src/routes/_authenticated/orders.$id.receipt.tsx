@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { COL, fsGet } from "@/lib/db/firestore";
 import { formatINR, formatDate, STATUS_META } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/orders/$id/receipt")({
@@ -47,20 +47,13 @@ function ReceiptPage() {
 
   const { data: order, isLoading } = useQuery({
     queryKey: ["receipt", id],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("orders").select("*").eq("id", id).maybeSingle();
-      if (error) throw error;
-      return data as OrderRow | null;
-    },
+    queryFn: async () => fsGet<OrderRow>(COL.orders, id),
   });
 
   const { data: profile } = useQuery({
     queryKey: ["receipt-profile", order?.user_id],
     enabled: !!order?.user_id,
-    queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("full_name").eq("id", order!.user_id).maybeSingle();
-      return data;
-    },
+    queryFn: async () => fsGet<{ full_name?: string | null }>(COL.profiles, order!.user_id),
   });
 
   if (isLoading) {
