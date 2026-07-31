@@ -8,6 +8,9 @@ import { lovable } from "@/integrations/lovable/index";
 import { sendWelcomeEmail } from "@/lib/email.functions";
 
 export const Route = createFileRoute("/auth")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    next: typeof s.next === "string" ? s.next : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Sign in — Avant-Garde Atelier" },
@@ -19,8 +22,21 @@ export const Route = createFileRoute("/auth")({
   component: Auth,
 });
 
+// Only same-origin relative paths may be used as a post-login destination.
+function safeNext(next?: string) {
+  return next && next.startsWith("/") && !next.startsWith("//") ? next : null;
+}
+
 function Auth() {
   const navigate = useNavigate();
+  const { next } = Route.useSearch();
+  const destination = safeNext(next);
+  const returnUrl = () =>
+    destination ? `${window.location.origin}${destination}` : window.location.origin;
+  const goHome = () => {
+    if (destination) window.location.href = destination;
+    else navigate({ to: "/" });
+  };
   const [mode, setMode] = useState<"signin" | "signup" | "forgot">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,7 +53,7 @@ function Auth() {
     setGoogleLoading(true);
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: returnUrl(),
       });
       if (result.error) {
         setError(result.error.message ?? "Google sign-in failed");
@@ -45,7 +61,7 @@ function Auth() {
         return;
       }
       if (result.redirected) return;
-      navigate({ to: "/" });
+      goHome();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Google sign-in failed");
       setGoogleLoading(false);
@@ -54,9 +70,12 @@ function Auth() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/" });
+      if (data.session) {
+        if (destination) window.location.href = destination;
+        else navigate({ to: "/" });
+      }
     });
-  }, [navigate]);
+  }, [navigate, destination]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -81,7 +100,7 @@ function Auth() {
           email,
           password,
           options: {
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: returnUrl(),
             data: { full_name: fullName, phone: phone || null },
           },
         });
@@ -105,7 +124,7 @@ function Auth() {
           throw error;
         }
       }
-      navigate({ to: "/" });
+      goHome();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
