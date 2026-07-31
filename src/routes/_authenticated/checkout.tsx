@@ -8,6 +8,7 @@ import { useCart } from "@/lib/cart";
 import { formatINR, estimatedDelivery } from "@/lib/format";
 import { toast } from "sonner";
 import { PaymentMethods } from "@/components/payment-methods";
+import { PhoneVerify } from "@/components/phone-verify";
 
 export const Route = createFileRoute("/_authenticated/checkout")({
   head: () => ({
@@ -68,6 +69,7 @@ function Checkout() {
   const [selectedAddrId, setSelectedAddrId] = useState<string>("");
   const [saveAddress, setSaveAddress] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [verifiedPhone, setVerifiedPhone] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -76,11 +78,13 @@ function Checkout() {
       setUserId(uid);
       if (!uid) return;
       const [{ data: p }, { data: a }] = await Promise.all([
-        supabase.from("profiles").select("full_name, phone, email, city").eq("id", uid).maybeSingle(),
+        supabase.from("profiles").select("full_name, phone, email, city, phone_verified").eq("id", uid).maybeSingle(),
         supabase.from("user_addresses").select("*").eq("user_id", uid).order("is_default", { ascending: false }).order("created_at", { ascending: false }),
       ]);
       const list = (a as SavedAddress[] | null) ?? [];
       setAddresses(list);
+      const prof0 = p as { phone?: string | null; phone_verified?: boolean | null } | null;
+      if (prof0?.phone_verified && prof0.phone) setVerifiedPhone(prof0.phone.replace(/\D/g, "").slice(-10));
       const authEmail = data.user?.email ?? "";
       const profileEmail = (p as { email?: string | null } | null)?.email ?? "";
       // Prefer default address; otherwise seed from profile
