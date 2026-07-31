@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, queryOptions } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { supabase } from "@/integrations/supabase/client";
+import { COL, fsList, where, orderBy } from "@/lib/db/firestore";
 import { formatDate } from "@/lib/format";
 
 type Post = { id: string; slug: string; title: string; excerpt: string | null; cover_image: string | null; reading_minutes: number | null; published_at: string | null };
@@ -10,13 +10,7 @@ type Post = { id: string; slug: string; title: string; excerpt: string | null; c
 const postsQuery = queryOptions({
   queryKey: ["blog-posts"],
   queryFn: async (): Promise<Post[]> => {
-    const { data, error } = await supabase
-      .from("blog_posts")
-      .select("id, slug, title, excerpt, cover_image, reading_minutes, published_at")
-      .eq("is_published", true)
-      .order("published_at", { ascending: false });
-    if (error) throw error;
-    return data ?? [];
+    return fsList<Post>(COL.blogPosts, where("is_published", "==", true), orderBy("published_at", "desc"));
   },
 });
 

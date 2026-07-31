@@ -19,39 +19,32 @@ export const sendWelcomeEmail = createServerFn({ method: "POST" })
 export const sendOrderConfirmationEmail = createServerFn({ method: "POST" })
   .inputValidator((d: { orderId: string }) => d)
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { adminGetDoc } = await import("@/lib/firebase-admin.server");
     const brand = await getBrand();
-    const { data: order, error } = await supabaseAdmin
-      .from("orders")
-      .select(
-        "id, order_number, total, deposit_paid, balance_due, user_id, delivery_city, expected_delivery_date, sofa_snapshot, fabric_snapshot",
-      )
-      .eq("id", data.orderId)
-      .maybeSingle();
-    if (error || !order) return { sent: false as const, error: "order_not_found" };
-    const { data: profile } = await supabaseAdmin
-      .from("profiles")
-      .select("email, full_name")
-      .eq("id", order.user_id)
-      .maybeSingle();
-    if (!profile?.email) return { sent: false as const, error: "no_email" };
+    const order = await adminGetDoc("orders", data.orderId);
+    if (!order) return { sent: false as const, error: "order_not_found" };
+    const profile = order['user_id']
+      ? await adminGetDoc("profiles", String(order['user_id']))
+      : null;
+    const email = typeof profile?.['email'] === "string" ? (profile['email'] as string) : null;
+    if (!email) return { sent: false as const, error: "no_email" };
     const sofa = (order.sofa_snapshot ?? {}) as { name?: string; quantity?: number };
     const fabric = (order.fabric_snapshot ?? {}) as { name?: string };
     return sendResend(
-      profile.email,
+      email,
       `Order confirmed — #${order.order_number ?? order.id.slice(0, 8).toUpperCase()} · ${brand.brand_name}`,
       orderHtml(brand, {
         id: order.id,
-        orderNumber: order.order_number ?? null,
+        orderNumber: (order['order_number'] as string | null) ?? null,
         total: Number(order.total) || 0,
         deposit_paid: Number(order.deposit_paid) || 0,
         balance_due: Number(order.balance_due) || 0,
-        name: profile.full_name,
+        name: (profile?.['full_name'] as string | null) ?? null,
         item: sofa.name ?? null,
         quantity: sofa.quantity ?? null,
         fabric: fabric.name ?? null,
-        city: order.delivery_city ?? null,
-        eta: order.expected_delivery_date ?? null,
+        city: (order['delivery_city'] as string | null) ?? null,
+        eta: (order['expected_delivery_date'] as string | null) ?? null,
       }),
       brand,
     );
@@ -63,30 +56,25 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const copy = STATUS_EMAIL_COPY[data.status];
     if (!copy) return { sent: false as const, error: "no_template_for_status" };
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { adminGetDoc } = await import("@/lib/firebase-admin.server");
     const brand = await getBrand();
-    const { data: order } = await supabaseAdmin
-      .from("orders")
-      .select("id, order_number, user_id, expected_delivery_date")
-      .eq("id", data.orderId)
-      .maybeSingle();
+    const order = await adminGetDoc("orders", data.orderId);
     if (!order) return { sent: false as const, error: "order_not_found" };
-    const { data: profile } = await supabaseAdmin
-      .from("profiles")
-      .select("email, full_name")
-      .eq("id", order.user_id)
-      .maybeSingle();
-    if (!profile?.email) return { sent: false as const, error: "no_email" };
-    const orderNumber = order.order_number ?? order.id.slice(0, 8).toUpperCase();
+    const profile = order['user_id']
+      ? await adminGetDoc("profiles", String(order['user_id']))
+      : null;
+    const email = typeof profile?.['email'] === "string" ? (profile['email'] as string) : null;
+    if (!email) return { sent: false as const, error: "no_email" };
+    const orderNumber = (order['order_number'] as string | null) ?? order.id.slice(0, 8).toUpperCase();
     return sendResend(
-      profile.email,
+      email,
       `${copy.subject} — #${orderNumber} · ${brand.brand_name}`,
       statusHtml(brand, {
-        name: profile.full_name,
+        name: (profile?.['full_name'] as string | null) ?? null,
         orderNumber,
         status: data.status,
         note: data.note ?? null,
-        eta: order.expected_delivery_date ?? null,
+        eta: (order['expected_delivery_date'] as string | null) ?? null,
         orderId: order.id,
       }),
       brand,
