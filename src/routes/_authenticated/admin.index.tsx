@@ -6,6 +6,7 @@ import type { Json } from "@/integrations/supabase/types";
 import { formatINR, formatDate, ORDER_STATUS_STEPS } from "@/lib/format";
 import { toast } from "sonner";
 import { getVisitors, clearVisitors, getDeviceIcon, getBrowser, type VisitorEvent } from "@/lib/visitor-tracker";
+import { brandQueryKey, fetchBrand, DEFAULT_BRAND, type BrandSettings } from "@/lib/brand";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   ssr: false,
@@ -1983,9 +1984,43 @@ function Showrooms() {
 
 function Settings() {
   const CMS_KEY = "tf_site_cms";
-  const STORE_KEY = "tf_store_info";
-  const TABS = ["Site CMS", "Store Info", "API Config", "Danger Zone"] as const;
-  const [tab, setTab] = useState<(typeof TABS)[number]>("Site CMS");
+  const TABS = ["Brand & Store", "Site CMS", "API Config", "Danger Zone"] as const;
+  const [tab, setTab] = useState<(typeof TABS)[number]>("Brand & Store");
+  const qc = useQueryClient();
+
+  // Single source of truth: site_settings row drives the storefront, emails, SEO and receipts.
+  const { data: brandRow } = useQuery({ queryKey: brandQueryKey, queryFn: fetchBrand });
+  const [brand, setBrand] = useState<BrandSettings>(DEFAULT_BRAND);
+  const [brandLoaded, setBrandLoaded] = useState(false);
+  const [savingBrand, setSavingBrand] = useState(false);
+  useEffect(() => {
+    if (brandRow && !brandLoaded) { setBrand(brandRow); setBrandLoaded(true); }
+  }, [brandRow, brandLoaded]);
+  const brandPatch = <K extends keyof BrandSettings>(k: K, v: BrandSettings[K]) => setBrand((p) => ({ ...p, [k]: v }));
+  const saveBrand = async () => {
+    setSavingBrand(true);
+    const { error } = await supabase.from("site_settings").update({
+      brand_name: brand.brand_name,
+      tagline: brand.tagline,
+      cities: brand.cities,
+      established: brand.established,
+      phone: brand.phone,
+      whatsapp: brand.whatsapp.replace(/\D/g, ""),
+      email: brand.email,
+      address: brand.address,
+      meta_title: brand.meta_title,
+      meta_description: brand.meta_description,
+      deposit_rate: Number(brand.deposit_rate) || 20,
+      free_delivery_above: Number(brand.free_delivery_above) || 0,
+      delivery_note: brand.delivery_note,
+      announcement: brand.announcement,
+      announcement_on: brand.announcement_on,
+    }).eq("id", "default");
+    setSavingBrand(false);
+    if (error) { toast.error(error.message); return; }
+    await qc.invalidateQueries({ queryKey: brandQueryKey });
+    toast.success("Brand details saved — applied across the site, emails and receipts.");
+  };
 
   const [cms, setCms] = useState({
     hero_headline: "Your perfect sofa, crafted for you",
@@ -2003,24 +2038,12 @@ function Settings() {
     delivery_note: "Free delivery in Indore & MP above ₹15,000",
   });
 
-  const [store, setStore] = useState({
-    storeName: "True Furniture's",
-    phone: "+91 77738 96496",
-    email: "hello@truefurnitures.in",
-    address: "Vijay Nagar, Indore — 452010",
-    adminEmail: "admin@truefurnitures.in",
-    depositRate: 20,
-    freeDelivery: 15000,
-  });
-
   const [apiUrl, setApiUrl] = useState("");
 
   useEffect(() => {
     try {
       const c = window.localStorage.getItem(CMS_KEY);
       if (c) setCms((p) => ({ ...p, ...JSON.parse(c) }));
-      const s = window.localStorage.getItem(STORE_KEY);
-      if (s) setStore((p) => ({ ...p, ...JSON.parse(s) }));
       setApiUrl(window.location.origin);
     } catch {
       /* ignore */
@@ -2031,14 +2054,6 @@ function Settings() {
     try {
       window.localStorage.setItem(CMS_KEY, JSON.stringify(cms));
       toast.success("Site CMS saved locally.");
-    } catch {
-      toast.error("Could not save.");
-    }
-  };
-  const saveStore = () => {
-    try {
-      window.localStorage.setItem(STORE_KEY, JSON.stringify(store));
-      toast.success("Store info saved locally.");
     } catch {
       toast.error("Could not save.");
     }
@@ -2066,8 +2081,6 @@ function Settings() {
   };
 
   const cmsPatch = <K extends keyof typeof cms>(k: K, v: (typeof cms)[K]) => setCms((p) => ({ ...p, [k]: v }));
-  const storePatch = <K extends keyof typeof store>(k: K, v: (typeof store)[K]) =>
-    setStore((p) => ({ ...p, [k]: v }));
 
   return (
     <div className="space-y-5 max-w-4xl">
