@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { COL, fsGet } from "@/lib/db/firestore";
 
 export type BrandSettings = {
   brand_name: string;
@@ -42,7 +42,7 @@ export const DEFAULT_BRAND: BrandSettings = {
 export const brandQueryKey = ["site-settings"] as const;
 
 export async function fetchBrand(): Promise<BrandSettings> {
-  const { data } = await supabase.from("site_settings").select("*").eq("id", "default").maybeSingle();
+  const data = await fsGet<Partial<BrandSettings>>(COL.siteSettings, "default");
   return { ...DEFAULT_BRAND, ...(data ?? {}) } as BrandSettings;
 }
 
