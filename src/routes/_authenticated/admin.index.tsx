@@ -2278,45 +2278,6 @@ function Settings() {
   );
 }
 
-function FeatureToggle({ defaultOn }: { defaultOn: boolean }) {
-  const [on, setOn] = useState(defaultOn);
-  return (
-    <button
-      onClick={() => setOn((v) => !v)}
-      className="relative w-9 h-5 rounded-full transition-colors"
-      style={{ background: on ? "#4CAF82" : "#2A2A38" }}
-      aria-pressed={on}
-    >
-      <span
-        className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all"
-        style={{ left: on ? "18px" : "2px" }}
-      />
-    </button>
-  );
-}
-
-/* ================= VISITOR ANALYTICS ================= */
-
-const V_TYPE_ICONS: Record<string, string> = {
-  session: "🌐",
-  visit: "📍",
-  add_to_cart: "🛒",
-  quote: "💬",
-  newsletter: "📧",
-  product_view: "👁️",
-  view_3d: "🧊",
-};
-const V_TYPE_COLORS: Record<string, string> = {
-  session: "#5090E0",
-  visit: "#4CAF82",
-  add_to_cart: "#B478FF",
-  quote: "#C8A86B",
-  newsletter: "#E56AA7",
-  product_view: "#5090E0",
-  view_3d: "#B478FF",
-};
-const V_ALL_TYPES = ["all", "session", "visit", "product_view", "view_3d", "add_to_cart", "quote", "newsletter"];
-
 function fmtRel(iso: string) {
   const t = new Date(iso).getTime();
   const diff = Date.now() - t;
