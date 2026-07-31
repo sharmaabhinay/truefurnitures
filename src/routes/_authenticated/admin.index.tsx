@@ -2030,12 +2030,6 @@ function Settings() {
     hero_badge: "True Furniture's · Indore & Ujjain · Est. 2007",
     hero_cta1: "Browse All Sofas",
     hero_cta2: "Get Free Quote",
-    announcement: "",
-    announcement_on: false,
-    meta_title: "True Furniture's — Custom Sofas",
-    meta_description: "Fully customizable sofas designed in 3D. Hand-tailored in Indore & Ujjain.",
-    whatsapp_number: "7773896496",
-    delivery_note: "Free delivery in Indore & MP above ₹15,000",
   });
 
   const [apiUrl, setApiUrl] = useState("");
@@ -2138,28 +2132,11 @@ function Settings() {
                   <img src={cms.hero_image} alt="" className="mt-3 w-full h-32 object-cover rounded-md opacity-70" />
                 )}
               </Field>
-              <Field label="Meta Title (SEO)">
-                <DarkInput value={cms.meta_title} onChange={(e) => cmsPatch("meta_title", e.target.value)} />
-              </Field>
-              <Field label="Meta Description (SEO)">
-                <DarkTextarea rows={2} value={cms.meta_description} onChange={(e) => cmsPatch("meta_description", e.target.value)} />
-              </Field>
-              <div className="text-[11px] uppercase tracking-[0.14em] pt-2" style={{ color: "#C8A86B" }}>
-                Announcement Bar
+              <div className="rounded-md p-3 text-[12px]" style={{ background: "rgba(200,168,107,0.08)", border: "1px solid #2A2A38", color: "#888899" }}>
+                SEO meta, announcement bar, WhatsApp number and the delivery note now live in the
+                <strong style={{ color: "#C8A86B" }}> Brand &amp; Store </strong> tab, so one edit updates the site,
+                emails and receipts together.
               </div>
-              <div className="flex items-center justify-between py-1">
-                <div className="text-[13px]">Show announcement</div>
-                <FeatureToggle defaultOn={cms.announcement_on} />
-              </div>
-              <Field label="Announcement Text">
-                <DarkInput value={cms.announcement} onChange={(e) => cmsPatch("announcement", e.target.value)} placeholder='e.g. "🎉 Sale — 20% off recliners"' />
-              </Field>
-              <Field label="WhatsApp Number">
-                <DarkInput value={cms.whatsapp_number} onChange={(e) => cmsPatch("whatsapp_number", e.target.value)} />
-              </Field>
-              <Field label="Delivery Note">
-                <DarkInput value={cms.delivery_note} onChange={(e) => cmsPatch("delivery_note", e.target.value)} />
-              </Field>
             </div>
           </div>
           <button
