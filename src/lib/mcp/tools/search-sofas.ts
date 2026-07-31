@@ -1,6 +1,8 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
-import { supabaseForUser } from "../supabase";
+import { adminQuery, pick, type Row } from "../firestore";
+
+const FIELDS = ["slug", "name", "tagline", "base_price", "sale_price", "lead_time_days", "is_featured"] as const;
 
 export default defineTool({
   name: "search_sofas",
@@ -16,20 +18,24 @@ export default defineTool({
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
     }
-    const supabase = supabaseForUser(ctx);
-    let request = supabase
-      .from("sofas")
-      .select("slug, name, tagline, base_price, sale_price, lead_time_days, is_featured")
-      .eq("is_published", true)
-      .order("sort_order")
-      .limit(limit ?? 10);
-    if (query) request = request.or(`name.ilike.%${query}%,tagline.ilike.%${query}%`);
-
-    const { data, error } = await request;
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
-      structuredContent: { sofas: data ?? [] },
-    };
+    try {
+      const rows = (await adminQuery("sofas", [{ field: "is_published", value: true }])) as Row[];
+      const q = query?.toLowerCase();
+      const matched = rows
+        .filter((r) =>
+          !q
+            ? true
+            : `${r['name'] ?? ""} ${r['tagline'] ?? ""}`.toLowerCase().includes(q),
+        )
+        .sort((a, b) => Number(a['sort_order'] ?? 0) - Number(b['sort_order'] ?? 0))
+        .slice(0, limit ?? 10)
+        .map((r) => pick(r, FIELDS));
+      return {
+        content: [{ type: "text", text: JSON.stringify(matched) }],
+        structuredContent: { sofas: matched },
+      };
+    } catch (e) {
+      return { content: [{ type: "text", text: (e as Error).message }], isError: true };
+    }
   },
 });

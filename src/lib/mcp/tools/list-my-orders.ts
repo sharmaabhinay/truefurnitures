@@ -1,6 +1,11 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
-import { supabaseForUser } from "../supabase";
+import { myRows, pick } from "../firestore";
+
+const FIELDS = [
+  "order_number", "status", "total", "deposit_paid", "balance_due",
+  "delivery_city", "expected_delivery_date", "created_at",
+] as const;
 
 export default defineTool({
   name: "list_my_orders",
@@ -15,19 +20,18 @@ export default defineTool({
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
     }
-    const supabase = supabaseForUser(ctx);
-    const { data, error } = await supabase
-      .from("orders")
-      .select(
-        "order_number, status, total, deposit_paid, balance_due, delivery_city, expected_delivery_date, created_at",
-      )
-      .order("created_at", { ascending: false })
-      .limit(limit ?? 10);
-
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
-      structuredContent: { orders: data ?? [] },
-    };
+    try {
+      const rows = await myRows(ctx, "orders");
+      const orders = rows
+        .sort((a, b) => String(b['created_at'] ?? "").localeCompare(String(a['created_at'] ?? "")))
+        .slice(0, limit ?? 10)
+        .map((r) => pick(r, FIELDS));
+      return {
+        content: [{ type: "text", text: JSON.stringify(orders) }],
+        structuredContent: { orders },
+      };
+    } catch (e) {
+      return { content: [{ type: "text", text: (e as Error).message }], isError: true };
+    }
   },
 });
