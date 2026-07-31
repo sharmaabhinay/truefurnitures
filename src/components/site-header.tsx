@@ -92,6 +92,7 @@ export function SiteHeader() {
   const primaryNav = [
     { to: "/collections", label: "Collections" },
     { to: "/design", label: "Design 3D" },
+    { to: "/hire-carpenter", label: "Hire a Carpenter" },
     { to: "/showrooms", label: "Showrooms" },
     { to: "/contact", label: "Contact" },
   ] as const;

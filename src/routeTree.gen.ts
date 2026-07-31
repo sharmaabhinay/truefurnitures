@@ -13,6 +13,7 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as ShowroomsRouteImport } from './routes/showrooms'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as HireCarpenterRouteImport } from './routes/hire-carpenter'
 import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as FaqRouteImport } from './routes/faq'
 import { Route as DesignRouteImport } from './routes/design'
@@ -37,6 +38,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCheckoutRouteImport } from './routes/_authenticated/checkout'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as ApiPublicWebhooksRazorpayRouteImport } from './routes/api/public/webhooks/razorpay'
 import { Route as AuthenticatedOrdersIdReceiptRouteImport } from './routes/_authenticated/orders.$id.receipt'
 import { Route as AuthenticatedAdminOrdersIdRouteImport } from './routes/_authenticated/admin.orders.$id'
@@ -60,6 +62,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HireCarpenterRoute = HireCarpenterRouteImport.update({
+  id: '/hire-carpenter',
+  path: '/hire-carpenter',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GalleryRoute = GalleryRouteImport.update({
@@ -181,6 +188,11 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
+  id: '/api/public/health',
+  path: '/api/public/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWebhooksRazorpayRoute =
   ApiPublicWebhooksRazorpayRouteImport.update({
     id: '/api/public/webhooks/razorpay',
@@ -219,6 +231,7 @@ export interface FileRoutesByFullPath {
   '/design': typeof DesignRoute
   '/faq': typeof FaqRoute
   '/gallery': typeof GalleryRoute
+  '/hire-carpenter': typeof HireCarpenterRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/showrooms': typeof ShowroomsRoute
@@ -233,6 +246,7 @@ export interface FileRoutesByFullPath {
   '/configure/$slug': typeof ConfigureSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/shared-design/$token': typeof SharedDesignTokenRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/admin/customers/$id': typeof AuthenticatedAdminCustomersIdRoute
   '/admin/orders/$id': typeof AuthenticatedAdminOrdersIdRoute
@@ -252,6 +266,7 @@ export interface FileRoutesByTo {
   '/design': typeof DesignRoute
   '/faq': typeof FaqRoute
   '/gallery': typeof GalleryRoute
+  '/hire-carpenter': typeof HireCarpenterRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/showrooms': typeof ShowroomsRoute
@@ -265,6 +280,7 @@ export interface FileRoutesByTo {
   '/configure/$slug': typeof ConfigureSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/shared-design/$token': typeof SharedDesignTokenRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/admin/customers/$id': typeof AuthenticatedAdminCustomersIdRoute
   '/admin/orders/$id': typeof AuthenticatedAdminOrdersIdRoute
@@ -286,6 +302,7 @@ export interface FileRoutesById {
   '/design': typeof DesignRoute
   '/faq': typeof FaqRoute
   '/gallery': typeof GalleryRoute
+  '/hire-carpenter': typeof HireCarpenterRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/showrooms': typeof ShowroomsRoute
@@ -300,6 +317,7 @@ export interface FileRoutesById {
   '/configure/$slug': typeof ConfigureSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/shared-design/$token': typeof SharedDesignTokenRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/admin/customers/$id': typeof AuthenticatedAdminCustomersIdRoute
   '/_authenticated/admin/orders/$id': typeof AuthenticatedAdminOrdersIdRoute
@@ -321,6 +339,7 @@ export interface FileRouteTypes {
     | '/design'
     | '/faq'
     | '/gallery'
+    | '/hire-carpenter'
     | '/privacy'
     | '/reset-password'
     | '/showrooms'
@@ -335,6 +354,7 @@ export interface FileRouteTypes {
     | '/configure/$slug'
     | '/products/$slug'
     | '/shared-design/$token'
+    | '/api/public/health'
     | '/admin/'
     | '/admin/customers/$id'
     | '/admin/orders/$id'
@@ -354,6 +374,7 @@ export interface FileRouteTypes {
     | '/design'
     | '/faq'
     | '/gallery'
+    | '/hire-carpenter'
     | '/privacy'
     | '/reset-password'
     | '/showrooms'
@@ -367,6 +388,7 @@ export interface FileRouteTypes {
     | '/configure/$slug'
     | '/products/$slug'
     | '/shared-design/$token'
+    | '/api/public/health'
     | '/admin'
     | '/admin/customers/$id'
     | '/admin/orders/$id'
@@ -387,6 +409,7 @@ export interface FileRouteTypes {
     | '/design'
     | '/faq'
     | '/gallery'
+    | '/hire-carpenter'
     | '/privacy'
     | '/reset-password'
     | '/showrooms'
@@ -401,6 +424,7 @@ export interface FileRouteTypes {
     | '/configure/$slug'
     | '/products/$slug'
     | '/shared-design/$token'
+    | '/api/public/health'
     | '/_authenticated/admin/'
     | '/_authenticated/admin/customers/$id'
     | '/_authenticated/admin/orders/$id'
@@ -422,6 +446,7 @@ export interface RootRouteChildren {
   DesignRoute: typeof DesignRoute
   FaqRoute: typeof FaqRoute
   GalleryRoute: typeof GalleryRoute
+  HireCarpenterRoute: typeof HireCarpenterRoute
   PrivacyRoute: typeof PrivacyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   ShowroomsRoute: typeof ShowroomsRoute
@@ -429,6 +454,7 @@ export interface RootRouteChildren {
   ConfigureSlugRoute: typeof ConfigureSlugRoute
   ProductsSlugRoute: typeof ProductsSlugRoute
   SharedDesignTokenRoute: typeof SharedDesignTokenRoute
+  ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicWebhooksRazorpayRoute: typeof ApiPublicWebhooksRazorpayRoute
 }
 
@@ -460,6 +486,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hire-carpenter': {
+      id: '/hire-carpenter'
+      path: '/hire-carpenter'
+      fullPath: '/hire-carpenter'
+      preLoaderRoute: typeof HireCarpenterRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gallery': {
@@ -630,6 +663,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/api/public/health': {
+      id: '/api/public/health'
+      path: '/api/public/health'
+      fullPath: '/api/public/health'
+      preLoaderRoute: typeof ApiPublicHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/webhooks/razorpay': {
       id: '/api/public/webhooks/razorpay'
       path: '/api/public/webhooks/razorpay'
@@ -723,6 +763,7 @@ const rootRouteChildren: RootRouteChildren = {
   DesignRoute: DesignRoute,
   FaqRoute: FaqRoute,
   GalleryRoute: GalleryRoute,
+  HireCarpenterRoute: HireCarpenterRoute,
   PrivacyRoute: PrivacyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   ShowroomsRoute: ShowroomsRoute,
@@ -730,18 +771,9 @@ const rootRouteChildren: RootRouteChildren = {
   ConfigureSlugRoute: ConfigureSlugRoute,
   ProductsSlugRoute: ProductsSlugRoute,
   SharedDesignTokenRoute: SharedDesignTokenRoute,
+  ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicWebhooksRazorpayRoute: ApiPublicWebhooksRazorpayRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

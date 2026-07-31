@@ -95,6 +95,66 @@ export type Database = {
         }
         Relationships: []
       }
+      carpenter_requests: {
+        Row: {
+          address_line: string
+          admin_notes: string | null
+          budget_range: string | null
+          city: string
+          created_at: string
+          details: string | null
+          duration: string | null
+          email: string | null
+          full_name: string
+          id: string
+          phone: string
+          pincode: string | null
+          preferred_date: string | null
+          status: string
+          updated_at: string
+          user_id: string | null
+          work_type: string
+        }
+        Insert: {
+          address_line: string
+          admin_notes?: string | null
+          budget_range?: string | null
+          city: string
+          created_at?: string
+          details?: string | null
+          duration?: string | null
+          email?: string | null
+          full_name: string
+          id?: string
+          phone: string
+          pincode?: string | null
+          preferred_date?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          work_type: string
+        }
+        Update: {
+          address_line?: string
+          admin_notes?: string | null
+          budget_range?: string | null
+          city?: string
+          created_at?: string
+          details?: string | null
+          duration?: string | null
+          email?: string | null
+          full_name?: string
+          id?: string
+          phone?: string
+          pincode?: string | null
+          preferred_date?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          work_type?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -485,6 +545,8 @@ export type Database = {
           full_name: string | null
           id: string
           phone: string | null
+          phone_verified: boolean
+          phone_verified_at: string | null
           updated_at: string
         }
         Insert: {
@@ -495,6 +557,8 @@ export type Database = {
           full_name?: string | null
           id: string
           phone?: string | null
+          phone_verified?: boolean
+          phone_verified_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -505,6 +569,8 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+          phone_verified?: boolean
+          phone_verified_at?: string | null
           updated_at?: string
         }
         Relationships: []

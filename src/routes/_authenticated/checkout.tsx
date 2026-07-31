@@ -8,6 +8,7 @@ import { useCart } from "@/lib/cart";
 import { formatINR, estimatedDelivery } from "@/lib/format";
 import { toast } from "sonner";
 import { PaymentMethods } from "@/components/payment-methods";
+import { PhoneVerify } from "@/components/phone-verify";
 
 export const Route = createFileRoute("/_authenticated/checkout")({
   head: () => ({
@@ -68,6 +69,7 @@ function Checkout() {
   const [selectedAddrId, setSelectedAddrId] = useState<string>("");
   const [saveAddress, setSaveAddress] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [verifiedPhone, setVerifiedPhone] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -76,11 +78,13 @@ function Checkout() {
       setUserId(uid);
       if (!uid) return;
       const [{ data: p }, { data: a }] = await Promise.all([
-        supabase.from("profiles").select("full_name, phone, email, city").eq("id", uid).maybeSingle(),
+        supabase.from("profiles").select("full_name, phone, email, city, phone_verified").eq("id", uid).maybeSingle(),
         supabase.from("user_addresses").select("*").eq("user_id", uid).order("is_default", { ascending: false }).order("created_at", { ascending: false }),
       ]);
       const list = (a as SavedAddress[] | null) ?? [];
       setAddresses(list);
+      const prof0 = p as { phone?: string | null; phone_verified?: boolean | null } | null;
+      if (prof0?.phone_verified && prof0.phone) setVerifiedPhone(prof0.phone.replace(/\D/g, "").slice(-10));
       const authEmail = data.user?.email ?? "";
       const profileEmail = (p as { email?: string | null } | null)?.email ?? "";
       // Prefer default address; otherwise seed from profile
@@ -131,6 +135,7 @@ function Checkout() {
 
   const deposit = Math.round(total * 0.2);
   const balance = total - deposit;
+  const phoneVerified = !!verifiedPhone && verifiedPhone === form.phone.replace(/\D/g, "").slice(-10);
 
   if (items.length === 0) {
     return (
@@ -164,6 +169,11 @@ function Checkout() {
       }
       setErrors(errs);
       toast.error("Please fix the highlighted fields");
+      return;
+    }
+    if (!phoneVerified) {
+      toast.error("Please verify your mobile number with the OTP before placing the order");
+      document.getElementById("tf-phone-verify")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
     setSubmitting(true);
@@ -354,10 +364,21 @@ function Checkout() {
               </div>
             </section>
 
+            <section id="tf-phone-verify">
+              <PhoneVerify
+                phone={form.phone}
+                verified={phoneVerified}
+                onVerified={(e164) => setVerifiedPhone(e164.replace(/\D/g, "").slice(-10))}
+              />
+            </section>
+
             <section className="bg-[color:var(--brand-muted)]/50 border border-[color:var(--brand-dark)]/10 p-6">
               <h2 className="font-display text-lg mb-2">Reserve · Pay Later</h2>
               <p className="text-sm text-[color:var(--brand-dark)]/70">
                 Pay a 20% booking deposit to lock in your build slot. The balance is due on delivery. Our team will contact you within 24 hours to confirm the deposit and fabric choices.
+              </p>
+              <p className="mt-3 text-sm text-[color:var(--brand-dark)]/80 border-l-2 border-[color:var(--brand-accent)] pl-3">
+                Please note: our craftsmen begin making your furniture only after the order is successfully placed and the initial deposit is paid.
               </p>
             </section>
 
@@ -399,9 +420,12 @@ function Checkout() {
               </div>
               <div className="text-[10px] text-[color:var(--brand-dark)]/60 pt-1">Estimated delivery by {estimatedDelivery(30)}.</div>
             </div>
-            <button type="submit" disabled={submitting} className="mt-6 w-full px-6 py-4 bg-[color:var(--brand-dark)] text-white text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2">
+            <p className="mt-4 text-[10px] text-[color:var(--brand-dark)]/60 leading-relaxed">
+              Crafting begins once your order is placed and the 20% deposit is paid.
+            </p>
+            <button type="submit" disabled={submitting || !phoneVerified} className="mt-3 w-full px-6 py-4 bg-[color:var(--brand-dark)] text-white text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2">
               <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 10V7a6 6 0 1112 0v3"/><rect x="4" y="10" width="16" height="11" rx="2"/></svg>
-              {submitting ? "Processing…" : `Continue to Payment · ${formatINR(deposit)}`}
+              {submitting ? "Processing…" : !phoneVerified ? "Verify Mobile to Continue" : `Continue to Payment · ${formatINR(deposit)}`}
             </button>
             <Link to="/cart" className="mt-3 block text-center text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-dark)]/60 hover:text-[color:var(--brand-accent)]">
               ← Back to Cart

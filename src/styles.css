@@ -192,6 +192,10 @@
 .animate-scale-in { animation: tf-scale-in 0.4s ease-out both; }
 
 @keyframes tf-kenburns { 0% { transform: scale(1); } 100% { transform: scale(1.08); } }
+
+@keyframes tf-shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+
+@keyframes tf-pulse-ring { 0% { transform: scale(0.9); opacity: 0.7; } 70% { transform: scale(1.35); opacity: 0; } 100% { opacity: 0; } }
 .animate-kenburns { animation: tf-kenburns 12s ease-out both; }
 
 /* Focus-visible ring using accent */
