@@ -35,15 +35,23 @@ export const Route = createFileRoute("/api/public/webhooks/razorpay")({
         const rzpOrderId: string | undefined = paymentEntity?.order_id;
         const rzpPaymentId: string | undefined = paymentEntity?.id;
 
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { adminGetDoc, adminSetDoc, adminQuery } = await import(
+          "@/lib/firebase-admin.server"
+        );
 
-        // Idempotency: Razorpay retries the same event id. The unique constraint on
-        // payment_events.event_id makes a duplicate insert fail, and we bail out.
+        // Idempotency: Razorpay retries the same event id, so the event id doubles as
+        // the payment_events document id — a repeat delivery finds the existing doc.
         const eventId =
           request.headers.get("x-razorpay-event-id") ??
           `${event}:${rzpPaymentId ?? "none"}:${rzpOrderId ?? "none"}`;
+        const eventDocId = eventId.replace(/\//g, "_");
 
-        const { error: logErr } = await supabaseAdmin.from("payment_events").insert({
+        const existing = await adminGetDoc("payment_events", eventDocId);
+        if (existing && existing['status'] !== "received") {
+          console.log("[razorpay-webhook] duplicate event ignored", eventId);
+          return new Response("ok (duplicate)", { status: 200 });
+        }
+        await adminSetDoc("payment_events", eventDocId, {
           event_id: eventId,
           event_type: event || "unknown",
           razorpay_order_id: rzpOrderId ?? null,
@@ -51,18 +59,12 @@ export const Route = createFileRoute("/api/public/webhooks/razorpay")({
           amount: paymentEntity?.amount ? Number(paymentEntity.amount) / 100 : null,
           currency: paymentEntity?.currency ?? null,
           status: "received",
-          payload,
+          created_at: new Date().toISOString(),
+          payload: JSON.stringify(payload).slice(0, 20000),
         });
-        if (logErr) {
-          if (logErr.code === "23505") {
-            console.log("[razorpay-webhook] duplicate event ignored", eventId);
-            return new Response("ok (duplicate)", { status: 200 });
-          }
-          console.error("[razorpay-webhook] log insert failed", logErr);
-        }
 
         const markEvent = async (status: string, patch: Record<string, unknown> = {}) => {
-          await supabaseAdmin.from("payment_events").update({ status, ...patch }).eq("event_id", eventId);
+          await adminSetDoc("payment_events", eventDocId, { status, ...patch });
         };
 
         // We only need to react to successful captures. Other events are logged only.
@@ -71,16 +73,17 @@ export const Route = createFileRoute("/api/public/webhooks/razorpay")({
           return new Response("ok", { status: 200 });
         }
 
-        const { data: orders, error } = await supabaseAdmin
-          .from("orders")
-          .select("id, total, deposit_paid, status")
-          .eq("razorpay_order_id", rzpOrderId);
-        if (error) {
+        let orders: Array<Record<string, unknown> & { id: string }> = [];
+        try {
+          orders = (await adminQuery("orders", [
+            { field: "razorpay_order_id", value: rzpOrderId },
+          ])) as Array<Record<string, unknown> & { id: string }>;
+        } catch (error) {
           console.error("[razorpay-webhook] lookup failed", error);
-          await markEvent("failed", { error: error.message });
+          await markEvent("failed", { error: String(error) });
           return new Response("Lookup failed", { status: 500 });
         }
-        if (!orders || orders.length === 0) {
+        if (orders.length === 0) {
           // Unknown order — acknowledge so Razorpay stops retrying.
           await markEvent("order_not_found");
           return new Response("ok", { status: 200 });
@@ -88,25 +91,27 @@ export const Route = createFileRoute("/api/public/webhooks/razorpay")({
 
         const nowIso = new Date().toISOString();
         const confirmedIds: string[] = [];
-        for (const row of orders as Array<{ id: string; total: number; deposit_paid: number; status: string }>) {
-          if (row.status === "confirmed" || row.status === "in_production" || row.status === "shipped" || row.status === "delivered") {
+        for (const row of orders) {
+          const status = String(row['status'] ?? "");
+          if (["confirmed", "in_production", "shipped", "delivered"].includes(status)) {
             continue; // already advanced; idempotent no-op
           }
-          const total = Number(row.total) || 0;
+          const total = Number(row['total']) || 0;
           const deposit = Math.round(total * 0.2);
           const balance = Math.max(0, total - deposit);
-          const { error: uerr } = await supabaseAdmin
-            .from("orders")
-            .update({
+          try {
+            await adminSetDoc("orders", row.id, {
               deposit_paid: deposit,
               balance_due: balance,
               status: "confirmed",
               razorpay_payment_id: rzpPaymentId,
               paid_at: nowIso,
-            })
-            .eq("id", row.id);
-          if (uerr) console.error("[razorpay-webhook] update failed", row.id, uerr);
-          else confirmedIds.push(row.id);
+              updated_at: nowIso,
+            });
+            confirmedIds.push(row.id);
+          } catch (uerr) {
+            console.error("[razorpay-webhook] update failed", row.id, uerr);
+          }
         }
 
         for (const id of confirmedIds) {
@@ -118,7 +123,7 @@ export const Route = createFileRoute("/api/public/webhooks/razorpay")({
         }
 
         await markEvent(confirmedIds.length > 0 ? "processed" : "already_processed", {
-          order_id: (orders as Array<{ id: string }>)[0]?.id ?? null,
+          order_id: orders[0]?.id ?? null,
         });
 
         return new Response("ok", { status: 200 });

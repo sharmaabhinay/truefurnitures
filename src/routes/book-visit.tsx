@@ -4,7 +4,8 @@ import { useState } from "react";
 import { z } from "zod";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { supabase } from "@/integrations/supabase/client";
+import { COL, fsList, fsAdd, orderBy } from "@/lib/db/firestore";
+import { useAuth } from "@/lib/auth/auth-context";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/book-visit")({
@@ -25,7 +26,7 @@ const schema = z.object({
   full_name: z.string().trim().min(2, "Enter your full name").max(80),
   phone: z.string().trim().regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit mobile"),
   email: z.string().trim().email().max(160).optional().or(z.literal("")),
-  showroom_id: z.string().uuid("Select a showroom"),
+  showroom_id: z.string().min(1, "Select a showroom"),
   preferred_date: z.string().min(1, "Select a date"),
   preferred_time: z.string().min(1, "Select a time"),
   party_size: z.number().int().min(1).max(10),
@@ -35,11 +36,11 @@ const schema = z.object({
 const TIMES = ["10:30 AM", "12:00 PM", "2:00 PM", "4:00 PM", "6:00 PM", "7:30 PM"];
 
 function BookVisit() {
+  const { user } = useAuth();
   const { data: showrooms } = useQuery({
     queryKey: ["showrooms-list"],
     queryFn: async () => {
-      const { data } = await supabase.from("showrooms").select("id, name, city").order("sort_order");
-      return data ?? [];
+      return fsList<{ id: string; name: string; city: string }>(COL.showrooms, orderBy("sort_order"));
     },
   });
 
@@ -71,10 +72,8 @@ function BookVisit() {
     }
     setSubmitting(true);
     try {
-      const { data: sess } = await supabase.auth.getSession();
-      const payload = { ...parsed.data, email: parsed.data.email || null, user_id: sess.session?.user.id ?? null };
-      const { error } = await supabase.from("showroom_bookings").insert(payload);
-      if (error) throw error;
+      const payload = { ...parsed.data, email: parsed.data.email || null, user_id: user?.uid ?? null };
+      await fsAdd(COL.showroomBookings, payload);
       setDone(true);
       toast.success("Booking request received! We'll confirm on WhatsApp shortly.");
     } catch (err) {
