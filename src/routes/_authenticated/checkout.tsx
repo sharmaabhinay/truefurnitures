@@ -70,12 +70,14 @@ function Checkout() {
   const [saveAddress, setSaveAddress] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [verifiedPhone, setVerifiedPhone] = useState<string | null>(null);
+  const [emailVerified, setEmailVerified] = useState(false);
 
   useEffect(() => {
     (async () => {
       const { data } = await supabase.auth.getUser();
       const uid = data.user?.id ?? null;
       setUserId(uid);
+      setEmailVerified(!!data.user?.email_confirmed_at);
       if (!uid) return;
       const [{ data: p }, { data: a }] = await Promise.all([
         supabase.from("profiles").select("full_name, phone, email, city, phone_verified").eq("id", uid).maybeSingle(),
@@ -320,12 +322,25 @@ function Checkout() {
                   {errors.full_name && <p className="text-xs text-red-600 mt-1">{errors.full_name}</p>}
                 </div>
                 <div>
-                  <label className={labelCls} htmlFor="phone">Mobile</label>
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <label className={labelCls} htmlFor="phone">Mobile</label>
+                    {phoneVerified ? <VerifiedBadge label="Verified" /> : <UnverifiedBadge label="Unverified" />}
+                  </div>
                   <input id="phone" inputMode="numeric" maxLength={10} className={inputCls} value={form.phone} onChange={(e) => set("phone", e.target.value.replace(/\D/g, ""))} placeholder="10-digit" />
                   {errors.phone && <p className="text-xs text-red-600 mt-1">{errors.phone}</p>}
+                  <div id="tf-phone-verify">
+                    <PhoneVerify
+                      phone={form.phone}
+                      verified={phoneVerified}
+                      onVerified={(e164) => setVerifiedPhone(e164.replace(/\D/g, "").slice(-10))}
+                    />
+                  </div>
                 </div>
                 <div>
-                  <label className={labelCls} htmlFor="email">Email</label>
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <label className={labelCls} htmlFor="email">Email</label>
+                    {emailVerified ? <VerifiedBadge label="Verified" /> : <UnverifiedBadge label="Unverified" />}
+                  </div>
                   <input id="email" type="email" className={inputCls} value={form.email} onChange={(e) => set("email", e.target.value)} />
                   {errors.email && <p className="text-xs text-red-600 mt-1">{errors.email}</p>}
                 </div>
@@ -362,14 +377,6 @@ function Checkout() {
                   </label>
                 )}
               </div>
-            </section>
-
-            <section id="tf-phone-verify">
-              <PhoneVerify
-                phone={form.phone}
-                verified={phoneVerified}
-                onVerified={(e164) => setVerifiedPhone(e164.replace(/\D/g, "").slice(-10))}
-              />
             </section>
 
             <section className="bg-[color:var(--brand-muted)]/50 border border-[color:var(--brand-dark)]/10 p-6">
