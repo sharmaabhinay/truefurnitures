@@ -1,31 +1,30 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireFirebaseAuth } from "@/lib/auth/firebase-auth-middleware";
 
 // Create a Razorpay order for the given order UUIDs (belonging to the caller).
 // Sums their (balance-safe) deposit amounts and returns Razorpay order info + public key id.
 export const createRazorpayOrder = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireFirebaseAuth])
   .inputValidator((input) =>
-    z.object({ orderIds: z.array(z.string().uuid()).min(1).max(50) }).parse(input),
+    z.object({ orderIds: z.array(z.string().min(1)).min(1).max(50) }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { userId } = context;
+    const { adminGetDoc, adminSetDoc } = await import("@/lib/firebase-admin.server");
     const keyId = process.env.RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
     if (!keyId || !keySecret) throw new Error("Razorpay keys not configured");
 
-    const { data: rows, error } = await supabase
-      .from("orders")
-      .select("id, total, deposit_paid, status")
-      .in("id", data.orderIds)
-      .eq("user_id", userId);
-    if (error) throw error;
-    if (!rows || rows.length !== data.orderIds.length) throw new Error("Orders not found");
+    const fetched = await Promise.all(data.orderIds.map((id) => adminGetDoc("orders", id)));
+    const rows = fetched.filter(
+      (row): row is NonNullable<typeof row> => !!row && row['user_id'] === userId,
+    );
+    if (rows.length !== data.orderIds.length) throw new Error("Orders not found");
 
-    const depositTotalRupees = rows.reduce((sum, r: any) => {
-      const total = Number(r.total) || 0;
-      const paid = Number(r.deposit_paid) || 0;
+    const depositTotalRupees = rows.reduce((sum, r) => {
+      const total = Number(r['total']) || 0;
+      const paid = Number(r['deposit_paid']) || 0;
       const deposit = Math.round(total * 0.2);
       return sum + Math.max(0, deposit - paid);
     }, 0);
@@ -58,11 +57,9 @@ export const createRazorpayOrder = createServerFn({ method: "POST" })
     const rp = (await res.json()) as { id: string; amount: number; currency: string };
 
     // Persist rzp order id on each order for tracking
-    await supabase
-      .from("orders")
-      .update({ razorpay_order_id: rp.id })
-      .in("id", data.orderIds)
-      .eq("user_id", userId);
+    await Promise.all(
+      rows.map((row) => adminSetDoc("orders", row.id, { razorpay_order_id: rp.id })),
+    );
 
     return {
       keyId,
@@ -74,19 +71,20 @@ export const createRazorpayOrder = createServerFn({ method: "POST" })
   });
 
 export const verifyRazorpayPayment = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireFirebaseAuth])
   .inputValidator((input) =>
     z
       .object({
         razorpay_order_id: z.string().min(4),
         razorpay_payment_id: z.string().min(4),
         razorpay_signature: z.string().min(4),
-        orderIds: z.array(z.string().uuid()).min(1).max(50),
+        orderIds: z.array(z.string().min(1)).min(1).max(50),
       })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { userId } = context;
+    const { adminGetDoc, adminSetDoc } = await import("@/lib/firebase-admin.server");
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
     if (!keySecret) throw new Error("Razorpay keys not configured");
 
@@ -102,39 +100,35 @@ export const verifyRazorpayPayment = createServerFn({ method: "POST" })
     }
 
     // Load caller's matching orders, update deposit_paid + status
-    const { data: rows, error } = await supabase
-      .from("orders")
-      .select("id, total, deposit_paid")
-      .in("id", data.orderIds)
-      .eq("user_id", userId)
-      .eq("razorpay_order_id", data.razorpay_order_id);
-    if (error) throw error;
-    if (!rows || rows.length === 0) throw new Error("Order not found");
+    const fetched = await Promise.all(data.orderIds.map((id) => adminGetDoc("orders", id)));
+    const rows = fetched.filter(
+      (row): row is NonNullable<typeof row> =>
+        !!row &&
+        row['user_id'] === userId &&
+        row['razorpay_order_id'] === data.razorpay_order_id,
+    );
+    if (rows.length === 0) throw new Error("Order not found");
 
     const nowIso = new Date().toISOString();
-    for (const r of rows as Array<{ id: string; total: number; deposit_paid: number }>) {
-      const total = Number(r.total) || 0;
+    for (const r of rows) {
+      const total = Number(r['total']) || 0;
       const deposit = Math.round(total * 0.2);
       const balance = Math.max(0, total - deposit);
-      const { error: uerr } = await supabase
-        .from("orders")
-        .update({
-          deposit_paid: deposit,
-          balance_due: balance,
-          status: "confirmed",
-          razorpay_payment_id: data.razorpay_payment_id,
-          razorpay_signature: data.razorpay_signature,
-          paid_at: nowIso,
-        })
-        .eq("id", r.id)
-        .eq("user_id", userId);
-      if (uerr) throw uerr;
+      await adminSetDoc("orders", r.id, {
+        deposit_paid: deposit,
+        balance_due: balance,
+        status: "confirmed",
+        razorpay_payment_id: data.razorpay_payment_id,
+        razorpay_signature: data.razorpay_signature,
+        paid_at: nowIso,
+        updated_at: nowIso,
+      });
     }
 
     // Send the Resend receipt email (non-fatal if it fails; webhook is a backstop).
     try {
       const { sendOrderConfirmationEmail } = await import("@/lib/email.functions");
-      for (const r of rows as Array<{ id: string }>) {
+      for (const r of rows) {
         await sendOrderConfirmationEmail({ data: { orderId: r.id } });
       }
     } catch (e) {

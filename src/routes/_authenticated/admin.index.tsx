@@ -966,25 +966,28 @@ function Products() {
   const { data } = useQuery({
     queryKey: ["admin-products"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("sofas")
-        .select("id, slug, name, tagline, description, full_description, features, dimensions, materials, base_price, sale_price, hero_image, gallery, model_url, video_url, seo_title, seo_description, is_published, is_featured, lead_time_days, delivery_days, product_options")
-        .order("sort_order");
-      return (data ?? []) as SofaRow[];
+      const rows = await fsList<SofaRow>(COL.sofas, orderBy("sort_order"));
+      return rows;
     },
   });
 
   const update = async (id: string, patch: any) => {
-    const { error } = await supabase.from("sofas").update(patch).eq("id", id);
-    if (error) return toast.error(error.message);
+    try {
+      await fsUpdate(COL.sofas, id, patch);
+    } catch (e) {
+      return toast.error(e instanceof Error ? e.message : "Update failed");
+    }
     toast.success("Saved");
     qc.invalidateQueries({ queryKey: ["admin-products"] });
   };
 
   const del = async (id: string, name: string) => {
     if (!confirm(`Delete "${name}"?`)) return;
-    const { error } = await supabase.from("sofas").delete().eq("id", id);
-    if (error) return toast.error(error.message);
+    try {
+      await fsDelete(COL.sofas, id);
+    } catch (e) {
+      return toast.error(e instanceof Error ? e.message : "Delete failed");
+    }
     toast.success("Deleted");
     qc.invalidateQueries({ queryKey: ["admin-products"] });
   };
@@ -1160,16 +1163,12 @@ function ProductModal({
 
   const uploadProductFile = async (file: File, folder: "images" | "models") => {
     const cleanName = file.name.toLowerCase().replace(/[^a-z0-9._-]+/g, "-");
-    const path = `${productFolder}/${folder}/${Date.now()}-${cleanName}`;
-    const { error } = await supabase.storage.from("product-media").upload(path, file, {
-      upsert: true,
-      contentType: file.type || "application/octet-stream",
-    });
-    if (error) throw error;
-    const { data, error: signError } = await supabase.storage.from("product-media").createSignedUrl(path, 60 * 60 * 24 * 365);
-    if (signError) throw signError;
-    if (!data?.signedUrl) throw new Error("Could not prepare uploaded file URL");
-    return { path, url: data.signedUrl };
+    const path = `product-media/${productFolder}/${folder}/${Date.now()}-${cleanName}`;
+    const storage = getStorage(getFirebaseApp());
+    const fileRef = storageRef(storage, path);
+    await uploadBytes(fileRef, file, { contentType: file.type || "application/octet-stream" });
+    const url = await getDownloadURL(fileRef);
+    return { path, url };
   };
 
   const uploadImages = async (files: FileList | null) => {
@@ -1277,11 +1276,17 @@ function ProductModal({
         modelFileName: modelFileName || null,
       },
     };
-    const result = isEdit && product.id
-      ? await supabase.from("sofas").update(payload).eq("id", product.id)
-      : await supabase.from("sofas").insert(payload);
+    try {
+      if (isEdit && product.id) {
+        await fsUpdate(COL.sofas, product.id, payload);
+      } else {
+        await fsAdd(COL.sofas, payload);
+      }
+    } catch (e) {
+      setSaving(false);
+      return toast.error(e instanceof Error ? e.message : "Save failed");
+    }
     setSaving(false);
-    if (result.error) return toast.error(result.error.message);
     toast.success(isEdit ? "Product updated" : "Product created");
     onSaved();
   };

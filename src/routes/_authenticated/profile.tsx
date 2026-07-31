@@ -1,13 +1,16 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
+import { updateEmail } from "firebase/auth";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { UnverifiedBadge, VerifiedBadge } from "@/components/phone-verify";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth/auth-context";
+import { COL, fsGet, fsList, fsAdd, fsUpdate, fsSet, fsDelete, where } from "@/lib/db/firestore";
 
 export const Route = createFileRoute("/_authenticated/profile")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "My Profile — True Furniture's" },
@@ -40,6 +43,7 @@ type Address = {
   city: string;
   pincode: string;
   is_default: boolean;
+  created_at?: string;
 };
 
 const addressSchema = z.object({
@@ -66,8 +70,16 @@ const EMPTY_ADDR: AddressForm = {
   is_default: false,
 };
 
+function sortAddresses(list: Address[]): Address[] {
+  return [...list].sort((a, b) => {
+    if (a.is_default !== b.is_default) return a.is_default ? -1 : 1;
+    return (b.created_at ?? "").localeCompare(a.created_at ?? "");
+  });
+}
+
 function ProfilePage() {
-  const [userId, setUserId] = useState<string | null>(null);
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,57 +93,54 @@ function ProfilePage() {
   const [emailVerified, setEmailVerified] = useState(false);
 
   useEffect(() => {
+    if (!authLoading && !user) navigate({ to: "/auth" });
+  }, [authLoading, user, navigate]);
+
+  useEffect(() => {
+    if (authLoading || !user) return;
     (async () => {
-      const { data } = await supabase.auth.getUser();
-      const uid = data.user?.id ?? null;
-      setUserId(uid);
-      setEmailVerified(!!data.user?.email_confirmed_at);
-      if (!uid) return;
-      const [{ data: p }, { data: a }] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", uid).maybeSingle(),
-        supabase.from("user_addresses").select("*").eq("user_id", uid).order("is_default", { ascending: false }).order("created_at", { ascending: false }),
+      const uid = user.uid;
+      setEmailVerified(!!user.emailVerified);
+      const [p, a] = await Promise.all([
+        fsGet<Profile>(COL.profiles, uid),
+        fsList<Address>(COL.userAddresses, where("user_id", "==", uid)),
       ]);
       const resolved: Profile =
-        (p as Profile | null) ?? {
+        p ?? {
           id: uid,
-          full_name: (data.user?.user_metadata?.full_name as string | undefined) ?? null,
-          email: data.user?.email ?? null,
+          full_name: user.displayName ?? null,
+          email: user.email ?? null,
           phone: null,
           city: null,
           avatar_url: null,
         };
       if (!p) {
-        await supabase.from("profiles").upsert({ id: uid, full_name: resolved.full_name, email: resolved.email }).select();
-      } else if (!resolved.email && data.user?.email) {
-        resolved.email = data.user.email;
+        await fsSet(COL.profiles, uid, { id: uid, full_name: resolved.full_name, email: resolved.email });
+      } else if (!resolved.email && user.email) {
+        resolved.email = user.email;
       }
       setProfile(resolved);
-      setAddresses((a as Address[] | null) ?? []);
+      setAddresses(sortAddresses(a));
       setLoading(false);
     })();
-  }, []);
+  }, [authLoading, user]);
 
   async function saveProfile(e: React.FormEvent) {
     e.preventDefault();
-    if (!profile || !userId) return;
+    if (!profile || !user) return;
     setSavingProfile(true);
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          full_name: profile.full_name?.trim() || null,
-          phone: profile.phone?.trim() || null,
-          city: profile.city?.trim() || null,
-        })
-        .eq("id", userId);
-      if (error) throw error;
+      await fsUpdate(COL.profiles, user.uid, {
+        full_name: profile.full_name?.trim() || null,
+        phone: profile.phone?.trim() || null,
+        city: profile.city?.trim() || null,
+      });
 
-      // Email change goes through auth (sends confirmation).
-      const { data: u } = await supabase.auth.getUser();
-      if (profile.email && u.user && profile.email.trim() !== u.user.email) {
-        const { error: eErr } = await supabase.auth.updateUser({ email: profile.email.trim() });
-        if (eErr) throw eErr;
-        toast.success("Profile saved. Check your inbox to confirm the new email.");
+      // Email change goes through Firebase auth (may require recent login).
+      if (profile.email && profile.email.trim() !== user.email) {
+        await updateEmail(user, profile.email.trim());
+        await fsUpdate(COL.profiles, user.uid, { email: profile.email.trim() });
+        toast.success("Profile saved. Please verify your new email.");
       } else {
         toast.success("Profile updated");
       }
@@ -167,7 +176,7 @@ function ProfilePage() {
 
   async function submitAddress(e: React.FormEvent) {
     e.preventDefault();
-    if (!userId) return;
+    if (!user) return;
     const parsed = addressSchema.safeParse(form);
     if (!parsed.success) {
       const es: Partial<Record<keyof AddressForm, string>> = {};
@@ -180,21 +189,19 @@ function ProfilePage() {
     }
     setSavingAddr(true);
     try {
-      const payload = { ...parsed.data, landmark: parsed.data.landmark || null, user_id: userId };
+      const userId = user.uid;
+      const payload: Record<string, unknown> = { ...parsed.data, landmark: parsed.data.landmark || null, user_id: userId };
       if (parsed.data.is_default) {
-        await supabase.from("user_addresses").update({ is_default: false }).eq("user_id", userId);
+        await Promise.all(addresses.map((a) => fsUpdate(COL.userAddresses, a.id, { is_default: false })));
       }
       if (editingId) {
-        const { error } = await supabase.from("user_addresses").update(payload).eq("id", editingId);
-        if (error) throw error;
+        await fsUpdate(COL.userAddresses, editingId, payload);
       } else {
-        // If it's the first address, mark default.
         if (addresses.length === 0) payload.is_default = true;
-        const { error } = await supabase.from("user_addresses").insert(payload);
-        if (error) throw error;
+        await fsAdd(COL.userAddresses, payload);
       }
-      const { data: a } = await supabase.from("user_addresses").select("*").eq("user_id", userId).order("is_default", { ascending: false }).order("created_at", { ascending: false });
-      setAddresses((a as Address[] | null) ?? []);
+      const a = await fsList<Address>(COL.userAddresses, where("user_id", "==", userId));
+      setAddresses(sortAddresses(a));
       setShowForm(false);
       toast.success(editingId ? "Address updated" : "Address saved");
     } catch (err) {
@@ -206,18 +213,24 @@ function ProfilePage() {
 
   async function removeAddress(id: string) {
     if (!confirm("Remove this address?")) return;
-    const { error } = await supabase.from("user_addresses").delete().eq("id", id);
-    if (error) return toast.error(error.message);
-    setAddresses((prev) => prev.filter((a) => a.id !== id));
+    try {
+      await fsDelete(COL.userAddresses, id);
+      setAddresses((prev) => prev.filter((a) => a.id !== id));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not remove address");
+    }
   }
 
   async function makeDefault(id: string) {
-    if (!userId) return;
-    await supabase.from("user_addresses").update({ is_default: false }).eq("user_id", userId);
-    const { error } = await supabase.from("user_addresses").update({ is_default: true }).eq("id", id);
-    if (error) return toast.error(error.message);
-    setAddresses((prev) => prev.map((a) => ({ ...a, is_default: a.id === id })).sort((a, b) => Number(b.is_default) - Number(a.is_default)));
-    toast.success("Default address updated");
+    if (!user) return;
+    try {
+      await Promise.all(addresses.map((a) => fsUpdate(COL.userAddresses, a.id, { is_default: false })));
+      await fsUpdate(COL.userAddresses, id, { is_default: true });
+      setAddresses((prev) => sortAddresses(prev.map((a) => ({ ...a, is_default: a.id === id }))));
+      toast.success("Default address updated");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not update default address");
+    }
   }
 
   const inputCls = "w-full px-4 py-3 bg-white border border-[color:var(--brand-dark)]/15 focus:border-[color:var(--brand-dark)] focus:outline-none text-sm";
@@ -230,7 +243,7 @@ function ProfilePage() {
         <span className="tf-chip mb-4">Account</span>
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-display mb-8 text-balance">My Profile</h1>
 
-        {loading || !profile ? (
+        {authLoading || loading || !profile ? (
           <p className="text-sm text-[color:var(--brand-dark)]/60">Loading…</p>
         ) : (
           <div className="grid gap-8 lg:grid-cols-[1fr_1.2fr]">
