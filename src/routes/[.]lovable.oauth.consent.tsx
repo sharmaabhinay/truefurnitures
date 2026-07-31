@@ -1,7 +1,8 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { useAuth } from "@/lib/auth/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 
 type OAuthApi = {
@@ -21,16 +22,13 @@ function oauthApi(): OAuthApi {
 }
 
 export const Route = createFileRoute("/.lovable/oauth/consent")({
-  // Browser-only: the Supabase session lives in localStorage, absent during SSR.
+  // Browser-only: auth state lives in the client (Firebase), absent during SSR.
   ssr: false,
   validateSearch: (s: Record<string, unknown>) => ({
     authorization_id: typeof s.authorization_id === "string" ? s.authorization_id : "",
   }),
-  beforeLoad: async ({ search, location }) => {
+  beforeLoad: async ({ search }) => {
     if (!search.authorization_id) throw new Error("Missing authorization_id");
-    const { data } = await supabase.auth.getSession();
-    const next = location.pathname + location.searchStr;
-    if (!data.session) throw redirect({ to: "/auth", search: { next } });
   },
   loader: async ({ location }) => {
     const authorizationId = new URLSearchParams(location.search).get("authorization_id")!;
@@ -69,9 +67,20 @@ function Shell({ children }: { children: React.ReactNode }) {
 function Consent() {
   const details = Route.useLoaderData();
   const { authorization_id } = Route.useSearch();
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const clientName = details?.client?.name ?? "an app";
+
+  useEffect(() => {
+    if (!loading && !user) {
+      const next = `${window.location.pathname}${window.location.search}`;
+      navigate({ to: "/auth", search: { next } });
+    }
+  }, [loading, user, navigate]);
+
+  if (loading || !user) return null;
 
   async function decide(approve: boolean) {
     setBusy(true);

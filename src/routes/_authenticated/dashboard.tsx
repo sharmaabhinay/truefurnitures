@@ -1,10 +1,11 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth/auth-context";
+import { COL, fsList, fsAdd, fsUpdate, where } from "@/lib/db/firestore";
 import {
   formatINR,
   formatDate,
@@ -36,6 +37,7 @@ type Order = {
 type HistoryRow = { id: string; order_id: string; status: string; note: string | null; created_at: string };
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "My Orders — True Furniture's" },
@@ -47,15 +49,19 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 function Dashboard() {
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!authLoading && !user) navigate({ to: "/auth" });
+  }, [authLoading, user, navigate]);
+
   const { data: orders, isLoading } = useQuery({
-    queryKey: ["my-orders"],
+    queryKey: ["my-orders", user?.uid],
+    enabled: !!user,
     queryFn: async (): Promise<Order[]> => {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("id, order_number, sofa_snapshot, fabric_snapshot, size_snapshot, total, deposit_paid, balance_due, status, expected_delivery_date, delivery_city, created_at, cancellation_reason, refund_reason, refund_amount")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as Order[];
+      const rows = await fsList<Order>(COL.orders, where("user_id", "==", user!.uid));
+      return rows.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
     },
   });
 
@@ -64,25 +70,28 @@ function Dashboard() {
     queryKey: ["order-history", orderIds.join(",")],
     enabled: orderIds.length > 0,
     queryFn: async (): Promise<HistoryRow[]> => {
-      const { data, error } = await supabase
-        .from("order_status_history")
-        .select("id, order_id, status, note, created_at")
-        .in("order_id", orderIds)
-        .order("created_at", { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as HistoryRow[];
+      const lists = await Promise.all(
+        orderIds.map((id) => fsList<HistoryRow>(COL.orderStatusHistory, where("order_id", "==", id))),
+      );
+      return lists.flat().sort((a, b) => (a.created_at > b.created_at ? 1 : -1));
     },
   });
 
   const qc = useQueryClient();
   const requestAction = useMutation({
     mutationFn: async ({ orderId, action, reason }: { orderId: string; action: "cancel" | "refund"; reason: string }) => {
-      const { error } = await supabase.rpc("request_order_action", {
-        _order_id: orderId,
-        _action: action,
-        _reason: reason,
+      const status = action === "cancel" ? "cancellation_requested" : "refund_requested";
+      const patch: Record<string, unknown> = { status };
+      if (action === "cancel") patch.cancellation_reason = reason || null;
+      else patch.refund_reason = reason || null;
+      await fsUpdate(COL.orders, orderId, patch);
+      await fsAdd(COL.orderStatusHistory, {
+        order_id: orderId,
+        user_id: user!.uid,
+        status,
+        note: reason || null,
+        created_at: new Date().toISOString(),
       });
-      if (error) throw error;
     },
     onSuccess: (_d, vars) => {
       toast.success(vars.action === "cancel" ? "Cancellation submitted." : "Refund request submitted.");
@@ -101,7 +110,7 @@ function Dashboard() {
           <p className="text-[color:var(--brand-dark)]/60 mt-2">Follow your bespoke pieces from confirmation to delivery.</p>
         </div>
 
-        {isLoading ? (
+        {authLoading || isLoading ? (
           <div className="space-y-6">
             {[0, 1].map((i) => <div key={i} className="tf-skeleton h-48" />)}
           </div>

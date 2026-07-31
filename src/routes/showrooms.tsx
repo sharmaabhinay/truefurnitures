@@ -2,20 +2,30 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { supabase } from "@/integrations/supabase/client";
+import { COL, fsList, orderBy } from "@/lib/db/firestore";
 import showroomIndore from "@/assets/showroom-indore.jpg";
 import showroomUjjain from "@/assets/showroom-ujjain.jpg";
 
+type Showroom = {
+  id: string;
+  slug: string;
+  name: string;
+  city: string;
+  address: string;
+  hours?: string | null;
+  phone?: string | null;
+  is_flagship?: boolean;
+};
+
 const showroomsQuery = queryOptions({
   queryKey: ["showrooms"],
-  queryFn: async () => {
-    const { data, error } = await supabase.from("showrooms").select("*").order("sort_order");
-    if (error) throw error;
-    return data ?? [];
+  queryFn: async (): Promise<Showroom[]> => {
+    return fsList<Showroom>(COL.showrooms, orderBy("sort_order"));
   },
 });
 
 export const Route = createFileRoute("/showrooms")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Showrooms in Indore & Ujjain — Avant-Garde" },
