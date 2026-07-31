@@ -420,6 +420,32 @@ function OrderDetail() {
               <Kv k="Total" v={<span className="font-semibold">{formatINR(Number(order.total))}</span>} />
               <Kv k="Deposit paid" v={formatINR(Number(order.deposit_paid))} />
               <Kv k="Balance due" v={<span style={{ color: Number(order.balance_due) > 0 ? dark.accent : "#98e5b3" }}>{formatINR(Number(order.balance_due))}</span>} />
+              <Kv k="Razorpay order" v={<span className="font-mono text-[10px]">{order.razorpay_order_id ?? "—"}</span>} />
+              <Kv k="Razorpay payment" v={<span className="font-mono text-[10px]">{order.razorpay_payment_id ?? "—"}</span>} />
+              <Kv k="Paid at" v={order.paid_at ? new Date(order.paid_at).toLocaleString("en-IN") : "—"} />
+            </Panel>
+
+            <Panel title="Payment webhook log">
+              {(paymentLogs ?? []).length === 0 ? (
+                <p className="text-sm" style={{ color: dark.mute }}>No webhook events recorded for this order.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {(paymentLogs ?? []).map((ev) => (
+                    <li key={ev.id} className="text-[11px] pb-2 border-b last:border-b-0" style={{ borderColor: "rgba(42,42,56,0.4)" }}>
+                      <div className="flex justify-between gap-2">
+                        <span className="font-semibold">{ev.event_type}</span>
+                        <span style={{ color: ev.status === "processed" ? "#98e5b3" : ev.status === "failed" ? "#e5484d" : dark.mute }}>{ev.status}</span>
+                      </div>
+                      <div style={{ color: dark.mute }}>
+                        {new Date(ev.created_at).toLocaleString("en-IN")}
+                        {ev.amount != null && ` · ${formatINR(Number(ev.amount))}`}
+                      </div>
+                      {ev.razorpay_payment_id && <div className="font-mono" style={{ color: dark.mute }}>{ev.razorpay_payment_id}</div>}
+                      {ev.error && <div style={{ color: "#e5484d" }}>{ev.error}</div>}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </Panel>
 
             <Panel title="Order meta">
