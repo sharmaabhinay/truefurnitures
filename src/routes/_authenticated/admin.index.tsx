@@ -1841,37 +1841,36 @@ function Blog() {
   const qc = useQueryClient();
   const { data } = useQuery({
     queryKey: ["admin-blog"],
-    queryFn: async () =>
-      (await supabase
-        .from("blog_posts")
-        .select("id, slug, title, is_published, created_at")
-        .order("created_at", { ascending: false })).data ?? [],
+    queryFn: async () => fsList<any>(COL.blogPosts, orderBy("created_at", "desc")),
   });
   const create = async () => {
     const title = prompt("Post title");
     if (!title) return;
     const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    const { error } = await supabase.from("blog_posts").insert({
-      title,
-      slug,
-      content: "Write your post here…",
-      excerpt: "",
-      is_published: false,
-    });
-    if (error) return toast.error(error.message);
+    try {
+      await fsAdd(COL.blogPosts, {
+        title,
+        slug,
+        content: "Write your post here…",
+        excerpt: "",
+        is_published: false,
+      });
+    } catch (e) {
+      return toast.error(e instanceof Error ? e.message : "Create failed");
+    }
     qc.invalidateQueries({ queryKey: ["admin-blog"] });
   };
   const toggle = async (id: string, published: boolean) => {
-    const { error } = await supabase
-      .from("blog_posts")
-      .update({ is_published: published, published_at: published ? new Date().toISOString() : null })
-      .eq("id", id);
-    if (error) return toast.error(error.message);
+    try {
+      await fsUpdate(COL.blogPosts, id, { is_published: published, published_at: published ? new Date().toISOString() : null });
+    } catch (e) {
+      return toast.error(e instanceof Error ? e.message : "Update failed");
+    }
     qc.invalidateQueries({ queryKey: ["admin-blog"] });
   };
   const del = async (id: string) => {
     if (!confirm("Delete post?")) return;
-    await supabase.from("blog_posts").delete().eq("id", id);
+    await fsDelete(COL.blogPosts, id);
     qc.invalidateQueries({ queryKey: ["admin-blog"] });
   };
   return (
@@ -1920,11 +1919,14 @@ function Blog() {
 function Designs() {
   const { data } = useQuery({
     queryKey: ["admin-designs"],
-    queryFn: async () =>
-      (await supabase
-        .from("saved_designs")
-        .select("id, name, created_at, share_token, sofa:sofas(name)")
-        .order("created_at", { ascending: false })).data ?? [],
+    queryFn: async () => {
+      const [designs, sofas] = await Promise.all([
+        fsList<any>(COL.savedDesigns, orderBy("created_at", "desc")),
+        fsList<any>(COL.sofas),
+      ]);
+      const byId = new Map(sofas.map((s) => [s.id, s]));
+      return designs.map((d) => ({ ...d, sofa: byId.get(d.sofa_id) }));
+    },
   });
   return (
     <Card className="!p-0">
@@ -1966,11 +1968,14 @@ function Showrooms() {
   const qc = useQueryClient();
   const { data } = useQuery({
     queryKey: ["admin-showrooms"],
-    queryFn: async () => (await supabase.from("showrooms").select("*").order("sort_order")).data ?? [],
+    queryFn: async () => fsList<any>(COL.showrooms, orderBy("sort_order")),
   });
   const update = async (id: string, patch: any) => {
-    const { error } = await supabase.from("showrooms").update(patch).eq("id", id);
-    if (error) return toast.error(error.message);
+    try {
+      await fsUpdate(COL.showrooms, id, patch);
+    } catch (e) {
+      return toast.error(e instanceof Error ? e.message : "Update failed");
+    }
     qc.invalidateQueries({ queryKey: ["admin-showrooms"] });
   };
   return (
@@ -2022,25 +2027,30 @@ function Settings() {
   const brandPatch = <K extends keyof BrandSettings>(k: K, v: BrandSettings[K]) => setBrand((p) => ({ ...p, [k]: v }));
   const saveBrand = async () => {
     setSavingBrand(true);
-    const { error } = await supabase.from("site_settings").update({
-      brand_name: brand.brand_name,
-      tagline: brand.tagline,
-      cities: brand.cities,
-      established: brand.established,
-      phone: brand.phone,
-      whatsapp: brand.whatsapp.replace(/\D/g, ""),
-      email: brand.email,
-      address: brand.address,
-      meta_title: brand.meta_title,
-      meta_description: brand.meta_description,
-      deposit_rate: Number(brand.deposit_rate) || 20,
-      free_delivery_above: Number(brand.free_delivery_above) || 0,
-      delivery_note: brand.delivery_note,
-      announcement: brand.announcement,
-      announcement_on: brand.announcement_on,
-    }).eq("id", "default");
+    try {
+      await fsSet(COL.siteSettings, "default", {
+        brand_name: brand.brand_name,
+        tagline: brand.tagline,
+        cities: brand.cities,
+        established: brand.established,
+        phone: brand.phone,
+        whatsapp: brand.whatsapp.replace(/\D/g, ""),
+        email: brand.email,
+        address: brand.address,
+        meta_title: brand.meta_title,
+        meta_description: brand.meta_description,
+        deposit_rate: Number(brand.deposit_rate) || 20,
+        free_delivery_above: Number(brand.free_delivery_above) || 0,
+        delivery_note: brand.delivery_note,
+        announcement: brand.announcement,
+        announcement_on: brand.announcement_on,
+      });
+    } catch (e) {
+      setSavingBrand(false);
+      toast.error(e instanceof Error ? e.message : "Save failed");
+      return;
+    }
     setSavingBrand(false);
-    if (error) { toast.error(error.message); return; }
     await qc.invalidateQueries({ queryKey: brandQueryKey });
     toast.success("Brand details saved — applied across the site, emails and receipts.");
   };
