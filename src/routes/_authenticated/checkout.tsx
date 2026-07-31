@@ -8,7 +8,7 @@ import { useCart } from "@/lib/cart";
 import { formatINR, estimatedDelivery } from "@/lib/format";
 import { toast } from "sonner";
 import { PaymentMethods } from "@/components/payment-methods";
-import { PhoneVerify } from "@/components/phone-verify";
+import { PhoneVerify, UnverifiedBadge, VerifiedBadge } from "@/components/phone-verify";
 
 export const Route = createFileRoute("/_authenticated/checkout")({
   head: () => ({
