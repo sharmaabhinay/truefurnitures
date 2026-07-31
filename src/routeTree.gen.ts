@@ -37,6 +37,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCheckoutRouteImport } from './routes/_authenticated/checkout'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as ApiPublicWebhooksRazorpayRouteImport } from './routes/api/public/webhooks/razorpay'
 import { Route as AuthenticatedOrdersIdReceiptRouteImport } from './routes/_authenticated/orders.$id.receipt'
 import { Route as AuthenticatedAdminOrdersIdRouteImport } from './routes/_authenticated/admin.orders.$id'
@@ -181,6 +182,11 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
+  id: '/api/public/health',
+  path: '/api/public/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWebhooksRazorpayRoute =
   ApiPublicWebhooksRazorpayRouteImport.update({
     id: '/api/public/webhooks/razorpay',
@@ -233,6 +239,7 @@ export interface FileRoutesByFullPath {
   '/configure/$slug': typeof ConfigureSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/shared-design/$token': typeof SharedDesignTokenRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/admin/customers/$id': typeof AuthenticatedAdminCustomersIdRoute
   '/admin/orders/$id': typeof AuthenticatedAdminOrdersIdRoute
@@ -265,6 +272,7 @@ export interface FileRoutesByTo {
   '/configure/$slug': typeof ConfigureSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/shared-design/$token': typeof SharedDesignTokenRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/admin/customers/$id': typeof AuthenticatedAdminCustomersIdRoute
   '/admin/orders/$id': typeof AuthenticatedAdminOrdersIdRoute
@@ -300,6 +308,7 @@ export interface FileRoutesById {
   '/configure/$slug': typeof ConfigureSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/shared-design/$token': typeof SharedDesignTokenRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/admin/customers/$id': typeof AuthenticatedAdminCustomersIdRoute
   '/_authenticated/admin/orders/$id': typeof AuthenticatedAdminOrdersIdRoute
@@ -335,6 +344,7 @@ export interface FileRouteTypes {
     | '/configure/$slug'
     | '/products/$slug'
     | '/shared-design/$token'
+    | '/api/public/health'
     | '/admin/'
     | '/admin/customers/$id'
     | '/admin/orders/$id'
@@ -367,6 +377,7 @@ export interface FileRouteTypes {
     | '/configure/$slug'
     | '/products/$slug'
     | '/shared-design/$token'
+    | '/api/public/health'
     | '/admin'
     | '/admin/customers/$id'
     | '/admin/orders/$id'
@@ -401,6 +412,7 @@ export interface FileRouteTypes {
     | '/configure/$slug'
     | '/products/$slug'
     | '/shared-design/$token'
+    | '/api/public/health'
     | '/_authenticated/admin/'
     | '/_authenticated/admin/customers/$id'
     | '/_authenticated/admin/orders/$id'
@@ -429,6 +441,7 @@ export interface RootRouteChildren {
   ConfigureSlugRoute: typeof ConfigureSlugRoute
   ProductsSlugRoute: typeof ProductsSlugRoute
   SharedDesignTokenRoute: typeof SharedDesignTokenRoute
+  ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicWebhooksRazorpayRoute: typeof ApiPublicWebhooksRazorpayRoute
 }
 
@@ -630,6 +643,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/api/public/health': {
+      id: '/api/public/health'
+      path: '/api/public/health'
+      fullPath: '/api/public/health'
+      preLoaderRoute: typeof ApiPublicHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/webhooks/razorpay': {
       id: '/api/public/webhooks/razorpay'
       path: '/api/public/webhooks/razorpay'
@@ -730,6 +750,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConfigureSlugRoute: ConfigureSlugRoute,
   ProductsSlugRoute: ProductsSlugRoute,
   SharedDesignTokenRoute: SharedDesignTokenRoute,
+  ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicWebhooksRazorpayRoute: ApiPublicWebhooksRazorpayRoute,
 }
 export const routeTree = rootRouteImport
