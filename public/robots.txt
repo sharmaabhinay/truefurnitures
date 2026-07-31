@@ -1,0 +1,14 @@
+# True Furniture's · Indore & Ujjain
+User-agent: *
+Allow: /
+
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /checkout
+Disallow: /payment
+Disallow: /my-designs
+Disallow: /reset-password
+Disallow: /api/
+
+Sitemap: https://project--457d33ec-429c-4ee3-b069-5856f6428284.lovable.app/sitemap.xml
