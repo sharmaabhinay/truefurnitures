@@ -13,6 +13,7 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as ShowroomsRouteImport } from './routes/showrooms'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as HireCarpenterRouteImport } from './routes/hire-carpenter'
 import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as FaqRouteImport } from './routes/faq'
 import { Route as DesignRouteImport } from './routes/design'
@@ -61,6 +62,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HireCarpenterRoute = HireCarpenterRouteImport.update({
+  id: '/hire-carpenter',
+  path: '/hire-carpenter',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GalleryRoute = GalleryRouteImport.update({
@@ -225,6 +231,7 @@ export interface FileRoutesByFullPath {
   '/design': typeof DesignRoute
   '/faq': typeof FaqRoute
   '/gallery': typeof GalleryRoute
+  '/hire-carpenter': typeof HireCarpenterRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/showrooms': typeof ShowroomsRoute
@@ -259,6 +266,7 @@ export interface FileRoutesByTo {
   '/design': typeof DesignRoute
   '/faq': typeof FaqRoute
   '/gallery': typeof GalleryRoute
+  '/hire-carpenter': typeof HireCarpenterRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/showrooms': typeof ShowroomsRoute
@@ -294,6 +302,7 @@ export interface FileRoutesById {
   '/design': typeof DesignRoute
   '/faq': typeof FaqRoute
   '/gallery': typeof GalleryRoute
+  '/hire-carpenter': typeof HireCarpenterRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/showrooms': typeof ShowroomsRoute
@@ -330,6 +339,7 @@ export interface FileRouteTypes {
     | '/design'
     | '/faq'
     | '/gallery'
+    | '/hire-carpenter'
     | '/privacy'
     | '/reset-password'
     | '/showrooms'
@@ -364,6 +374,7 @@ export interface FileRouteTypes {
     | '/design'
     | '/faq'
     | '/gallery'
+    | '/hire-carpenter'
     | '/privacy'
     | '/reset-password'
     | '/showrooms'
@@ -398,6 +409,7 @@ export interface FileRouteTypes {
     | '/design'
     | '/faq'
     | '/gallery'
+    | '/hire-carpenter'
     | '/privacy'
     | '/reset-password'
     | '/showrooms'
@@ -434,6 +446,7 @@ export interface RootRouteChildren {
   DesignRoute: typeof DesignRoute
   FaqRoute: typeof FaqRoute
   GalleryRoute: typeof GalleryRoute
+  HireCarpenterRoute: typeof HireCarpenterRoute
   PrivacyRoute: typeof PrivacyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   ShowroomsRoute: typeof ShowroomsRoute
@@ -473,6 +486,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hire-carpenter': {
+      id: '/hire-carpenter'
+      path: '/hire-carpenter'
+      fullPath: '/hire-carpenter'
+      preLoaderRoute: typeof HireCarpenterRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gallery': {
@@ -743,6 +763,7 @@ const rootRouteChildren: RootRouteChildren = {
   DesignRoute: DesignRoute,
   FaqRoute: FaqRoute,
   GalleryRoute: GalleryRoute,
+  HireCarpenterRoute: HireCarpenterRoute,
   PrivacyRoute: PrivacyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   ShowroomsRoute: ShowroomsRoute,
