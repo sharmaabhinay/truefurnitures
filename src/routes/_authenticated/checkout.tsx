@@ -364,10 +364,21 @@ function Checkout() {
               </div>
             </section>
 
+            <section id="tf-phone-verify">
+              <PhoneVerify
+                phone={form.phone}
+                verified={phoneVerified}
+                onVerified={(e164) => setVerifiedPhone(e164.replace(/\D/g, "").slice(-10))}
+              />
+            </section>
+
             <section className="bg-[color:var(--brand-muted)]/50 border border-[color:var(--brand-dark)]/10 p-6">
               <h2 className="font-display text-lg mb-2">Reserve · Pay Later</h2>
               <p className="text-sm text-[color:var(--brand-dark)]/70">
                 Pay a 20% booking deposit to lock in your build slot. The balance is due on delivery. Our team will contact you within 24 hours to confirm the deposit and fabric choices.
+              </p>
+              <p className="mt-3 text-sm text-[color:var(--brand-dark)]/80 border-l-2 border-[color:var(--brand-accent)] pl-3">
+                Please note: our craftsmen begin making your furniture only after the order is successfully placed and the initial deposit is paid.
               </p>
             </section>
 
@@ -409,9 +420,12 @@ function Checkout() {
               </div>
               <div className="text-[10px] text-[color:var(--brand-dark)]/60 pt-1">Estimated delivery by {estimatedDelivery(30)}.</div>
             </div>
-            <button type="submit" disabled={submitting} className="mt-6 w-full px-6 py-4 bg-[color:var(--brand-dark)] text-white text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2">
+            <p className="mt-4 text-[10px] text-[color:var(--brand-dark)]/60 leading-relaxed">
+              Crafting begins once your order is placed and the 20% deposit is paid.
+            </p>
+            <button type="submit" disabled={submitting || !phoneVerified} className="mt-3 w-full px-6 py-4 bg-[color:var(--brand-dark)] text-white text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2">
               <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 10V7a6 6 0 1112 0v3"/><rect x="4" y="10" width="16" height="11" rx="2"/></svg>
-              {submitting ? "Processing…" : `Continue to Payment · ${formatINR(deposit)}`}
+              {submitting ? "Processing…" : !phoneVerified ? "Verify Mobile to Continue" : `Continue to Payment · ${formatINR(deposit)}`}
             </button>
             <Link to="/cart" className="mt-3 block text-center text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-dark)]/60 hover:text-[color:var(--brand-accent)]">
               ← Back to Cart
