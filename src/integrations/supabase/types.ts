@@ -536,6 +536,62 @@ export type Database = {
           },
         ]
       }
+      payment_events: {
+        Row: {
+          amount: number | null
+          created_at: string
+          currency: string | null
+          error: string | null
+          event_id: string
+          event_type: string
+          id: string
+          order_id: string | null
+          payload: Json | null
+          razorpay_order_id: string | null
+          razorpay_payment_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          currency?: string | null
+          error?: string | null
+          event_id: string
+          event_type: string
+          id?: string
+          order_id?: string | null
+          payload?: Json | null
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          currency?: string | null
+          error?: string | null
+          event_id?: string
+          event_type?: string
+          id?: string
+          order_id?: string | null
+          payload?: Json | null
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -774,6 +830,69 @@ export type Database = {
           phone?: string | null
           slug?: string
           sort_order?: number
+        }
+        Relationships: []
+      }
+      site_settings: {
+        Row: {
+          address: string
+          announcement: string | null
+          announcement_on: boolean
+          brand_name: string
+          cities: string
+          created_at: string
+          delivery_note: string
+          deposit_rate: number
+          email: string
+          established: string
+          free_delivery_above: number
+          id: string
+          meta_description: string
+          meta_title: string
+          phone: string
+          tagline: string
+          updated_at: string
+          whatsapp: string
+        }
+        Insert: {
+          address?: string
+          announcement?: string | null
+          announcement_on?: boolean
+          brand_name?: string
+          cities?: string
+          created_at?: string
+          delivery_note?: string
+          deposit_rate?: number
+          email?: string
+          established?: string
+          free_delivery_above?: number
+          id?: string
+          meta_description?: string
+          meta_title?: string
+          phone?: string
+          tagline?: string
+          updated_at?: string
+          whatsapp?: string
+        }
+        Update: {
+          address?: string
+          announcement?: string | null
+          announcement_on?: boolean
+          brand_name?: string
+          cities?: string
+          created_at?: string
+          delivery_note?: string
+          deposit_rate?: number
+          email?: string
+          established?: string
+          free_delivery_above?: number
+          id?: string
+          meta_description?: string
+          meta_title?: string
+          phone?: string
+          tagline?: string
+          updated_at?: string
+          whatsapp?: string
         }
         Relationships: []
       }

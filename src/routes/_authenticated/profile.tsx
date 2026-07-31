@@ -4,6 +4,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { UnverifiedBadge, VerifiedBadge } from "@/components/phone-verify";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/profile")({
@@ -26,6 +27,7 @@ type Profile = {
   phone: string | null;
   city: string | null;
   avatar_url: string | null;
+  phone_verified?: boolean | null;
 };
 
 type Address = {
@@ -76,12 +78,14 @@ function ProfilePage() {
   const [form, setForm] = useState<AddressForm>(EMPTY_ADDR);
   const [errs, setErrs] = useState<Partial<Record<keyof AddressForm, string>>>({});
   const [savingAddr, setSavingAddr] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
 
   useEffect(() => {
     (async () => {
       const { data } = await supabase.auth.getUser();
       const uid = data.user?.id ?? null;
       setUserId(uid);
+      setEmailVerified(!!data.user?.email_confirmed_at);
       if (!uid) return;
       const [{ data: p }, { data: a }] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", uid).maybeSingle(),
@@ -238,13 +242,22 @@ function ProfilePage() {
                   <input className={inputCls} value={profile.full_name ?? ""} onChange={(e) => setProfile({ ...profile, full_name: e.target.value })} />
                 </div>
                 <div>
-                  <label className={labelCls}>Email</label>
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <label className={labelCls}>Email</label>
+                    {emailVerified ? <VerifiedBadge label="Verified" /> : <UnverifiedBadge label="Unverified" />}
+                  </div>
                   <input type="email" className={inputCls} value={profile.email ?? ""} onChange={(e) => setProfile({ ...profile, email: e.target.value })} />
                   <p className="text-[10px] text-[color:var(--brand-dark)]/50 mt-1">Changing email sends a confirmation link to the new address.</p>
                 </div>
                 <div>
-                  <label className={labelCls}>Mobile</label>
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <label className={labelCls}>Mobile</label>
+                    {profile.phone_verified ? <VerifiedBadge label="Verified" /> : <UnverifiedBadge label="Unverified" />}
+                  </div>
                   <input inputMode="numeric" maxLength={10} className={inputCls} value={profile.phone ?? ""} onChange={(e) => setProfile({ ...profile, phone: e.target.value.replace(/\D/g, "") })} placeholder="10-digit" />
+                  {!profile.phone_verified && (
+                    <p className="text-[10px] text-[color:var(--brand-dark)]/50 mt-1">Your mobile is verified by OTP during checkout.</p>
+                  )}
                 </div>
                 <div>
                   <label className={labelCls}>City</label>

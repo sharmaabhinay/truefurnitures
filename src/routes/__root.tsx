@@ -86,6 +86,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "True Furniture's — Fully Customizable Furniture" },
       { property: "og:description", content: "Fully customizable sofas designed in 3D. Hand-tailored in Indore & Ujjain." },
       { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "True Furniture's" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
@@ -99,6 +100,30 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap",
+      },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "FurnitureStore",
+          name: "True Furniture's",
+          slogan: "Fully Customizable Furniture",
+          description:
+            "True Furniture's — fully customizable sofas designed in 3D. Hand-tailored in Indore & Ujjain.",
+          telephone: "+91 77738 96496",
+          email: "hello@truefurnitures.in",
+          areaServed: ["Indore", "Ujjain"],
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: "Vijay Nagar",
+            addressLocality: "Indore",
+            addressRegion: "Madhya Pradesh",
+            postalCode: "452010",
+            addressCountry: "IN",
+          },
+        }),
       },
     ],
   }),

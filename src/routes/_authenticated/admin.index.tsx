@@ -6,6 +6,7 @@ import type { Json } from "@/integrations/supabase/types";
 import { formatINR, formatDate, ORDER_STATUS_STEPS } from "@/lib/format";
 import { toast } from "sonner";
 import { getVisitors, clearVisitors, getDeviceIcon, getBrowser, type VisitorEvent } from "@/lib/visitor-tracker";
+import { brandQueryKey, fetchBrand, DEFAULT_BRAND, type BrandSettings } from "@/lib/brand";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   ssr: false,
@@ -1983,9 +1984,43 @@ function Showrooms() {
 
 function Settings() {
   const CMS_KEY = "tf_site_cms";
-  const STORE_KEY = "tf_store_info";
-  const TABS = ["Site CMS", "Store Info", "API Config", "Danger Zone"] as const;
-  const [tab, setTab] = useState<(typeof TABS)[number]>("Site CMS");
+  const TABS = ["Brand & Store", "Site CMS", "API Config", "Danger Zone"] as const;
+  const [tab, setTab] = useState<(typeof TABS)[number]>("Brand & Store");
+  const qc = useQueryClient();
+
+  // Single source of truth: site_settings row drives the storefront, emails, SEO and receipts.
+  const { data: brandRow } = useQuery({ queryKey: brandQueryKey, queryFn: fetchBrand });
+  const [brand, setBrand] = useState<BrandSettings>(DEFAULT_BRAND);
+  const [brandLoaded, setBrandLoaded] = useState(false);
+  const [savingBrand, setSavingBrand] = useState(false);
+  useEffect(() => {
+    if (brandRow && !brandLoaded) { setBrand(brandRow); setBrandLoaded(true); }
+  }, [brandRow, brandLoaded]);
+  const brandPatch = <K extends keyof BrandSettings>(k: K, v: BrandSettings[K]) => setBrand((p) => ({ ...p, [k]: v }));
+  const saveBrand = async () => {
+    setSavingBrand(true);
+    const { error } = await supabase.from("site_settings").update({
+      brand_name: brand.brand_name,
+      tagline: brand.tagline,
+      cities: brand.cities,
+      established: brand.established,
+      phone: brand.phone,
+      whatsapp: brand.whatsapp.replace(/\D/g, ""),
+      email: brand.email,
+      address: brand.address,
+      meta_title: brand.meta_title,
+      meta_description: brand.meta_description,
+      deposit_rate: Number(brand.deposit_rate) || 20,
+      free_delivery_above: Number(brand.free_delivery_above) || 0,
+      delivery_note: brand.delivery_note,
+      announcement: brand.announcement,
+      announcement_on: brand.announcement_on,
+    }).eq("id", "default");
+    setSavingBrand(false);
+    if (error) { toast.error(error.message); return; }
+    await qc.invalidateQueries({ queryKey: brandQueryKey });
+    toast.success("Brand details saved — applied across the site, emails and receipts.");
+  };
 
   const [cms, setCms] = useState({
     hero_headline: "Your perfect sofa, crafted for you",
@@ -1995,22 +2030,6 @@ function Settings() {
     hero_badge: "True Furniture's · Indore & Ujjain · Est. 2007",
     hero_cta1: "Browse All Sofas",
     hero_cta2: "Get Free Quote",
-    announcement: "",
-    announcement_on: false,
-    meta_title: "True Furniture's — Custom Sofas",
-    meta_description: "Fully customizable sofas designed in 3D. Hand-tailored in Indore & Ujjain.",
-    whatsapp_number: "7773896496",
-    delivery_note: "Free delivery in Indore & MP above ₹15,000",
-  });
-
-  const [store, setStore] = useState({
-    storeName: "True Furniture's",
-    phone: "+91 77738 96496",
-    email: "hello@truefurnitures.in",
-    address: "Vijay Nagar, Indore — 452010",
-    adminEmail: "admin@truefurnitures.in",
-    depositRate: 20,
-    freeDelivery: 15000,
   });
 
   const [apiUrl, setApiUrl] = useState("");
@@ -2019,8 +2038,6 @@ function Settings() {
     try {
       const c = window.localStorage.getItem(CMS_KEY);
       if (c) setCms((p) => ({ ...p, ...JSON.parse(c) }));
-      const s = window.localStorage.getItem(STORE_KEY);
-      if (s) setStore((p) => ({ ...p, ...JSON.parse(s) }));
       setApiUrl(window.location.origin);
     } catch {
       /* ignore */
@@ -2031,14 +2048,6 @@ function Settings() {
     try {
       window.localStorage.setItem(CMS_KEY, JSON.stringify(cms));
       toast.success("Site CMS saved locally.");
-    } catch {
-      toast.error("Could not save.");
-    }
-  };
-  const saveStore = () => {
-    try {
-      window.localStorage.setItem(STORE_KEY, JSON.stringify(store));
-      toast.success("Store info saved locally.");
     } catch {
       toast.error("Could not save.");
     }
@@ -2066,8 +2075,6 @@ function Settings() {
   };
 
   const cmsPatch = <K extends keyof typeof cms>(k: K, v: (typeof cms)[K]) => setCms((p) => ({ ...p, [k]: v }));
-  const storePatch = <K extends keyof typeof store>(k: K, v: (typeof store)[K]) =>
-    setStore((p) => ({ ...p, [k]: v }));
 
   return (
     <div className="space-y-5 max-w-4xl">
@@ -2125,28 +2132,11 @@ function Settings() {
                   <img src={cms.hero_image} alt="" className="mt-3 w-full h-32 object-cover rounded-md opacity-70" />
                 )}
               </Field>
-              <Field label="Meta Title (SEO)">
-                <DarkInput value={cms.meta_title} onChange={(e) => cmsPatch("meta_title", e.target.value)} />
-              </Field>
-              <Field label="Meta Description (SEO)">
-                <DarkTextarea rows={2} value={cms.meta_description} onChange={(e) => cmsPatch("meta_description", e.target.value)} />
-              </Field>
-              <div className="text-[11px] uppercase tracking-[0.14em] pt-2" style={{ color: "#C8A86B" }}>
-                Announcement Bar
+              <div className="rounded-md p-3 text-[12px]" style={{ background: "rgba(200,168,107,0.08)", border: "1px solid #2A2A38", color: "#888899" }}>
+                SEO meta, announcement bar, WhatsApp number and the delivery note now live in the
+                <strong style={{ color: "#C8A86B" }}> Brand &amp; Store </strong> tab, so one edit updates the site,
+                emails and receipts together.
               </div>
-              <div className="flex items-center justify-between py-1">
-                <div className="text-[13px]">Show announcement</div>
-                <FeatureToggle defaultOn={cms.announcement_on} />
-              </div>
-              <Field label="Announcement Text">
-                <DarkInput value={cms.announcement} onChange={(e) => cmsPatch("announcement", e.target.value)} placeholder='e.g. "🎉 Sale — 20% off recliners"' />
-              </Field>
-              <Field label="WhatsApp Number">
-                <DarkInput value={cms.whatsapp_number} onChange={(e) => cmsPatch("whatsapp_number", e.target.value)} />
-              </Field>
-              <Field label="Delivery Note">
-                <DarkInput value={cms.delivery_note} onChange={(e) => cmsPatch("delivery_note", e.target.value)} />
-              </Field>
             </div>
           </div>
           <button
@@ -2159,48 +2149,87 @@ function Settings() {
         </Card>
       )}
 
-      {tab === "Store Info" && (
+      {tab === "Brand & Store" && (
         <Card>
-          <CardTitle>Store Information</CardTitle>
+          <CardTitle right="One place — applies everywhere">Brand & Store</CardTitle>
+          <p className="text-[12px] mb-4" style={{ color: "#888899" }}>
+            These details are the single source of truth. Changing them updates the storefront, page titles &amp; social
+            previews, every Resend email, and order receipts automatically.
+          </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Store Name">
-              <DarkInput value={store.storeName} onChange={(e) => storePatch("storeName", e.target.value)} />
+            <Field label="Brand Name">
+              <DarkInput value={brand.brand_name} onChange={(e) => brandPatch("brand_name", e.target.value)} />
+            </Field>
+            <Field label="Tagline">
+              <DarkInput value={brand.tagline} onChange={(e) => brandPatch("tagline", e.target.value)} />
+            </Field>
+            <Field label="Cities">
+              <DarkInput value={brand.cities} onChange={(e) => brandPatch("cities", e.target.value)} />
+            </Field>
+            <Field label="Established">
+              <DarkInput value={brand.established} onChange={(e) => brandPatch("established", e.target.value)} />
             </Field>
             <Field label="Phone">
-              <DarkInput value={store.phone} onChange={(e) => storePatch("phone", e.target.value)} />
+              <DarkInput value={brand.phone} onChange={(e) => brandPatch("phone", e.target.value)} />
+            </Field>
+            <Field label="WhatsApp (digits, with country code)">
+              <DarkInput value={brand.whatsapp} onChange={(e) => brandPatch("whatsapp", e.target.value)} />
             </Field>
             <Field label="Email">
-              <DarkInput value={store.email} onChange={(e) => storePatch("email", e.target.value)} />
+              <DarkInput value={brand.email} onChange={(e) => brandPatch("email", e.target.value)} />
             </Field>
-            <Field label="Admin Email">
-              <DarkInput value={store.adminEmail} onChange={(e) => storePatch("adminEmail", e.target.value)} />
+            <Field label="Address">
+              <DarkInput value={brand.address} onChange={(e) => brandPatch("address", e.target.value)} />
             </Field>
-            <div className="sm:col-span-2">
-              <Field label="Address">
-                <DarkInput value={store.address} onChange={(e) => storePatch("address", e.target.value)} />
-              </Field>
-            </div>
             <Field label="Advance Deposit (%)">
-              <DarkInput
-                type="number"
-                value={store.depositRate}
-                onChange={(e) => storePatch("depositRate", Number(e.target.value))}
-              />
+              <DarkInput type="number" value={brand.deposit_rate} onChange={(e) => brandPatch("deposit_rate", Number(e.target.value))} />
             </Field>
             <Field label="Free Delivery Above (₹)">
-              <DarkInput
-                type="number"
-                value={store.freeDelivery}
-                onChange={(e) => storePatch("freeDelivery", Number(e.target.value))}
-              />
+              <DarkInput type="number" value={brand.free_delivery_above} onChange={(e) => brandPatch("free_delivery_above", Number(e.target.value))} />
             </Field>
+            <div className="sm:col-span-2">
+              <Field label="Delivery Note">
+                <DarkInput value={brand.delivery_note} onChange={(e) => brandPatch("delivery_note", e.target.value)} />
+              </Field>
+            </div>
+            <div className="sm:col-span-2">
+              <Field label="Meta Title (SEO)">
+                <DarkInput value={brand.meta_title} onChange={(e) => brandPatch("meta_title", e.target.value)} />
+              </Field>
+            </div>
+            <div className="sm:col-span-2">
+              <Field label="Meta Description (SEO)">
+                <DarkTextarea rows={2} value={brand.meta_description} onChange={(e) => brandPatch("meta_description", e.target.value)} />
+              </Field>
+            </div>
+            <div className="sm:col-span-2 flex items-center justify-between py-1">
+              <div className="text-[13px]">Show announcement bar</div>
+              <button
+                type="button"
+                onClick={() => brandPatch("announcement_on", !brand.announcement_on)}
+                className="relative w-9 h-5 rounded-full transition-colors"
+                style={{ background: brand.announcement_on ? "#4CAF82" : "#2A2A38" }}
+                aria-label="Toggle announcement bar"
+              >
+                <span
+                  className="absolute top-0.5 size-4 rounded-full bg-white transition-all"
+                  style={{ left: brand.announcement_on ? "18px" : "2px" }}
+                />
+              </button>
+            </div>
+            <div className="sm:col-span-2">
+              <Field label="Announcement Text">
+                <DarkInput value={brand.announcement ?? ""} onChange={(e) => brandPatch("announcement", e.target.value)} placeholder='e.g. "🎉 Sale — 20% off recliners"' />
+              </Field>
+            </div>
           </div>
           <button
-            onClick={saveStore}
-            className="mt-6 rounded-md px-6 py-2.5 text-[13px] font-semibold"
+            onClick={saveBrand}
+            disabled={savingBrand}
+            className="mt-6 rounded-md px-6 py-2.5 text-[13px] font-semibold disabled:opacity-60"
             style={{ background: "#C8A86B", color: "#1a1a1a" }}
           >
-            💾 Save Store Info
+            {savingBrand ? "Saving…" : "💾 Save Brand Details"}
           </button>
         </Card>
       )}
@@ -2249,45 +2278,6 @@ function Settings() {
   );
 }
 
-function FeatureToggle({ defaultOn }: { defaultOn: boolean }) {
-  const [on, setOn] = useState(defaultOn);
-  return (
-    <button
-      onClick={() => setOn((v) => !v)}
-      className="relative w-9 h-5 rounded-full transition-colors"
-      style={{ background: on ? "#4CAF82" : "#2A2A38" }}
-      aria-pressed={on}
-    >
-      <span
-        className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all"
-        style={{ left: on ? "18px" : "2px" }}
-      />
-    </button>
-  );
-}
-
-/* ================= VISITOR ANALYTICS ================= */
-
-const V_TYPE_ICONS: Record<string, string> = {
-  session: "🌐",
-  visit: "📍",
-  add_to_cart: "🛒",
-  quote: "💬",
-  newsletter: "📧",
-  product_view: "👁️",
-  view_3d: "🧊",
-};
-const V_TYPE_COLORS: Record<string, string> = {
-  session: "#5090E0",
-  visit: "#4CAF82",
-  add_to_cart: "#B478FF",
-  quote: "#C8A86B",
-  newsletter: "#E56AA7",
-  product_view: "#5090E0",
-  view_3d: "#B478FF",
-};
-const V_ALL_TYPES = ["all", "session", "visit", "product_view", "view_3d", "add_to_cart", "quote", "newsletter"];
-
 function fmtRel(iso: string) {
   const t = new Date(iso).getTime();
   const diff = Date.now() - t;
@@ -2296,6 +2286,37 @@ function fmtRel(iso: string) {
   if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
   return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 }
+
+const V_ALL_TYPES = [
+  "all",
+  "session",
+  "visit",
+  "product_view",
+  "view_3d",
+  "add_to_cart",
+  "quote",
+  "newsletter",
+] as const;
+
+const V_TYPE_ICONS: Record<string, string> = {
+  session: "👤",
+  visit: "👁️",
+  product_view: "🛋️",
+  view_3d: "🧊",
+  add_to_cart: "🛒",
+  quote: "📝",
+  newsletter: "✉️",
+};
+
+const V_TYPE_COLORS: Record<string, string> = {
+  session: "#C8A86B",
+  visit: "#6BA8C8",
+  product_view: "#4CAF82",
+  view_3d: "#A86BC8",
+  add_to_cart: "#E0A458",
+  quote: "#E5484D",
+  newsletter: "#6BC8B4",
+};
 
 function Visitors() {
   const [visitors, setVisitors] = useState<VisitorEvent[]>([]);

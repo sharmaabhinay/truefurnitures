@@ -1,3 +1,4 @@
+import { useBrand } from "@/lib/brand";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, queryOptions } from "@tanstack/react-query";
@@ -48,6 +49,7 @@ const STATIC_SUGGESTIONS = [
 ] as const;
 
 export function SiteHeader() {
+  const brand = useBrand();
   const [signedIn, setSignedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [open, setOpen] = useState(false);
@@ -133,7 +135,7 @@ export function SiteHeader() {
     <>
       <nav className="sticky top-0 z-50 flex items-center justify-between gap-3 px-4 sm:px-6 md:px-10 py-4 md:py-5 bg-[color:var(--brand-cream)]/85 backdrop-blur-md border-b border-[color:var(--brand-dark)]/5">
         <Link to="/" className="font-display text-xl sm:text-2xl font-bold tracking-tight text-[color:var(--brand-dark)] hover:text-[color:var(--brand-accent)] transition-colors shrink-0">
-          True Furniture&apos;s
+          {brand.brand_name}
         </Link>
         <div className="hidden lg:flex gap-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-[color:var(--brand-dark)]">
           {primaryNav.map((n) => (
@@ -252,7 +254,7 @@ export function SiteHeader() {
           <div className="absolute inset-0 bg-[color:var(--brand-dark)]/50 backdrop-blur-sm" onClick={() => setOpen(false)} />
           <div className="absolute right-0 top-0 h-full w-[86%] max-w-sm bg-[color:var(--brand-cream)] p-6 flex flex-col animate-slide-in">
             <div className="flex items-center justify-between mb-8">
-              <span className="font-display text-xl">True Furniture&apos;s</span>
+              <span className="font-display text-xl">{brand.brand_name}</span>
               <button aria-label="Close menu" onClick={() => setOpen(false)} className="p-2 -mr-2">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M6 6l12 12M18 6L6 18"/></svg>
               </button>

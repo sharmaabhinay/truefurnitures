@@ -7,10 +7,12 @@ type Props = {
   onComplete?: (v: string) => void;
   disabled?: boolean;
   error?: boolean;
+  /** Small inline boxes for use directly beneath a form field. */
+  compact?: boolean;
 };
 
 /** Fancy animated OTP entry — auto-advance, paste support, shake on error. */
-export function OtpInput({ length = 6, value, onChange, onComplete, disabled, error }: Props) {
+export function OtpInput({ length = 6, value, onChange, onComplete, disabled, error, compact }: Props) {
   const refs = useRef<Array<HTMLInputElement | null>>([]);
   const [focused, setFocused] = useState<number | null>(null);
 
@@ -27,12 +29,12 @@ export function OtpInput({ length = 6, value, onChange, onComplete, disabled, er
   };
 
   return (
-    <div className={`flex gap-2 sm:gap-3 ${error ? "animate-[tf-shake_0.4s_ease-in-out]" : ""}`}>
+    <div className={`flex ${compact ? "gap-1.5" : "gap-2 sm:gap-3"} ${error ? "animate-[tf-shake_0.4s_ease-in-out]" : ""}`}>
       {Array.from({ length }).map((_, i) => {
         const char = value[i] ?? "";
         const active = focused === i || (focused === null && value.length === i);
         return (
-          <div key={i} className="relative flex-1">
+          <div key={i} className={compact ? "relative" : "relative flex-1"}>
             <input
               ref={(el) => { refs.current[i] = el; }}
               inputMode="numeric"
@@ -71,7 +73,9 @@ export function OtpInput({ length = 6, value, onChange, onComplete, disabled, er
                 if (e.key === "ArrowRight" && i < length - 1) refs.current[i + 1]?.focus();
               }}
               className={[
-                "w-full aspect-square text-center font-display text-2xl bg-white outline-none transition-all duration-300",
+                compact
+                  ? "w-9 h-11 text-center font-display text-lg bg-white outline-none transition-all duration-300"
+                  : "w-full aspect-square text-center font-display text-2xl bg-white outline-none transition-all duration-300",
                 "border",
                 error
                   ? "border-red-500 text-red-600"
@@ -83,7 +87,7 @@ export function OtpInput({ length = 6, value, onChange, onComplete, disabled, er
               ].join(" ")}
             />
             <span
-              className={`pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-1 h-[2px] bg-[color:var(--brand-accent)] transition-all duration-300 ${char ? "w-6 opacity-100" : "w-0 opacity-0"}`}
+              className={`pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-1 h-[2px] bg-[color:var(--brand-accent)] transition-all duration-300 ${char ? (compact ? "w-4 opacity-100" : "w-6 opacity-100") : "w-0 opacity-0"}`}
             />
           </div>
         );
