@@ -1,12 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { PaymentMethods } from "@/components/payment-methods";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth/auth-context";
+import { COL, fsGet } from "@/lib/db/firestore";
 import { formatINR, estimatedDelivery } from "@/lib/format";
 import { createRazorpayOrder, verifyRazorpayPayment } from "@/lib/razorpay.functions";
 import { openRazorpayCheckout } from "@/lib/razorpay-checkout";
@@ -17,6 +18,7 @@ const searchSchema = z.object({
 });
 
 export const Route = createFileRoute("/_authenticated/payment")({
+  ssr: false,
   validateSearch: (s: Record<string, unknown>) => searchSchema.parse(s),
   head: () => ({
     meta: [
@@ -48,10 +50,15 @@ type OrderRow = {
 
 function PaymentPage() {
   const { orders: ordersParam } = Route.useSearch();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const createRzp = useServerFn(createRazorpayOrder);
   const verifyRzp = useServerFn(verifyRazorpayPayment);
   const [processing, setProcessing] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && !user) navigate({ to: "/auth" });
+  }, [authLoading, user, navigate]);
 
   const orderIds = useMemo(
     () => String(ordersParam).split(",").map((s: string) => s.trim()).filter(Boolean),
@@ -62,12 +69,8 @@ function PaymentPage() {
     queryKey: ["payment-orders", orderIds.join(",")],
     enabled: orderIds.length > 0,
     queryFn: async (): Promise<OrderRow[]> => {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("id, order_number, total, deposit_paid, balance_due, status, delivery_city, phone, expected_delivery_date, sofa_snapshot, fabric_snapshot")
-        .in("id", orderIds);
-      if (error) throw error;
-      return (data ?? []) as OrderRow[];
+      const rows = await Promise.all(orderIds.map((id) => fsGet<OrderRow>(COL.orders, id)));
+      return rows.filter((r): r is OrderRow => !!r);
     },
   });
 
@@ -130,7 +133,7 @@ function PaymentPage() {
           </p>
         </div>
 
-        {isLoading ? (
+        {authLoading || isLoading ? (
           <div className="tf-skeleton h-96" />
         ) : orders.length === 0 ? (
           <div className="border border-[color:var(--brand-dark)]/10 p-10 text-center bg-white">

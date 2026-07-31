@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { supabase } from "@/integrations/supabase/client";
+import { COL, fsList, where, orderBy, limit } from "@/lib/db/firestore";
 import { formatDate } from "@/lib/format";
 
 export const Route = createFileRoute("/gallery")({
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/gallery")({
   component: Gallery,
 });
 
-type Review = {
+type RawReview = {
   id: string;
   rating: number;
   title: string | null;
@@ -27,8 +27,12 @@ type Review = {
   images: string[] | null;
   city: string | null;
   created_at: string;
-  sofa: { name: string; slug: string } | null;
+  sofa_id: string | null;
 };
+
+type Review = RawReview & { sofa: { name: string; slug: string } | null };
+
+type SofaLite = { id: string; name: string; slug: string };
 
 function Stars({ n }: { n: number }) {
   return (
@@ -43,14 +47,16 @@ function Stars({ n }: { n: number }) {
 function Gallery() {
   const { data: reviews, isLoading } = useQuery({
     queryKey: ["public-reviews"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("reviews")
-        .select("id, rating, title, body, images, city, created_at, sofa:sofas(name, slug)")
-        .eq("approved", true)
-        .order("created_at", { ascending: false })
-        .limit(60);
-      return (data as unknown as Review[]) ?? [];
+    queryFn: async (): Promise<Review[]> => {
+      const rows = await fsList<RawReview>(
+        COL.reviews,
+        where("approved", "==", true),
+        orderBy("created_at", "desc"),
+        limit(60),
+      );
+      const sofas = await fsList<SofaLite>(COL.sofas);
+      const sofaMap = new Map(sofas.map((s) => [s.id, { name: s.name, slug: s.slug }]));
+      return rows.map((r) => ({ ...r, sofa: r.sofa_id ? sofaMap.get(r.sofa_id) ?? null : null }));
     },
   });
 

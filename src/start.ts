@@ -1,7 +1,7 @@
 import { createStart, createCsrfMiddleware, createMiddleware } from "@tanstack/react-start";
 
 import { renderErrorPage } from "./lib/error-page";
-import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher";
+import { getFirebaseAuth } from "@/lib/firebase";
 
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
   try {
@@ -18,6 +18,16 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
   }
 });
 
+// Attaches the current Firebase user's ID token to server function requests
+// so protected serverFns can verify the caller on the server side.
+const attachFirebaseAuth = createMiddleware({ type: "function" }).client(async ({ next }) => {
+  const currentUser = getFirebaseAuth().currentUser;
+  const token = currentUser ? await currentUser.getIdToken() : null;
+  return next({
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+});
+
 // Start installs this automatically when src/start.ts is absent; defining the
 // file opts out, so re-add it explicitly to keep server functions protected
 // from cross-site requests.
@@ -26,6 +36,6 @@ const csrfMiddleware = createCsrfMiddleware({
 });
 
 export const startInstance = createStart(() => ({
-  functionMiddleware: [attachSupabaseAuth],
+  functionMiddleware: [attachFirebaseAuth],
   requestMiddleware: [errorMiddleware, csrfMiddleware],
 }));

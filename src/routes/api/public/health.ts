@@ -16,8 +16,11 @@ export const Route = createFileRoute("/api/public/health")({
         const checks: Check[] = [
           {
             service: "database",
-            configured: present("SUPABASE_URL") && present("SUPABASE_SERVICE_ROLE_KEY"),
-            detail: "Database URL + service key",
+            configured:
+              present("FIREBASE_PROJECT_ID") &&
+              present("FIREBASE_CLIENT_EMAIL") &&
+              present("FIREBASE_PRIVATE_KEY"),
+            detail: "Firestore project + service account",
           },
           {
             service: "razorpay",
@@ -39,13 +42,18 @@ export const Route = createFileRoute("/api/public/health")({
             configured: true,
             detail: "Firebase Web SDK config bundled client-side",
           },
+          {
+            service: "cloudinary",
+            configured: present("CLOUDINARY_CLOUD_NAME") && present("CLOUDINARY_API_KEY"),
+            detail: "Media hosting for images + 3D models",
+          },
         ];
 
         let databaseReachable: boolean | null = null;
         try {
-          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          const { error } = await supabaseAdmin.from("sofas").select("id").limit(1);
-          databaseReachable = !error;
+          const { adminQuery } = await import("@/lib/firebase-admin.server");
+          await adminQuery("sofas", [], { limit: 1 });
+          databaseReachable = true;
         } catch {
           databaseReachable = false;
         }

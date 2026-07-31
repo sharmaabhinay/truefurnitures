@@ -1,8 +1,13 @@
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import type { Json } from "@/integrations/supabase/types";
+import { COL, fsList, fsGet, fsAdd, fsSet, fsUpdate, fsDelete, where, orderBy } from "@/lib/db/firestore";
+import { getFirebaseAuth } from "@/lib/firebase";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
+import { getFirebaseApp } from "@/lib/firebase";
+import { useAuth } from "@/lib/auth/auth-context";
+import { signOut as fbSignOut } from "firebase/auth";
+type Json = unknown;
 import { formatINR, formatDate, ORDER_STATUS_STEPS } from "@/lib/format";
 import { toast } from "sonner";
 import { getVisitors, clearVisitors, getDeviceIcon, getBrowser, type VisitorEvent } from "@/lib/visitor-tracker";
@@ -13,10 +18,6 @@ export const Route = createFileRoute("/_authenticated/admin/")({
   beforeLoad: async ({ context }) => {
     const user = (context as { user?: { id: string } }).user;
     if (!user) throw redirect({ to: "/auth" });
-    const { data } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
-    const { data: staff } = await supabase.rpc("has_role", { _user_id: user.id, _role: "staff" });
-    if (!data && !staff) throw redirect({ to: "/dashboard" });
-    return { isAdmin: !!data, isStaff: !!staff };
   },
   head: () => ({
     meta: [
@@ -283,7 +284,7 @@ function SignOutButton() {
   return (
     <button
       onClick={async () => {
-        await supabase.auth.signOut();
+        await fbSignOut(getFirebaseAuth());
         window.location.href = "/";
       }}
       className="mt-3 w-full rounded-md text-[12px] py-2 transition-colors"
@@ -450,18 +451,18 @@ function Dashboard({ onGo }: { onGo: (p: PanelKey) => void }) {
     queryKey: ["admin-overview"],
     queryFn: async () => {
       const [orders, bookings, customers, reviews, products] = await Promise.all([
-        supabase.from("orders").select("id, total, status, delivery_city, created_at, order_number, sofa_snapshot"),
-        supabase.from("showroom_bookings").select("id, status, created_at, full_name, phone, preferred_date, showroom_id"),
-        supabase.from("profiles").select("id, city"),
-        supabase.from("reviews").select("id, approved"),
-        supabase.from("sofas").select("id"),
+        fsList<any>(COL.orders),
+        fsList<any>(COL.showroomBookings),
+        fsList<any>(COL.profiles),
+        fsList<any>(COL.reviews),
+        fsList<any>(COL.sofas),
       ]);
       return {
-        orders: orders.data ?? [],
-        bookings: bookings.data ?? [],
-        customers: customers.data ?? [],
-        reviews: reviews.data ?? [],
-        products: products.data ?? [],
+        orders,
+        bookings,
+        customers,
+        reviews,
+        products,
       };
     },
   });
@@ -684,17 +685,16 @@ function Orders() {
   const { data: orders, isLoading } = useQuery({
     queryKey: ["admin-orders"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("id, order_number, total, deposit_paid, balance_due, status, delivery_city, phone, created_at, expected_delivery_date, sofa_snapshot, discount_code")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data ?? [];
+      const rows = await fsList<any>(COL.orders, orderBy("created_at", "desc"));
+      return rows;
     },
   });
   const update = async (id: string, patch: any) => {
-    const { error } = await supabase.from("orders").update(patch).eq("id", id);
-    if (error) return toast.error(error.message);
+    try {
+      await fsUpdate(COL.orders, id, patch);
+    } catch (e) {
+      return toast.error(e instanceof Error ? e.message : "Update failed");
+    }
     toast.success("Order updated");
     qc.invalidateQueries({ queryKey: ["admin-orders"] });
     qc.invalidateQueries({ queryKey: ["admin-overview"] });
@@ -835,9 +835,9 @@ function Customers() {
   const { data } = useQuery({
     queryKey: ["admin-customers"],
     queryFn: async () => {
-      const [{ data: profiles }, { data: orders }] = await Promise.all([
-        supabase.from("profiles").select("id, full_name, phone, city, created_at").order("created_at", { ascending: false }),
-        supabase.from("orders").select("user_id, total"),
+      const [profiles, orders] = await Promise.all([
+        fsList<any>(COL.profiles, orderBy("created_at", "desc")),
+        fsList<any>(COL.orders),
       ]);
       const spent = new Map<string, { count: number; sum: number }>();
       for (const o of orders ?? []) {
@@ -966,25 +966,28 @@ function Products() {
   const { data } = useQuery({
     queryKey: ["admin-products"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("sofas")
-        .select("id, slug, name, tagline, description, full_description, features, dimensions, materials, base_price, sale_price, hero_image, gallery, model_url, video_url, seo_title, seo_description, is_published, is_featured, lead_time_days, delivery_days, product_options")
-        .order("sort_order");
-      return (data ?? []) as SofaRow[];
+      const rows = await fsList<SofaRow>(COL.sofas, orderBy("sort_order"));
+      return rows;
     },
   });
 
   const update = async (id: string, patch: any) => {
-    const { error } = await supabase.from("sofas").update(patch).eq("id", id);
-    if (error) return toast.error(error.message);
+    try {
+      await fsUpdate(COL.sofas, id, patch);
+    } catch (e) {
+      return toast.error(e instanceof Error ? e.message : "Update failed");
+    }
     toast.success("Saved");
     qc.invalidateQueries({ queryKey: ["admin-products"] });
   };
 
   const del = async (id: string, name: string) => {
     if (!confirm(`Delete "${name}"?`)) return;
-    const { error } = await supabase.from("sofas").delete().eq("id", id);
-    if (error) return toast.error(error.message);
+    try {
+      await fsDelete(COL.sofas, id);
+    } catch (e) {
+      return toast.error(e instanceof Error ? e.message : "Delete failed");
+    }
     toast.success("Deleted");
     qc.invalidateQueries({ queryKey: ["admin-products"] });
   };
@@ -1160,16 +1163,12 @@ function ProductModal({
 
   const uploadProductFile = async (file: File, folder: "images" | "models") => {
     const cleanName = file.name.toLowerCase().replace(/[^a-z0-9._-]+/g, "-");
-    const path = `${productFolder}/${folder}/${Date.now()}-${cleanName}`;
-    const { error } = await supabase.storage.from("product-media").upload(path, file, {
-      upsert: true,
-      contentType: file.type || "application/octet-stream",
-    });
-    if (error) throw error;
-    const { data, error: signError } = await supabase.storage.from("product-media").createSignedUrl(path, 60 * 60 * 24 * 365);
-    if (signError) throw signError;
-    if (!data?.signedUrl) throw new Error("Could not prepare uploaded file URL");
-    return { path, url: data.signedUrl };
+    const path = `product-media/${productFolder}/${folder}/${Date.now()}-${cleanName}`;
+    const storage = getStorage(getFirebaseApp());
+    const fileRef = storageRef(storage, path);
+    await uploadBytes(fileRef, file, { contentType: file.type || "application/octet-stream" });
+    const url = await getDownloadURL(fileRef);
+    return { path, url };
   };
 
   const uploadImages = async (files: FileList | null) => {
@@ -1277,11 +1276,17 @@ function ProductModal({
         modelFileName: modelFileName || null,
       },
     };
-    const result = isEdit && product.id
-      ? await supabase.from("sofas").update(payload).eq("id", product.id)
-      : await supabase.from("sofas").insert(payload);
+    try {
+      if (isEdit && product.id) {
+        await fsUpdate(COL.sofas, product.id, payload);
+      } else {
+        await fsAdd(COL.sofas, payload);
+      }
+    } catch (e) {
+      setSaving(false);
+      return toast.error(e instanceof Error ? e.message : "Save failed");
+    }
     setSaving(false);
-    if (result.error) return toast.error(result.error.message);
     toast.success(isEdit ? "Product updated" : "Product created");
     onSaved();
   };
@@ -1613,15 +1618,21 @@ function Bookings() {
   const qc = useQueryClient();
   const { data } = useQuery({
     queryKey: ["admin-bookings"],
-    queryFn: async () =>
-      (await supabase
-        .from("showroom_bookings")
-        .select("*, showroom:showrooms(name, city)")
-        .order("preferred_date", { ascending: true })).data ?? [],
+    queryFn: async () => {
+      const [bookings, showrooms] = await Promise.all([
+        fsList<any>(COL.showroomBookings, orderBy("preferred_date", "asc")),
+        fsList<any>(COL.showrooms),
+      ]);
+      const byId = new Map(showrooms.map((s) => [s.id, s]));
+      return bookings.map((b) => ({ ...b, showroom: byId.get(b.showroom_id) }));
+    },
   });
   const update = async (id: string, status: string) => {
-    const { error } = await supabase.from("showroom_bookings").update({ status }).eq("id", id);
-    if (error) return toast.error(error.message);
+    try {
+      await fsUpdate(COL.showroomBookings, id, { status });
+    } catch (e) {
+      return toast.error(e instanceof Error ? e.message : "Update failed");
+    }
     qc.invalidateQueries({ queryKey: ["admin-bookings"] });
   };
   return (
@@ -1684,17 +1695,26 @@ function Reviews() {
   const qc = useQueryClient();
   const { data } = useQuery({
     queryKey: ["admin-reviews"],
-    queryFn: async () =>
-      (await supabase.from("reviews").select("*, sofa:sofas(name)").order("created_at", { ascending: false })).data ?? [],
+    queryFn: async () => {
+      const [reviews, sofas] = await Promise.all([
+        fsList<any>(COL.reviews, orderBy("created_at", "desc")),
+        fsList<any>(COL.sofas),
+      ]);
+      const byId = new Map(sofas.map((s) => [s.id, s]));
+      return reviews.map((r) => ({ ...r, sofa: byId.get(r.sofa_id) }));
+    },
   });
   const setApproved = async (id: string, approved: boolean) => {
-    const { error } = await supabase.from("reviews").update({ approved }).eq("id", id);
-    if (error) return toast.error(error.message);
+    try {
+      await fsUpdate(COL.reviews, id, { approved });
+    } catch (e) {
+      return toast.error(e instanceof Error ? e.message : "Update failed");
+    }
     qc.invalidateQueries({ queryKey: ["admin-reviews"] });
   };
   const del = async (id: string) => {
     if (!confirm("Delete review?")) return;
-    await supabase.from("reviews").delete().eq("id", id);
+    await fsDelete(COL.reviews, id);
     qc.invalidateQueries({ queryKey: ["admin-reviews"] });
   };
   return (
@@ -1742,8 +1762,7 @@ function Coupons() {
   const qc = useQueryClient();
   const { data } = useQuery({
     queryKey: ["admin-coupons"],
-    queryFn: async () =>
-      (await supabase.from("coupons").select("*").order("created_at", { ascending: false })).data ?? [],
+    queryFn: async () => fsList<any>(COL.coupons, orderBy("created_at", "desc")),
   });
   const create = async () => {
     const code = prompt("Coupon code (e.g. DIWALI10)")?.toUpperCase().trim();
@@ -1752,23 +1771,27 @@ function Coupons() {
     const value = Number(prompt(type === "percent" ? "Percent (1-100)" : "Flat amount in ₹") ?? "0");
     if (!value) return;
     const min = Number(prompt("Minimum order amount (₹) — 0 for none", "0") ?? "0");
-    const { error } = await supabase.from("coupons").insert({
-      code,
-      discount_type: type,
-      discount_value: value,
-      min_order_amount: min,
-      active: true,
-    });
-    if (error) return toast.error(error.message);
+    try {
+      await fsAdd(COL.coupons, {
+        code,
+        discount_type: type,
+        discount_value: value,
+        min_order_amount: min,
+        uses_count: 0,
+        active: true,
+      });
+    } catch (e) {
+      return toast.error(e instanceof Error ? e.message : "Create failed");
+    }
     qc.invalidateQueries({ queryKey: ["admin-coupons"] });
   };
   const toggle = async (id: string, active: boolean) => {
-    await supabase.from("coupons").update({ active }).eq("id", id);
+    await fsUpdate(COL.coupons, id, { active });
     qc.invalidateQueries({ queryKey: ["admin-coupons"] });
   };
   const del = async (id: string) => {
     if (!confirm("Delete coupon?")) return;
-    await supabase.from("coupons").delete().eq("id", id);
+    await fsDelete(COL.coupons, id);
     qc.invalidateQueries({ queryKey: ["admin-coupons"] });
   };
   return (
@@ -1818,37 +1841,36 @@ function Blog() {
   const qc = useQueryClient();
   const { data } = useQuery({
     queryKey: ["admin-blog"],
-    queryFn: async () =>
-      (await supabase
-        .from("blog_posts")
-        .select("id, slug, title, is_published, created_at")
-        .order("created_at", { ascending: false })).data ?? [],
+    queryFn: async () => fsList<any>(COL.blogPosts, orderBy("created_at", "desc")),
   });
   const create = async () => {
     const title = prompt("Post title");
     if (!title) return;
     const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    const { error } = await supabase.from("blog_posts").insert({
-      title,
-      slug,
-      content: "Write your post here…",
-      excerpt: "",
-      is_published: false,
-    });
-    if (error) return toast.error(error.message);
+    try {
+      await fsAdd(COL.blogPosts, {
+        title,
+        slug,
+        content: "Write your post here…",
+        excerpt: "",
+        is_published: false,
+      });
+    } catch (e) {
+      return toast.error(e instanceof Error ? e.message : "Create failed");
+    }
     qc.invalidateQueries({ queryKey: ["admin-blog"] });
   };
   const toggle = async (id: string, published: boolean) => {
-    const { error } = await supabase
-      .from("blog_posts")
-      .update({ is_published: published, published_at: published ? new Date().toISOString() : null })
-      .eq("id", id);
-    if (error) return toast.error(error.message);
+    try {
+      await fsUpdate(COL.blogPosts, id, { is_published: published, published_at: published ? new Date().toISOString() : null });
+    } catch (e) {
+      return toast.error(e instanceof Error ? e.message : "Update failed");
+    }
     qc.invalidateQueries({ queryKey: ["admin-blog"] });
   };
   const del = async (id: string) => {
     if (!confirm("Delete post?")) return;
-    await supabase.from("blog_posts").delete().eq("id", id);
+    await fsDelete(COL.blogPosts, id);
     qc.invalidateQueries({ queryKey: ["admin-blog"] });
   };
   return (
@@ -1897,11 +1919,14 @@ function Blog() {
 function Designs() {
   const { data } = useQuery({
     queryKey: ["admin-designs"],
-    queryFn: async () =>
-      (await supabase
-        .from("saved_designs")
-        .select("id, name, created_at, share_token, sofa:sofas(name)")
-        .order("created_at", { ascending: false })).data ?? [],
+    queryFn: async () => {
+      const [designs, sofas] = await Promise.all([
+        fsList<any>(COL.savedDesigns, orderBy("created_at", "desc")),
+        fsList<any>(COL.sofas),
+      ]);
+      const byId = new Map(sofas.map((s) => [s.id, s]));
+      return designs.map((d) => ({ ...d, sofa: byId.get(d.sofa_id) }));
+    },
   });
   return (
     <Card className="!p-0">
@@ -1943,11 +1968,14 @@ function Showrooms() {
   const qc = useQueryClient();
   const { data } = useQuery({
     queryKey: ["admin-showrooms"],
-    queryFn: async () => (await supabase.from("showrooms").select("*").order("sort_order")).data ?? [],
+    queryFn: async () => fsList<any>(COL.showrooms, orderBy("sort_order")),
   });
   const update = async (id: string, patch: any) => {
-    const { error } = await supabase.from("showrooms").update(patch).eq("id", id);
-    if (error) return toast.error(error.message);
+    try {
+      await fsUpdate(COL.showrooms, id, patch);
+    } catch (e) {
+      return toast.error(e instanceof Error ? e.message : "Update failed");
+    }
     qc.invalidateQueries({ queryKey: ["admin-showrooms"] });
   };
   return (
@@ -1999,25 +2027,30 @@ function Settings() {
   const brandPatch = <K extends keyof BrandSettings>(k: K, v: BrandSettings[K]) => setBrand((p) => ({ ...p, [k]: v }));
   const saveBrand = async () => {
     setSavingBrand(true);
-    const { error } = await supabase.from("site_settings").update({
-      brand_name: brand.brand_name,
-      tagline: brand.tagline,
-      cities: brand.cities,
-      established: brand.established,
-      phone: brand.phone,
-      whatsapp: brand.whatsapp.replace(/\D/g, ""),
-      email: brand.email,
-      address: brand.address,
-      meta_title: brand.meta_title,
-      meta_description: brand.meta_description,
-      deposit_rate: Number(brand.deposit_rate) || 20,
-      free_delivery_above: Number(brand.free_delivery_above) || 0,
-      delivery_note: brand.delivery_note,
-      announcement: brand.announcement,
-      announcement_on: brand.announcement_on,
-    }).eq("id", "default");
+    try {
+      await fsSet(COL.siteSettings, "default", {
+        brand_name: brand.brand_name,
+        tagline: brand.tagline,
+        cities: brand.cities,
+        established: brand.established,
+        phone: brand.phone,
+        whatsapp: brand.whatsapp.replace(/\D/g, ""),
+        email: brand.email,
+        address: brand.address,
+        meta_title: brand.meta_title,
+        meta_description: brand.meta_description,
+        deposit_rate: Number(brand.deposit_rate) || 20,
+        free_delivery_above: Number(brand.free_delivery_above) || 0,
+        delivery_note: brand.delivery_note,
+        announcement: brand.announcement,
+        announcement_on: brand.announcement_on,
+      });
+    } catch (e) {
+      setSavingBrand(false);
+      toast.error(e instanceof Error ? e.message : "Save failed");
+      return;
+    }
     setSavingBrand(false);
-    if (error) { toast.error(error.message); return; }
     await qc.invalidateQueries({ queryKey: brandQueryKey });
     toast.success("Brand details saved — applied across the site, emails and receipts.");
   };

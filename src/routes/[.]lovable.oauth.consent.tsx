@@ -1,57 +1,25 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth/auth-context";
 
-type OAuthApi = {
-  getAuthorizationDetails: (id: string) => Promise<{ data: AuthorizationDetails | null; error: { message: string } | null }>;
-  approveAuthorization: (id: string) => Promise<{ data: AuthorizationDetails | null; error: { message: string } | null }>;
-  denyAuthorization: (id: string) => Promise<{ data: AuthorizationDetails | null; error: { message: string } | null }>;
-};
-
-type AuthorizationDetails = {
-  client?: { name?: string | null } | null;
-  redirect_url?: string | null;
-  redirect_to?: string | null;
-};
-
-function oauthApi(): OAuthApi {
-  return (supabase.auth as unknown as { oauth: OAuthApi }).oauth;
-}
+// NOTE: Supabase's `auth.oauth` consent API (getAuthorizationDetails /
+// approveAuthorization / denyAuthorization) has no Firebase equivalent.
+// We keep the consent UI and degrade gracefully: once the user is signed
+// in with Firebase, "Approve" completes the flow by redirecting back to
+// the requesting app with the original query params (plus an `approved`
+// flag); "Deny" redirects back with `approved=false`. There is no server
+// authorization record to fetch, so we show a generic client name.
 
 export const Route = createFileRoute("/.lovable/oauth/consent")({
-  // Browser-only: the Supabase session lives in localStorage, absent during SSR.
+  // Browser-only: auth state lives in the client (Firebase), absent during SSR.
   ssr: false,
   validateSearch: (s: Record<string, unknown>) => ({
     authorization_id: typeof s.authorization_id === "string" ? s.authorization_id : "",
+    redirect_uri: typeof s.redirect_uri === "string" ? s.redirect_uri : "",
   }),
-  beforeLoad: async ({ search, location }) => {
-    if (!search.authorization_id) throw new Error("Missing authorization_id");
-    const { data } = await supabase.auth.getSession();
-    const next = location.pathname + location.searchStr;
-    if (!data.session) throw redirect({ to: "/auth", search: { next } });
-  },
-  loader: async ({ location }) => {
-    const authorizationId = new URLSearchParams(location.search).get("authorization_id")!;
-    const { data, error } = await oauthApi().getAuthorizationDetails(authorizationId);
-    if (error) throw error;
-    const immediate = data?.redirect_url ?? data?.redirect_to;
-    if (immediate && !data?.client) throw redirect({ href: immediate });
-    return data;
-  },
   component: Consent,
-  errorComponent: ({ error }) => (
-    <Shell>
-      <h1 className="text-2xl font-display mb-3">Authorization request unavailable</h1>
-      <p className="text-sm text-[color:var(--brand-dark)]/60">
-        {String((error as Error)?.message ?? error)}
-      </p>
-      <p className="text-sm text-[color:var(--brand-dark)]/60 mt-3">
-        This request may have expired. Start the connection again from the app you were using.
-      </p>
-    </Shell>
-  ),
 });
 
 function Shell({ children }: { children: React.ReactNode }) {
@@ -67,31 +35,40 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 
 function Consent() {
-  const details = Route.useLoaderData();
-  const { authorization_id } = Route.useSearch();
+  const search = Route.useSearch();
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const clientName = details?.client?.name ?? "an app";
+  const clientName = "an app";
 
-  async function decide(approve: boolean) {
+  useEffect(() => {
+    if (!loading && !user) {
+      const next = `${window.location.pathname}${window.location.search}`;
+      navigate({ to: "/auth", search: { next } });
+    }
+  }, [loading, user, navigate]);
+
+  if (loading || !user) return null;
+
+  function decide(approve: boolean) {
     setBusy(true);
     setError(null);
-    const api = oauthApi();
-    const { data, error } = approve
-      ? await api.approveAuthorization(authorization_id)
-      : await api.denyAuthorization(authorization_id);
-    if (error) {
+    const currentParams = new URLSearchParams(window.location.search);
+    if (!search.redirect_uri) {
       setBusy(false);
-      setError(error.message);
+      setError("No redirect target was provided with this authorization request.");
       return;
     }
-    const target = data?.redirect_url ?? data?.redirect_to;
-    if (!target) {
+    try {
+      const target = new URL(search.redirect_uri);
+      currentParams.forEach((value, key) => target.searchParams.set(key, value));
+      target.searchParams.set("approved", String(approve));
+      window.location.href = target.toString();
+    } catch {
       setBusy(false);
-      setError("No redirect returned by the authorization server.");
-      return;
+      setError("The redirect target for this authorization request is invalid.");
     }
-    window.location.href = target;
   }
 
   return (

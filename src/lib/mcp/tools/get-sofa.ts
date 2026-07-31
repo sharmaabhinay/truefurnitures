@@ -1,6 +1,11 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
-import { supabaseForUser } from "../supabase";
+import { adminQuery, pick, type Row } from "../firestore";
+
+const FIELDS = [
+  "slug", "name", "tagline", "description", "full_description", "features", "dimensions",
+  "materials", "base_price", "sale_price", "delivery_days", "lead_time_days", "hero_image",
+] as const;
 
 export default defineTool({
   name: "get_sofa",
@@ -13,23 +18,26 @@ export default defineTool({
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
     }
-    const supabase = supabaseForUser(ctx);
-    const { data, error } = await supabase
-      .from("sofas")
-      .select(
-        "slug, name, tagline, description, full_description, features, dimensions, materials, base_price, sale_price, delivery_days, lead_time_days, hero_image",
-      )
-      .eq("slug", slug)
-      .eq("is_published", true)
-      .maybeSingle();
-
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    if (!data) {
-      return { content: [{ type: "text", text: `No published sofa found for slug '${slug}'.` }], isError: true };
+    try {
+      const rows = (await adminQuery(
+        "sofas",
+        [
+          { field: "slug", value: slug },
+          { field: "is_published", value: true },
+        ],
+        { limit: 1 },
+      )) as Row[];
+      const sofa = rows[0];
+      if (!sofa) {
+        return { content: [{ type: "text", text: `No published sofa found for slug '${slug}'.` }], isError: true };
+      }
+      const data = pick(sofa, FIELDS);
+      return {
+        content: [{ type: "text", text: JSON.stringify(data) }],
+        structuredContent: { sofa: data },
+      };
+    } catch (e) {
+      return { content: [{ type: "text", text: (e as Error).message }], isError: true };
     }
-    return {
-      content: [{ type: "text", text: JSON.stringify(data) }],
-      structuredContent: { sofa: data },
-    };
   },
 });

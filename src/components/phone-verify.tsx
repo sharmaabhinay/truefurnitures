@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { OtpInput } from "@/components/otp-input";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth/auth-context";
+import { COL, fsSet } from "@/lib/db/firestore";
 
 type Props = {
   phone: string;
@@ -18,6 +19,7 @@ function normalise(p: string) {
 
 /** Mandatory phone OTP gate (Firebase phone auth) before an order can be placed. */
 export function PhoneVerify({ phone, verified, onVerified }: Props) {
+  const { user } = useAuth();
   const [stage, setStage] = useState<"idle" | "sending" | "code" | "verifying">("idle");
   const [code, setCode] = useState("");
   const [error, setError] = useState(false);
@@ -67,13 +69,12 @@ export function PhoneVerify({ phone, verified, onVerified }: Props) {
     try {
       await confirmationRef.current.confirm(value);
       const e164 = normalise(phone);
-      const { data: sess } = await supabase.auth.getSession();
-      const uid = sess.session?.user?.id;
-      if (uid) {
-        await supabase
-          .from("profiles")
-          .update({ phone: e164, phone_verified: true, phone_verified_at: new Date().toISOString() })
-          .eq("id", uid);
+      if (user?.uid) {
+        await fsSet(COL.profiles, user.uid, {
+          phone: e164,
+          phone_verified: true,
+          phone_verified_at: new Date().toISOString(),
+        });
       }
       toast.success("Phone number verified");
       onVerified(e164);

@@ -2,7 +2,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useQuery, queryOptions } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { supabase } from "@/integrations/supabase/client";
+import { COL, fsFindOne, where } from "@/lib/db/firestore";
 import { formatDate } from "@/lib/format";
 
 type Post = {
@@ -22,18 +22,12 @@ type Post = {
 const postQuery = (slug: string) => queryOptions({
   queryKey: ["blog-post", slug],
   queryFn: async (): Promise<Post | null> => {
-    const { data, error } = await supabase
-      .from("blog_posts")
-      .select("*")
-      .eq("slug", slug)
-      .eq("is_published", true)
-      .maybeSingle();
-    if (error) throw error;
-    return data as Post | null;
+    return fsFindOne<Post>(COL.blogPosts, where("slug", "==", slug), where("is_published", "==", true));
   },
 });
 
 export const Route = createFileRoute("/blog/$slug")({
+  ssr: false,
   loader: async ({ params, context }) => {
     const data = await context.queryClient.ensureQueryData(postQuery(params.slug));
     if (!data) throw notFound();

@@ -4,7 +4,8 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { useCart } from "@/lib/cart";
 import { formatINR } from "@/lib/format";
-import { supabase } from "@/integrations/supabase/client";
+import { COL, fsFindOne, where } from "@/lib/db/firestore";
+import { useAuth } from "@/lib/auth/auth-context";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/cart")({
@@ -25,6 +26,7 @@ export const Route = createFileRoute("/cart")({
 function CartPage() {
   const { items, remove, setQty, subtotal, discount, total, count, coupon, applyCoupon, removeCoupon } = useCart();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const deposit = Math.round(total * 0.2);
   const [code, setCode] = useState("");
   const [checking, setChecking] = useState(false);
@@ -34,12 +36,12 @@ function CartPage() {
     if (!c) return;
     setChecking(true);
     try {
-      const { data, error } = await supabase.from("coupons").select("code, discount_type, discount_value, min_order_amount, active, valid_until").eq("code", c).maybeSingle();
-      if (error) throw error;
+      type CouponDoc = { code: string; discount_type: "percent" | "flat"; discount_value: number; min_order_amount: number; active: boolean; valid_until: string | null };
+      const data = await fsFindOne<CouponDoc>(COL.coupons, where("code", "==", c));
       if (!data || !data.active) return toast.error("Invalid or inactive coupon");
       if (data.valid_until && new Date(data.valid_until) < new Date()) return toast.error("This coupon has expired");
       if (subtotal < Number(data.min_order_amount)) return toast.error(`Minimum order ${formatINR(Number(data.min_order_amount))} required`);
-      applyCoupon({ code: data.code, discount_type: data.discount_type as "percent" | "flat", discount_value: Number(data.discount_value), min_order_amount: Number(data.min_order_amount) });
+      applyCoupon({ code: data.code, discount_type: data.discount_type, discount_value: Number(data.discount_value), min_order_amount: Number(data.min_order_amount) });
       toast.success(`Coupon ${data.code} applied!`);
       setCode("");
     } catch (e) {
@@ -48,8 +50,7 @@ function CartPage() {
   };
 
   const onCheckout = async () => {
-    const { data } = await supabase.auth.getSession();
-    if (!data.session) {
+    if (!user) {
       navigate({ to: "/auth", search: { redirect: "/checkout" } as never });
       return;
     }

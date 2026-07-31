@@ -1,5 +1,3 @@
-import { supabase } from "@/integrations/supabase/client";
-
 declare global {
   interface Window {
     Razorpay?: any;
@@ -32,9 +30,6 @@ export async function openRazorpayCheckout(params: {
 }) {
   const scriptOk = await loadRazorpayScript();
   if (!scriptOk) throw new Error("Could not load payment gateway");
-
-  // Ensure session exists (RLS on server fn)
-  await supabase.auth.getSession();
 
   const rp = await params.createRzp({ data: { orderIds: params.orderIds } });
 

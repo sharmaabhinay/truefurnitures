@@ -1,18 +1,28 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { supabase } from "@/integrations/supabase/client";
+import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { useAuth } from "@/lib/auth/auth-context";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   ssr: false,
-  beforeLoad: async ({ context }) => {
-    const user = (context as { user?: { id: string } }).user;
-    if (!user) throw redirect({ to: "/auth" });
-    const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
-    const { data: isStaff } = await supabase.rpc("has_role", { _user_id: user.id, _role: "staff" });
-    if (!isAdmin && !isStaff) throw redirect({ to: "/dashboard" });
-  },
   component: AdminLayout,
 });
 
 function AdminLayout() {
+  const { user, isStaff, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (loading) return;
+    if (!user) {
+      navigate({ to: "/auth" });
+      return;
+    }
+    if (!isStaff) {
+      navigate({ to: "/dashboard" });
+    }
+  }, [loading, user, isStaff, navigate]);
+
+  if (loading || !user || !isStaff) return null;
+
   return <Outlet />;
 }

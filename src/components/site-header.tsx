@@ -2,7 +2,8 @@ import { useBrand } from "@/lib/brand";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, queryOptions } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth/auth-context";
+import { COL, fsList, orderBy, where } from "@/lib/db/firestore";
 import { useCart } from "@/lib/cart";
 
 type SearchItem = {
@@ -15,12 +16,11 @@ type SearchItem = {
 const searchQuery = queryOptions({
   queryKey: ["search-sofas"],
   queryFn: async (): Promise<SearchItem[]> => {
-    const { data, error } = await supabase
-      .from("sofas")
-      .select("slug, name, tagline")
-      .eq("is_published", true)
-      .order("sort_order");
-    if (error) return [];
+    const data = await fsList<{ slug: string; name: string; tagline: string | null }>(
+      COL.sofas,
+      where("is_published", "==", true),
+      orderBy("sort_order"),
+    ).catch(() => []);
     return (data ?? []).map((s) => ({
       slug: s.slug,
       name: s.name,
@@ -50,8 +50,9 @@ const STATIC_SUGGESTIONS = [
 
 export function SiteHeader() {
   const brand = useBrand();
-  const [signedIn, setSignedIn] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { user, isStaff, signOut } = useAuth();
+  const signedIn = !!user;
+  const isAdmin = isStaff;
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -59,26 +60,6 @@ export function SiteHeader() {
   const navigate = useNavigate();
   const { count } = useCart();
   const { data: searchItems } = useQuery(searchQuery);
-
-  useEffect(() => {
-    const check = async (session: { user?: { id: string } } | null) => {
-      setSignedIn(!!session);
-      if (session?.user?.id) {
-        const [{ data: a }, { data: s }] = await Promise.all([
-          supabase.rpc("has_role", { _user_id: session.user.id, _role: "admin" }),
-          supabase.rpc("has_role", { _user_id: session.user.id, _role: "staff" }),
-        ]);
-        setIsAdmin(!!a || !!s);
-      } else {
-        setIsAdmin(false);
-      }
-    };
-    supabase.auth.getSession().then(({ data }) => check(data.session));
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      check(session);
-    });
-    return () => sub.subscription.unsubscribe();
-  }, []);
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -223,7 +204,7 @@ export function SiteHeader() {
                 </Link>
               )}
               <button
-                onClick={async () => { await supabase.auth.signOut(); }}
+                onClick={async () => { await signOut(); }}
                 className="hidden sm:inline-block px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-dark)]/60 hover:text-[color:var(--brand-accent)] transition-colors"
               >
                 Sign out
@@ -296,7 +277,7 @@ export function SiteHeader() {
                   {!isAdmin && <Link to="/dashboard" onClick={() => setOpen(false)} className="py-3 border-b border-[color:var(--brand-dark)]/10 text-sm font-semibold uppercase tracking-widest">My Orders</Link>}
                   {!isAdmin && <Link to="/profile" onClick={() => setOpen(false)} className="py-3 border-b border-[color:var(--brand-dark)]/10 text-sm font-semibold uppercase tracking-widest">Profile</Link>}
                   <Link to="/my-designs" onClick={() => setOpen(false)} className="py-3 border-b border-[color:var(--brand-dark)]/10 text-sm font-semibold uppercase tracking-widest">Saved Designs</Link>
-                  <button onClick={async () => { await supabase.auth.signOut(); setOpen(false); }} className="py-3 border-b border-[color:var(--brand-dark)]/10 text-left text-sm font-semibold uppercase tracking-widest text-[color:var(--brand-dark)]/60">Sign out</button>
+                  <button onClick={async () => { await signOut(); setOpen(false); }} className="py-3 border-b border-[color:var(--brand-dark)]/10 text-left text-sm font-semibold uppercase tracking-widest text-[color:var(--brand-dark)]/60">Sign out</button>
                 </>
               ) : (
                 <Link to="/auth" onClick={() => setOpen(false)} className="py-3 border-b border-[color:var(--brand-dark)]/10 text-sm font-semibold uppercase tracking-widest">Sign in</Link>

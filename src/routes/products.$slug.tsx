@@ -3,8 +3,7 @@ import { useQuery, queryOptions } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { supabase } from "@/integrations/supabase/client";
-import type { Json } from "@/integrations/supabase/types";
+import { COL, fsFindOne, fsList, where, orderBy, limit } from "@/lib/db/firestore";
 import { formatINR, estimatedDelivery } from "@/lib/format";
 import { useCart } from "@/lib/cart";
 import { toast } from "sonner";
@@ -160,7 +159,7 @@ type Sofa = {
   delivery_days: number | null;
   seo_title: string | null;
   seo_description: string | null;
-  product_options: Json | null;
+  product_options: unknown | null;
 };
 
 type SpecRow = { key: string; val: string };
@@ -177,7 +176,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function parseProductOptions(value: Json | null | undefined): ProductOptions {
+function parseProductOptions(value: unknown | null | undefined): ProductOptions {
   return isRecord(value) ? (value as unknown as ProductOptions) : {};
 }
 
@@ -193,14 +192,12 @@ const sofaQuery = (slug: string) =>
   queryOptions({
     queryKey: ["sofa", slug],
     queryFn: async (): Promise<Sofa | null> => {
-      const { data, error } = await supabase
-        .from("sofas")
-        .select("id, slug, name, tagline, base_price, sale_price, hero_image, gallery, model_url, full_description, description, features, dimensions, materials, delivery_days, seo_title, seo_description, product_options")
-        .eq("slug", slug)
-        .eq("is_published", true)
-        .maybeSingle();
-      if (error) throw error;
-      return data as Sofa | null;
+      const data = await fsFindOne<Sofa & { is_published?: boolean }>(
+        COL.sofas,
+        where("slug", "==", slug),
+        where("is_published", "==", true),
+      );
+      return data ?? null;
     },
   });
 
@@ -211,15 +208,17 @@ const relatedQuery = (slug: string) =>
   queryOptions({
     queryKey: ["sofa-related", slug],
     queryFn: async (): Promise<RelatedSofa[]> => {
-      const { data, error } = await supabase
-        .from("sofas")
-        .select("id, slug, name, tagline, base_price")
-        .eq("is_published", true)
-        .neq("slug", slug)
-        .order("sort_order")
-        .limit(3);
-      if (error) return [];
-      return data ?? [];
+      try {
+        const rows = await fsList<RelatedSofa & { slug: string }>(
+          COL.sofas,
+          where("is_published", "==", true),
+          orderBy("sort_order"),
+          limit(4),
+        );
+        return rows.filter((r) => r.slug !== slug).slice(0, 3);
+      } catch {
+        return [];
+      }
     },
   });
 
@@ -285,15 +284,18 @@ function ProductPage() {
     enabled: Boolean(sofaId),
     queryFn: async (): Promise<Review[]> => {
       if (!sofaId) return [];
-      const { data, error } = await supabase
-        .from("reviews")
-        .select("id, rating, title, body, city, created_at, images")
-        .eq("sofa_id", sofaId)
-        .eq("approved", true)
-        .order("created_at", { ascending: false })
-        .limit(6);
-      if (error) return [];
-      return (data ?? []) as unknown as Review[];
+      try {
+        const rows = await fsList<Review>(
+          COL.reviews,
+          where("sofa_id", "==", sofaId),
+          where("approved", "==", true),
+          orderBy("created_at", "desc"),
+          limit(6),
+        );
+        return rows;
+      } catch {
+        return [];
+      }
     },
   });
   const cart = useCart();

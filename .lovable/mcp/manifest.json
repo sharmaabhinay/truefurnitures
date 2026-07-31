@@ -4,9 +4,9 @@
   "path": "/mcp",
   "auth": {
     "type": "oauth",
-    "issuer": "https://esimasvteoxelmkocyat.supabase.co/auth/v1",
+    "issuer": "https://securetoken.google.com/true-furniture-s",
     "accepted_audiences": [
-      "authenticated"
+      "true-furniture-s"
     ]
   },
   "mcp": {

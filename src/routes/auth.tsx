@@ -3,14 +3,13 @@ import { useState, useEffect } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
+import { useAuth } from "@/lib/auth/auth-context";
+import { COL, fsSet } from "@/lib/db/firestore";
 import { sendWelcomeEmail } from "@/lib/email.functions";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (s: Record<string, unknown>) => ({
-    next: typeof s.next === "string" ? s.next : undefined,
-  }),
+  validateSearch: (s: Record<string, unknown>): { next?: string } =>
+    typeof s['next'] === "string" ? { next: s['next'] } : {},
   head: () => ({
     meta: [
       { title: "Sign in — Avant-Garde Atelier" },
@@ -29,10 +28,9 @@ function safeNext(next?: string) {
 
 function Auth() {
   const navigate = useNavigate();
+  const { user, loading: authLoading, signIn, signUp, signInWithGoogle, resetPassword } = useAuth();
   const { next } = Route.useSearch();
   const destination = safeNext(next);
-  const returnUrl = () =>
-    destination ? `${window.location.origin}${destination}` : window.location.origin;
   const goHome = () => {
     if (destination) window.location.href = destination;
     else navigate({ to: "/" });
@@ -52,15 +50,7 @@ function Auth() {
     setError(null);
     setGoogleLoading(true);
     try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: returnUrl(),
-      });
-      if (result.error) {
-        setError(result.error.message ?? "Google sign-in failed");
-        setGoogleLoading(false);
-        return;
-      }
-      if (result.redirected) return;
+      await signInWithGoogle();
       goHome();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Google sign-in failed");
@@ -69,13 +59,11 @@ function Auth() {
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) {
-        if (destination) window.location.href = destination;
-        else navigate({ to: "/" });
-      }
-    });
-  }, [navigate, destination]);
+    if (!authLoading && user) {
+      if (destination) window.location.href = destination;
+      else navigate({ to: "/" });
+    }
+  }, [authLoading, user, navigate, destination]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -84,10 +72,7 @@ function Auth() {
     setLoading(true);
     try {
       if (mode === "forgot") {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/reset-password`,
-        });
-        if (error) throw error;
+        await resetPassword(email).catch(() => undefined);
         setInfo("If an account exists for that email, a reset link is on its way. Check your inbox.");
         setLoading(false);
         return;
@@ -96,32 +81,23 @@ function Auth() {
         if (phone && !/^[6-9]\d{9}$/.test(phone)) {
           throw new Error("Enter a valid 10-digit Indian mobile number");
         }
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: returnUrl(),
-            data: { full_name: fullName, phone: phone || null },
-          },
-        });
-        if (error) throw error;
+        const newUser = await signUp(email, password, fullName);
+        if (phone) {
+          await fsSet(COL.profiles, newUser.uid, { phone: `+91${phone}` }).catch(() => undefined);
+        }
         // Fire-and-forget welcome email
         sendWelcomeEmail({ data: { email, name: fullName } }).catch((e) =>
           console.error("welcome email failed", e),
         );
-        if (!data.session) {
-          setInfo("Account created. Please sign in.");
-          setMode("signin");
-          setLoading(false);
-          return;
-        }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) {
-          if (error.message.toLowerCase().includes("invalid")) {
+        try {
+          await signIn(email, password);
+        } catch (err) {
+          const code = (err as { code?: string })?.code ?? "";
+          if (code.includes("invalid") || code.includes("wrong-password") || code.includes("user-not-found")) {
             throw new Error("Invalid email or password. If you just signed up, try again in a moment.");
           }
-          throw error;
+          throw err;
         }
       }
       goHome();

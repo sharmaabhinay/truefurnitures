@@ -1,22 +1,15 @@
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { COL, fsList, fsGet, fsAdd, where, orderBy } from "@/lib/db/firestore";
+import { useAuth } from "@/lib/auth/auth-context";
 import { formatINR, formatDate, ORDER_STATUS_STEPS } from "@/lib/format";
 import { getAuthUserDetails } from "@/lib/admin-users.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin/customers/$id")({
   ssr: false,
-  beforeLoad: async ({ context }) => {
-    const user = (context as { user?: { id: string } }).user;
-    if (!user) throw redirect({ to: "/auth" });
-    const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
-    const { data: isStaff } = await supabase.rpc("has_role", { _user_id: user.id, _role: "staff" });
-    if (!isAdmin && !isStaff) throw redirect({ to: "/dashboard" });
-    return { adminUserId: user.id };
-  },
   head: () => ({ meta: [{ title: "Customer — Admin · True Furniture's" }, { name: "robots", content: "noindex" }] }),
   component: CustomerDetail,
 });
@@ -32,76 +25,71 @@ const dark = {
 
 function CustomerDetail() {
   const { id } = Route.useParams();
-  const { adminUserId } = Route.useRouteContext() as { adminUserId: string };
+  const { user, isStaff, loading: authLoading } = useAuth();
+  const adminUserId = user?.uid ?? "";
   const qc = useQueryClient();
   const getAuth = useServerFn(getAuthUserDetails);
 
   const { data: profile } = useQuery({
     queryKey: ["cust-profile", id],
-    queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("*").eq("id", id).maybeSingle();
-      return data;
-    },
+    queryFn: () => fsGet<any>(COL.profiles, id),
   });
 
   const { data: auth } = useQuery({
     queryKey: ["cust-auth", id],
     queryFn: () => getAuth({ data: { userId: id } }),
+    retry: false,
   });
 
   const { data: orders } = useQuery({
     queryKey: ["cust-orders", id],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("orders")
-        .select("id, order_number, status, total, deposit_paid, balance_due, delivery_city, expected_delivery_date, created_at, sofa_snapshot, assigned_craftsman")
-        .eq("user_id", id)
-        .order("created_at", { ascending: false });
-      return data ?? [];
+      const rows = await fsList<any>(COL.orders, where("user_id", "==", id));
+      return rows.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     },
   });
 
   const { data: designs } = useQuery({
     queryKey: ["cust-designs", id],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("saved_designs")
-        .select("id, name, share_token, created_at, config, sofa:sofas(name, slug, hero_image)")
-        .eq("user_id", id)
-        .order("created_at", { ascending: false });
-      return data ?? [];
+      const rows = await fsList<any>(COL.savedDesigns, where("user_id", "==", id));
+      const sorted = rows.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      const sofas = await Promise.all(
+        sorted.map((d) => (d.sofa_id ? fsGet<any>(COL.sofas, d.sofa_id) : Promise.resolve(null))),
+      );
+      return sorted.map((d, i) => ({
+        ...d,
+        sofa: sofas[i] ? { name: sofas[i].name, slug: sofas[i].slug, hero_image: sofas[i].hero_image } : null,
+      }));
     },
   });
 
   const { data: roles } = useQuery({
     queryKey: ["cust-roles", id],
     queryFn: async () => {
-      const { data } = await supabase.from("user_roles").select("role").eq("user_id", id);
-      return (data ?? []).map((r) => r.role);
+      const rows = await fsList<any>(COL.userRoles, where("user_id", "==", id));
+      const set = new Set<string>();
+      for (const r of rows) {
+        if (r.role) set.add(r.role);
+        for (const rr of r.roles ?? []) set.add(rr);
+      }
+      return Array.from(set);
     },
   });
 
   const { data: notes } = useQuery({
     queryKey: ["cust-notes", id],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("customer_admin_notes")
-        .select("id, body, created_at, author_id")
-        .eq("customer_id", id)
-        .order("created_at", { ascending: false });
-      return data ?? [];
+      const rows = await fsList<any>(COL.customerAdminNotes, where("customer_id", "==", id));
+      return rows.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     },
   });
 
   const { data: messages } = useQuery({
     queryKey: ["cust-msgs", id],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("customer_messages")
-        .select("id, body, created_at, sender_id, sender_role, read_at")
-        .eq("customer_id", id)
-        .order("created_at", { ascending: true });
-      return data ?? [];
+      const rows = await fsList<any>(COL.customerMessages, where("customer_id", "==", id));
+      return rows.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     },
     refetchInterval: 10000,
   });
@@ -109,24 +97,16 @@ function CustomerDetail() {
   const { data: bookings } = useQuery({
     queryKey: ["cust-bookings", id],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("showroom_bookings")
-        .select("*")
-        .eq("user_id", id)
-        .order("created_at", { ascending: false });
-      return data ?? [];
+      const rows = await fsList<any>(COL.showroomBookings, where("user_id", "==", id));
+      return rows.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     },
   });
 
   const { data: reviews } = useQuery({
     queryKey: ["cust-reviews", id],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("reviews")
-        .select("*")
-        .eq("user_id", id)
-        .order("created_at", { ascending: false });
-      return data ?? [];
+      const rows = await fsList<any>(COL.reviews, where("user_id", "==", id));
+      return rows.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     },
   });
 
@@ -135,8 +115,7 @@ function CustomerDetail() {
     mutationFn: async () => {
       const body = noteBody.trim();
       if (!body) throw new Error("Empty note");
-      const { error } = await supabase.from("customer_admin_notes").insert({ customer_id: id, author_id: adminUserId, body });
-      if (error) throw error;
+      await fsAdd(COL.customerAdminNotes, { customer_id: id, author_id: adminUserId, body });
     },
     onSuccess: () => {
       setNoteBody("");
@@ -157,13 +136,12 @@ function CustomerDetail() {
       const body = msgBody.trim();
       if (!body) throw new Error("Empty message");
       const role = roles?.includes("admin") ? "admin" : "staff";
-      const { error } = await supabase.from("customer_messages").insert({
+      await fsAdd(COL.customerMessages, {
         customer_id: id,
         sender_id: adminUserId,
         sender_role: role,
         body,
       });
-      if (error) throw error;
     },
     onSuccess: () => {
       setMsgBody("");
@@ -174,6 +152,10 @@ function CustomerDetail() {
 
   const spent = (orders ?? []).reduce((s, o) => s + Number(o.total), 0);
   const active = (orders ?? []).filter((o) => !["delivered", "cancelled"].includes(o.status)).length;
+
+  if (!authLoading && !isStaff) {
+    return <div style={{ background: dark.bg, color: dark.text, minHeight: "100vh" }} className="p-10 text-center">Not authorized. <Link to="/dashboard" style={{ color: dark.accent }}>Back</Link></div>;
+  }
 
   return (
     <div style={{ background: dark.bg, color: dark.text, minHeight: "100vh" }} className="pb-20">
@@ -410,17 +392,16 @@ function RecentActivity({ customerId }: { customerId: string }) {
   const { data } = useQuery({
     queryKey: ["cust-recent", customerId],
     queryFn: async () => {
-      const { data: os } = await supabase.from("orders").select("id, order_number").eq("user_id", customerId);
-      const ids = (os ?? []).map((o) => o.id);
-      if (ids.length === 0) return [] as any[];
-      const { data: hist } = await supabase
-        .from("order_status_history")
-        .select("id, order_id, status, note, created_at")
-        .in("order_id", ids)
-        .order("created_at", { ascending: false })
-        .limit(12);
-      const nameById = new Map((os ?? []).map((o) => [o.id, o.order_number]));
-      return (hist ?? []).map((h) => ({ ...h, order_number: nameById.get(h.order_id) }));
+      const os = await fsList<any>(COL.orders, where("user_id", "==", customerId));
+      const ids = new Set(os.map((o) => o.id));
+      if (ids.size === 0) return [] as any[];
+      const hist = await fsList<any>(COL.orderStatusHistory);
+      const nameById = new Map(os.map((o) => [o.id, o.order_number]));
+      return hist
+        .filter((h) => ids.has(h.order_id))
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 12)
+        .map((h) => ({ ...h, order_number: nameById.get(h.order_id) }));
     },
   });
   if (!data || data.length === 0) return <Empty text="No status changes yet." />;

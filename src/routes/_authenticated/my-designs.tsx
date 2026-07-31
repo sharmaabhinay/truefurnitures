@@ -1,12 +1,15 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth/auth-context";
+import { COL, fsList, fsGet, fsDelete, where } from "@/lib/db/firestore";
 import { formatDate, formatINR } from "@/lib/format";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/my-designs")({
+  ssr: false,
   head: () => ({ meta: [
     { title: "My Saved Designs — True Furniture's" },
     { name: "description", content: "Every sofa configuration you have saved. Share, edit or add to cart." },
@@ -15,25 +18,38 @@ export const Route = createFileRoute("/_authenticated/my-designs")({
   component: MyDesigns,
 });
 
-type SavedDesign = {
+type SavedDesignDoc = {
   id: string;
   name: string;
   share_token: string;
   created_at: string;
+  sofa_id: string | null;
   config: { price?: number; sizeLabel?: string; colorLabel?: string; fabricLabel?: string };
+};
+
+type SavedDesign = SavedDesignDoc & {
   sofa: { slug: string; name: string; hero_image: string | null } | null;
 };
 
 function MyDesigns() {
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const qc = useQueryClient();
+
+  useEffect(() => {
+    if (!authLoading && !user) navigate({ to: "/auth" });
+  }, [authLoading, user, navigate]);
+
   const { data, isLoading } = useQuery({
-    queryKey: ["my-designs"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("saved_designs")
-        .select("id, name, share_token, created_at, config, sofa:sofas(slug, name, hero_image)")
-        .order("created_at", { ascending: false });
-      return (data as unknown as SavedDesign[]) ?? [];
+    queryKey: ["my-designs", user?.uid],
+    enabled: !!user,
+    queryFn: async (): Promise<SavedDesign[]> => {
+      const rows = await fsList<SavedDesignDoc>(COL.savedDesigns, where("user_id", "==", user!.uid));
+      rows.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+      const sofas = await Promise.all(
+        rows.map((r) => (r.sofa_id ? fsGet<{ slug: string; name: string; hero_image: string | null }>(COL.sofas, r.sofa_id) : Promise.resolve(null))),
+      );
+      return rows.map((r, i) => ({ ...r, sofa: sofas[i] }));
     },
   });
 
@@ -45,10 +61,13 @@ function MyDesigns() {
 
   const del = async (id: string) => {
     if (!confirm("Delete this design?")) return;
-    const { error } = await supabase.from("saved_designs").delete().eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Deleted");
-    qc.invalidateQueries({ queryKey: ["my-designs"] });
+    try {
+      await fsDelete(COL.savedDesigns, id);
+      toast.success("Deleted");
+      qc.invalidateQueries({ queryKey: ["my-designs"] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not delete design");
+    }
   };
 
   return (
@@ -58,7 +77,7 @@ function MyDesigns() {
         <span className="tf-chip mb-4">Your Studio</span>
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-display mt-4 mb-3 text-balance">Saved designs.</h1>
         <p className="text-[color:var(--brand-dark)]/60 mb-8">Pick up where you left off, or share a design with family before ordering.</p>
-        {isLoading ? (
+        {authLoading || isLoading ? (
           <div className="grid gap-4 sm:grid-cols-2">{[0,1,2].map((i) => <div key={i} className="tf-skeleton h-40" />)}</div>
         ) : !data || data.length === 0 ? (
           <div className="border border-[color:var(--brand-dark)]/10 p-10 text-center bg-white">

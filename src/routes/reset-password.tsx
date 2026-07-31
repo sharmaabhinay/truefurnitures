@@ -3,9 +3,14 @@ import { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { supabase } from "@/integrations/supabase/client";
+import { getFirebaseAuth } from "@/lib/firebase";
+import { confirmPasswordReset, verifyPasswordResetCode } from "firebase/auth";
 
 export const Route = createFileRoute("/reset-password")({
+  ssr: false,
+  validateSearch: (s: Record<string, unknown>) => ({
+    oobCode: typeof s.oobCode === "string" ? s.oobCode : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Reset Password — True Furniture's" },
@@ -20,7 +25,9 @@ export const Route = createFileRoute("/reset-password")({
 
 function ResetPassword() {
   const navigate = useNavigate();
+  const { oobCode } = Route.useSearch();
   const [ready, setReady] = useState(false);
+  const [invalid, setInvalid] = useState(false);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [show, setShow] = useState(false);
@@ -29,16 +36,14 @@ function ResetPassword() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Supabase auto-handles the token from the URL hash (type=recovery)
-    // and emits a PASSWORD_RECOVERY event; also handles code= in query.
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") setReady(true);
-    });
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) setReady(true);
-    });
-    return () => sub.subscription.unsubscribe();
-  }, []);
+    if (!oobCode) {
+      setInvalid(true);
+      return;
+    }
+    verifyPasswordResetCode(getFirebaseAuth(), oobCode)
+      .then(() => setReady(true))
+      .catch(() => setInvalid(true));
+  }, [oobCode]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -46,12 +51,12 @@ function ResetPassword() {
     setInfo(null);
     if (password.length < 6) return setError("Password must be at least 6 characters.");
     if (password !== confirm) return setError("Passwords do not match.");
+    if (!oobCode) return setError("Invalid or expired reset link.");
     setLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password });
-      if (error) throw error;
+      await confirmPasswordReset(getFirebaseAuth(), oobCode, password);
       setInfo("Password updated. Redirecting…");
-      setTimeout(() => navigate({ to: "/dashboard" }), 1200);
+      setTimeout(() => navigate({ to: "/auth" }), 1200);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not update password.");
     } finally {
@@ -67,7 +72,9 @@ function ResetPassword() {
           <span className="text-[color:var(--brand-accent)] font-semibold tracking-[0.3em] uppercase text-xs">Secure</span>
           <h1 className="text-3xl font-display mt-3 mb-2">Set a new password</h1>
           <p className="text-sm text-[color:var(--brand-dark)]/60 mb-8">Choose a strong password you don't use elsewhere.</p>
-          {!ready ? (
+          {invalid ? (
+            <p className="text-sm text-red-600">This reset link is invalid or has expired. Please request a new one.</p>
+          ) : !ready ? (
             <p className="text-sm text-[color:var(--brand-dark)]/70">Verifying your reset link…</p>
           ) : (
           <form onSubmit={onSubmit} className="space-y-5">

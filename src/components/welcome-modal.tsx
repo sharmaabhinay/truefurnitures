@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { COL, fsAdd, fsFindOne, where } from "@/lib/db/firestore";
 
 const KEY = "tf_welcome_v1";
 
@@ -26,12 +26,20 @@ export function WelcomeModal() {
     e.preventDefault();
     setStatus("loading");
     const code = "TF5-WELCOME";
-    const { error } = await supabase
-      .from("newsletter_subscribers")
-      .insert({ email: email.trim().toLowerCase(), city, source: "welcome_popup", discount_code: code });
-    if (error && !error.message.toLowerCase().includes("duplicate")) {
+    const normalizedEmail = email.trim().toLowerCase();
+    try {
+      const existing = await fsFindOne(COL.newsletterSubscribers, where("email", "==", normalizedEmail));
+      if (!existing) {
+        await fsAdd(COL.newsletterSubscribers, {
+          email: normalizedEmail,
+          city,
+          source: "welcome_popup",
+          discount_code: code,
+        });
+      }
+    } catch (e) {
       setStatus("error");
-      setMessage(error.message);
+      setMessage(e instanceof Error ? e.message : "Something went wrong");
       return;
     }
     localStorage.setItem("tf_location", city);

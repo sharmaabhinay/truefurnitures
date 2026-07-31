@@ -4,7 +4,8 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { supabase } from "@/integrations/supabase/client";
+import { COL, fsAdd, fsGet } from "@/lib/db/firestore";
+import { useAuth } from "@/lib/auth/auth-context";
 
 export const Route = createFileRoute("/hire-carpenter")({
   head: () => ({
@@ -50,6 +51,7 @@ const schema = z.object({
 type FormState = z.infer<typeof schema>;
 
 function HireCarpenter() {
+  const { user } = useAuth();
   const [form, setForm] = useState<FormState>({
     full_name: "",
     phone: "",
@@ -66,27 +68,22 @@ function HireCarpenter() {
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.auth.getUser();
-      const uid = data.user?.id ?? null;
-      setUserId(uid);
-      if (!uid) return;
-      const { data: p } = await supabase.from("profiles").select("full_name, phone, email, city").eq("id", uid).maybeSingle();
-      const prof = p as { full_name?: string | null; phone?: string | null; email?: string | null; city?: string | null } | null;
+      if (!user) return;
+      const prof = await fsGet<{ full_name?: string | null; phone?: string | null; email?: string | null; city?: string | null }>(COL.profiles, user.uid);
       if (prof) {
         setForm((s) => ({
           ...s,
           full_name: prof.full_name ?? s.full_name,
           phone: prof.phone?.replace(/\D/g, "").slice(-10) ?? s.phone,
-          email: prof.email ?? data.user?.email ?? s.email,
+          email: prof.email ?? user.email ?? s.email,
           city: prof.city === "Ujjain" ? "Ujjain" : "Indore",
         }));
       }
     })();
-  }, []);
+  }, [user]);
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => {
     setForm((s) => ({ ...s, [k]: v }));
@@ -108,28 +105,29 @@ function HireCarpenter() {
     }
     setSubmitting(true);
     const d = parsed.data;
-    const { error } = await supabase.from("carpenter_requests").insert({
-      user_id: userId,
-      full_name: d.full_name,
-      phone: d.phone,
-      email: d.email || null,
-      city: d.city,
-      address_line: d.address_line,
-      pincode: d.pincode || null,
-      work_type: d.work_type,
-      preferred_date: d.preferred_date || null,
-      duration: d.duration || null,
-      budget_range: d.budget_range || null,
-      details: d.details || null,
-    });
-    setSubmitting(false);
-    if (error) {
+    try {
+      await fsAdd(COL.carpenterRequests, {
+        user_id: user?.uid ?? null,
+        full_name: d.full_name,
+        phone: d.phone,
+        email: d.email || null,
+        city: d.city,
+        address_line: d.address_line,
+        pincode: d.pincode || null,
+        work_type: d.work_type,
+        preferred_date: d.preferred_date || null,
+        duration: d.duration || null,
+        budget_range: d.budget_range || null,
+        details: d.details || null,
+      });
+      setDone(true);
+      toast.success("Request received — our team will call you shortly.");
+    } catch (error) {
       console.error(error);
       toast.error("Could not send your request. Please WhatsApp us instead.");
-      return;
+    } finally {
+      setSubmitting(false);
     }
-    setDone(true);
-    toast.success("Request received — our team will call you shortly.");
   };
 
   const inputCls =
