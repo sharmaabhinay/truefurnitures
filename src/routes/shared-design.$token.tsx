@@ -1,41 +1,49 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { supabase } from "@/integrations/supabase/client";
+import { COL, fsFindOne, fsGet, where } from "@/lib/db/firestore";
 import { formatINR } from "@/lib/format";
 
 const Sofa3D = lazy(() => import("@/components/sofa-3d"));
 
+type SavedDesignConfig = {
+  colorHex?: string;
+  fabric?: string;
+  seats?: number;
+  isSectional?: boolean;
+  addons?: Record<string, boolean>;
+  price?: number;
+  sizeLabel?: string;
+  colorLabel?: string;
+  fabricLabel?: string;
+};
+
+type SavedDesignDoc = {
+  id: string;
+  name: string;
+  config: SavedDesignConfig;
+  sofa_id: string;
+  share_token: string;
+};
+
 type SharedDesign = {
   id: string;
   name: string;
-  config: {
-    colorHex?: string;
-    fabric?: string;
-    seats?: number;
-    isSectional?: boolean;
-    addons?: Record<string, boolean>;
-    price?: number;
-    sizeLabel?: string;
-    colorLabel?: string;
-    fabricLabel?: string;
-  };
+  config: SavedDesignConfig;
   sofa: { slug: string; name: string } | null;
 };
 
 export const Route = createFileRoute("/shared-design/$token")({
   loader: async ({ params }) => {
-    const { data } = await supabase
-      .rpc("get_shared_design", { p_token: params.token })
-      .maybeSingle();
-    if (!data) throw notFound();
+    const design = await fsFindOne<SavedDesignDoc>(COL.savedDesigns, where("share_token", "==", params.token));
+    if (!design) throw notFound();
+    const sofa = design.sofa_id ? await fsGet<{ slug: string; name: string }>(COL.sofas, design.sofa_id) : null;
     return {
-      id: data.id,
-      name: data.name,
-      config: data.config,
-      sofa: data.sofa_slug ? { slug: data.sofa_slug, name: data.sofa_name } : null,
+      id: design.id,
+      name: design.name,
+      config: design.config,
+      sofa: sofa ? { slug: sofa.slug, name: sofa.name } : null,
     } as SharedDesign;
   },
   head: ({ loaderData }) => ({
@@ -70,7 +78,7 @@ function SharedDesignView() {
                   seats={cfg.seats ?? 3}
                   isSectional={cfg.isSectional ?? false}
                   fabric={cfg.fabric ?? "boucle"}
-                  addons={cfg.addons ?? { cupHolder: false, footrest: false, usb: false, storage: false }}
+                  addons={{ cupHolder: false, footrest: false, usb: false, storage: false, ...cfg.addons }}
                 />
               </Suspense>
             )}

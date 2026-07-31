@@ -309,3 +309,91 @@ export async function setUserRole(uid: string, role: "admin" | "staff" | "user")
   );
   if (!res.ok) throw new Error(`Failed to set role: ${await res.text()}`);
 }
+
+/** Look up a Firebase Auth user's identity-toolkit record by uid (admin-only). */
+export async function adminLookupUser(uid: string): Promise<{
+  uid: string;
+  email: string | null;
+  phone: string | null;
+  createdAt: string | null;
+  lastLoginAt: string | null;
+  emailVerified: boolean;
+  provider: string | null;
+} | null> {
+  const res = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/projects/${projectId()}/accounts:lookup`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${await accessToken()}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ localId: [uid] }),
+    },
+  );
+  if (!res.ok) return null;
+  const json = (await res.json()) as {
+    users?: Array<{
+      localId: string;
+      email?: string;
+      phoneNumber?: string;
+      createdAt?: string;
+      lastLoginAt?: string;
+      emailVerified?: boolean;
+      providerUserInfo?: Array<{ providerId?: string }>;
+    }>;
+  };
+  const u = json.users?.[0];
+  if (!u) return null;
+  return {
+    uid: u.localId,
+    email: u.email ?? null,
+    phone: u.phoneNumber ?? null,
+    createdAt: u.createdAt ? new Date(Number(u.createdAt)).toISOString() : null,
+    lastLoginAt: u.lastLoginAt ? new Date(Number(u.lastLoginAt)).toISOString() : null,
+    emailVerified: !!u.emailVerified,
+    provider: u.providerUserInfo?.[0]?.providerId ?? null,
+  };
+}
+
+/** List all Firebase Auth users (paginates through the whole project; admin-only). */
+export async function adminListUsers(): Promise<
+  Array<{ uid: string; email: string | null; createdAt: string | null; lastLoginAt: string | null }>
+> {
+  const out: Array<{ uid: string; email: string | null; createdAt: string | null; lastLoginAt: string | null }> = [];
+  let nextPageToken: string | undefined;
+  do {
+    const res = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/projects/${projectId()}/accounts:query`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${await accessToken()}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ returnUserInfo: true, limit: 500, ...(nextPageToken ? { nextPageToken } : {}) }),
+      },
+    );
+    if (!res.ok) break;
+    const json = (await res.json()) as {
+      userInfo?: Array<{ localId: string; email?: string; createdAt?: string; lastLoginAt?: string }>;
+      nextPageToken?: string;
+    };
+    for (const u of json.userInfo ?? []) {
+      out.push({
+        uid: u.localId,
+        email: u.email ?? null,
+        createdAt: u.createdAt ? new Date(Number(u.createdAt)).toISOString() : null,
+        lastLoginAt: u.lastLoginAt ? new Date(Number(u.lastLoginAt)).toISOString() : null,
+      });
+    }
+    nextPageToken = json.nextPageToken;
+  } while (nextPageToken);
+  return out;
+}
+
+/** Delete a document (admin-only). */
+export async function adminDeleteDoc(col: string, id: string): Promise<void> {
+  const res = await fsFetch(`/${col}/${encodeURIComponent(id)}`, { method: "DELETE" });
+  if (!res.ok && res.status !== 404) throw new Error(`Firestore delete failed: ${await res.text()}`);
+}

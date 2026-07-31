@@ -3,8 +3,8 @@ import { queryOptions, useQuery } from "@tanstack/react-query";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { supabase } from "@/integrations/supabase/client";
-import type { Json } from "@/integrations/supabase/types";
+import { COL, fsAdd, fsFindOne, where } from "@/lib/db/firestore";
+import { useAuth } from "@/lib/auth/auth-context";
 import { formatINR, estimatedDelivery } from "@/lib/format";
 import { useCart } from "@/lib/cart";
 import { toast } from "sonner";
@@ -21,7 +21,7 @@ type Sofa = {
   delivery_days: number | null;
   hero_image: string | null;
   model_url: string | null;
-  product_options: Json | null;
+  product_options: unknown | null;
 };
 
 type SizeVariant = { label: string; price: string; dimensions: string; seating: string };
@@ -40,7 +40,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function parseProductOptions(value: Json | null | undefined): ProductOptions {
+function parseProductOptions(value: unknown | null | undefined): ProductOptions {
   return isRecord(value) ? (value as unknown as ProductOptions) : {};
 }
 
@@ -52,14 +52,12 @@ const sofaQuery = (slug: string) =>
   queryOptions({
     queryKey: ["configure-sofa", slug],
     queryFn: async (): Promise<Sofa | null> => {
-      const { data, error } = await supabase
-        .from("sofas")
-        .select("id, slug, name, tagline, base_price, sale_price, delivery_days, hero_image, model_url, product_options")
-        .eq("slug", slug)
-        .eq("is_published", true)
-        .maybeSingle();
-      if (error) throw error;
-      return data as Sofa | null;
+      const data = await fsFindOne<Sofa & { is_published?: boolean }>(
+        COL.sofas,
+        where("slug", "==", slug),
+        where("is_published", "==", true),
+      );
+      return data ?? null;
     },
   });
 
@@ -167,6 +165,7 @@ function ConfigurePage() {
   const { data: sofa } = useQuery(sofaQuery(slug));
   const navigate = useNavigate();
   const cart = useCart();
+  const { user } = useAuth();
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -220,31 +219,36 @@ function ConfigurePage() {
   const addonList = ADDONS.filter((a) => addons[a.key]).map((a) => a.label);
 
   const saveDesign = async () => {
-    const { data: sess } = await supabase.auth.getSession();
-    if (!sess.session) {
+    if (!user) {
       toast.error("Sign in to save designs");
-      navigate({ to: "/auth" });
+      navigate({ to: "/auth", search: {} as never });
       return;
     }
     const name = prompt("Name this design", `${sofa.name} — ${sizeDef.label}`) ?? `${sofa.name}`;
-    const { data, error } = await supabase.from("saved_designs").insert({
-      user_id: sess.session.user.id,
-      sofa_id: sofa.id,
-      name,
-      config: {
-        colorHex: colorDef.hex,
-        seats: sizeDef.seats,
-        isSectional: sizeDef.sectional,
-        fabric,
-        addons,
-        price,
-        sizeLabel: sizeDef.label,
-        colorLabel: colorDef.label,
-        fabricLabel: fabricDef.label,
-      },
-    }).select("share_token").maybeSingle();
-    if (error) return toast.error(error.message);
-    const link = `${window.location.origin}/shared-design/${data?.share_token}`;
+    const shareToken = crypto.randomUUID();
+    try {
+      await fsAdd(COL.savedDesigns, {
+        user_id: user.uid,
+        sofa_id: sofa.id,
+        name,
+        share_token: shareToken,
+        config: {
+          colorHex: colorDef.hex,
+          seats: sizeDef.seats,
+          isSectional: sizeDef.sectional,
+          fabric,
+          addons,
+          price,
+          sizeLabel: sizeDef.label,
+          colorLabel: colorDef.label,
+          fabricLabel: fabricDef.label,
+        },
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save design");
+      return;
+    }
+    const link = `${window.location.origin}/shared-design/${shareToken}`;
     await navigator.clipboard.writeText(link).catch(() => {});
     toast.success("Design saved! Share link copied to clipboard.");
   };

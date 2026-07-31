@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { z } from "zod";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth/auth-context";
+import { COL, fsAdd, fsFindOne, fsList, fsUpdate, orderBy, where } from "@/lib/db/firestore";
 import { useCart } from "@/lib/cart";
 import { formatINR, estimatedDelivery } from "@/lib/format";
 import { toast } from "sonner";
@@ -11,6 +12,7 @@ import { PaymentMethods } from "@/components/payment-methods";
 import { PhoneVerify, UnverifiedBadge, VerifiedBadge } from "@/components/phone-verify";
 
 export const Route = createFileRoute("/_authenticated/checkout")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Checkout — True Furniture's" },
@@ -48,11 +50,14 @@ type SavedAddress = {
   city: string;
   pincode: string;
   is_default: boolean;
+  user_id?: string;
+  created_at?: string;
 };
 
 function Checkout() {
   const { items, subtotal, discount, total, coupon, clear } = useCart();
   const navigate = useNavigate();
+  const { user, profile, loading: authLoading, refreshProfile } = useAuth();
   const [form, setForm] = useState<FormState>({
     full_name: "",
     phone: "",
@@ -68,27 +73,27 @@ function Checkout() {
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
   const [selectedAddrId, setSelectedAddrId] = useState<string>("");
   const [saveAddress, setSaveAddress] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
   const [verifiedPhone, setVerifiedPhone] = useState<string | null>(null);
   const [emailVerified, setEmailVerified] = useState(false);
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      navigate({ to: "/auth" });
+      return;
+    }
     (async () => {
-      const { data } = await supabase.auth.getUser();
-      const uid = data.user?.id ?? null;
-      setUserId(uid);
-      setEmailVerified(!!data.user?.email_confirmed_at);
-      if (!uid) return;
-      const [{ data: p }, { data: a }] = await Promise.all([
-        supabase.from("profiles").select("full_name, phone, email, city, phone_verified").eq("id", uid).maybeSingle(),
-        supabase.from("user_addresses").select("*").eq("user_id", uid).order("is_default", { ascending: false }).order("created_at", { ascending: false }),
-      ]);
-      const list = (a as SavedAddress[] | null) ?? [];
+      setEmailVerified(!!user.emailVerified);
+      const list = await fsList<SavedAddress>(
+        COL.userAddresses,
+        where("user_id", "==", user.uid),
+        orderBy("is_default", "desc"),
+        orderBy("created_at", "desc"),
+      ).catch(() => []);
       setAddresses(list);
-      const prof0 = p as { phone?: string | null; phone_verified?: boolean | null } | null;
-      if (prof0?.phone_verified && prof0.phone) setVerifiedPhone(prof0.phone.replace(/\D/g, "").slice(-10));
-      const authEmail = data.user?.email ?? "";
-      const profileEmail = (p as { email?: string | null } | null)?.email ?? "";
+      if (profile?.phone_verified && profile.phone) setVerifiedPhone(profile.phone.replace(/\D/g, "").slice(-10));
+      const authEmail = user.email ?? "";
+      const profileEmail = profile?.email ?? "";
       // Prefer default address; otherwise seed from profile
       const def = list.find((x) => x.is_default) ?? list[0];
       if (def) {
@@ -103,20 +108,20 @@ function Checkout() {
           landmark: def.landmark ?? "",
           pincode: def.pincode,
         }));
-      } else if (p) {
-        const prof = p as { full_name?: string | null; phone?: string | null; city?: string | null; email?: string | null };
+      } else if (profile) {
         setForm((s) => ({
           ...s,
-          full_name: prof.full_name ?? s.full_name,
-          phone: prof.phone ?? s.phone,
-          email: prof.email ?? authEmail ?? s.email,
-          city: (prof.city === "Ujjain" ? "Ujjain" : "Indore"),
+          full_name: profile.full_name ?? s.full_name,
+          phone: profile.phone ?? s.phone,
+          email: profile.email ?? authEmail ?? s.email,
+          city: (profile.city === "Ujjain" ? "Ujjain" : "Indore"),
         }));
       } else if (authEmail) {
         setForm((s) => ({ ...s, email: authEmail }));
       }
     })();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user, profile]);
 
   function selectAddress(id: string) {
     setSelectedAddrId(id);
@@ -180,8 +185,7 @@ function Checkout() {
     }
     setSubmitting(true);
     try {
-      const { data: sess } = await supabase.auth.getSession();
-      const uid = sess.session?.user.id ?? userId;
+      const uid = user?.uid;
       if (!uid) throw new Error("Not signed in");
 
       const data = parsed.data;
@@ -189,7 +193,7 @@ function Checkout() {
       // Optionally save this delivery address for future orders
       if (saveAddress && selectedAddrId === "__new") {
         try {
-          await supabase.from("user_addresses").insert({
+          await fsAdd(COL.userAddresses, {
             user_id: uid,
             label: "Home",
             full_name: data.full_name,
@@ -207,11 +211,12 @@ function Checkout() {
 
       // Keep profile in sync (name/phone/city) so future checkouts prefill.
       try {
-        await supabase.from("profiles").update({
+        await fsUpdate(COL.profiles, uid, {
           full_name: data.full_name,
           phone: data.phone,
           city: data.city,
-        }).eq("id", uid);
+        });
+        await refreshProfile();
       } catch {
         // non-fatal
       }
@@ -220,14 +225,18 @@ function Checkout() {
         .filter(Boolean)
         .join(" · ");
 
-      const rows = items.map((i) => {
+      const nowIso = new Date().toISOString();
+      const orderIds: string[] = [];
+      for (const i of items) {
         const lineSubtotal = i.unitPrice * i.quantity;
         // proportionally distribute discount across lines
         const lineDiscount = subtotal > 0 ? Math.round((discount * lineSubtotal) / subtotal) : 0;
         const lineTotal = lineSubtotal - lineDiscount;
         const lineDeposit = Math.round(lineTotal * 0.2);
-        return {
+        const orderNumber = `TF-${String(Date.now() % 100000).padStart(5, "0")}`;
+        const orderId = await fsAdd(COL.orders, {
           user_id: uid,
+          order_number: orderNumber,
           sofa_id: i.sofaId,
           sofa_snapshot: { name: i.name, slug: i.slug, image: i.image, unit_price: i.unitPrice, quantity: i.quantity },
           fabric_snapshot: { name: i.fabric },
@@ -239,21 +248,23 @@ function Checkout() {
           discount_code: coupon?.code ?? null,
           deposit_paid: 0,
           balance_due: lineTotal - lineDeposit,
-          status: "pending_deposit" as const,
+          status: "pending_deposit",
           delivery_city: data.city,
           delivery_address: addressBlob,
           phone: data.phone,
           customer_notes: data.notes || null,
           expected_delivery_date: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString().slice(0, 10),
-        };
-      });
-
-      const { data: inserted, error } = await supabase
-        .from("orders")
-        .insert(rows)
-        .select("id");
-      if (error) throw error;
-      const orderIds = (inserted ?? []).map((r: { id: string }) => r.id);
+          created_at: nowIso,
+        });
+        orderIds.push(orderId);
+        await fsAdd(COL.orderStatusHistory, {
+          order_id: orderId,
+          user_id: uid,
+          status: "pending_deposit",
+          note: "Order placed",
+          created_at: nowIso,
+        });
+      }
       if (orderIds.length === 0) throw new Error("Could not create order");
 
       clear();
