@@ -5,6 +5,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatINR, formatDate, ORDER_STATUS_STEPS, statusIndex } from "@/lib/format";
 import { getAuthUserDetails } from "@/lib/admin-users.functions";
+import { sendOrderStatusEmail } from "@/lib/email.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin/orders/$id")({
@@ -33,10 +34,23 @@ const CRAFTSMEN = [
   "Ajay Chouhan (Apprentice · Indore)",
 ];
 
+/** Statuses that have a customer-facing email template. */
+const NOTIFIABLE = new Set([
+  "confirmed",
+  "in_production",
+  "quality_check",
+  "shipped",
+  "out_for_delivery",
+  "delivered",
+  "cancelled",
+  "refunded",
+]);
+
 function OrderDetail() {
   const { id } = Route.useParams();
   const qc = useQueryClient();
   const getAuth = useServerFn(getAuthUserDetails);
+  const notifyCustomer = useServerFn(sendOrderStatusEmail);
 
   const { data: order, isLoading } = useQuery({
     queryKey: ["admin-order", id],
@@ -88,21 +102,42 @@ function OrderDetail() {
   });
 
   const [statusNote, setStatusNote] = useState("");
+  const [notify, setNotify] = useState(true);
   const advanceStatus = useMutation({
     mutationFn: async (newStatus: string) => {
       const { error } = await supabase.from("orders").update({ status: newStatus } as any).eq("id", id);
       if (error) throw error;
+      const note = statusNote.trim();
       if (statusNote.trim()) {
-        await supabase.from("order_status_history").insert({ order_id: id, status: newStatus, note: statusNote.trim() } as any);
+        await supabase.from("order_status_history").insert({ order_id: id, status: newStatus, note } as any);
       }
+      if (notify && NOTIFIABLE.has(newStatus)) {
+        const res = await notifyCustomer({ data: { orderId: id, status: newStatus, note: note || null } });
+        return res as { sent: boolean; error?: string };
+      }
+      return { sent: false as const };
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
       setStatusNote("");
-      toast.success("Status updated");
+      if (res?.sent) toast.success("Status updated · customer notified by email");
+      else if (notify) toast.success("Status updated (no email sent for this status)");
+      else toast.success("Status updated");
       qc.invalidateQueries({ queryKey: ["admin-order", id] });
       qc.invalidateQueries({ queryKey: ["admin-order-history", id] });
     },
     onError: (e: Error) => toast.error(e.message),
+  });
+
+  const { data: paymentLogs } = useQuery({
+    queryKey: ["admin-order-payments", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("payment_events")
+        .select("id, event_type, status, amount, currency, razorpay_payment_id, razorpay_order_id, error, created_at")
+        .eq("order_id", id)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
   });
 
   const approveCancel = useMutation({
@@ -225,6 +260,10 @@ function OrderDetail() {
                   style={{ background: dark.bg, border: `1px solid ${dark.border}`, color: dark.text }}
                 />
               </div>
+              <label className="flex items-center gap-2 mb-4 text-xs cursor-pointer" style={{ color: dark.mute }}>
+                <input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} />
+                Email the customer automatically when the status changes
+              </label>
 
               {(order.status === "cancellation_requested" || order.status === "refund_requested" || order.cancellation_reason || order.refund_reason) && (
                 <div className="mb-4 p-3 rounded" style={{ background: "rgba(200,168,107,0.08)", border: `1px solid ${dark.border}` }}>
