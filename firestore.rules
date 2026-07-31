@@ -1,0 +1,132 @@
+rules_version = '2';
+
+// True Furniture's — Firestore security rules.
+// Mirrors the access model the app previously enforced with Postgres RLS.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    // Roles are stored in a separate collection and mirrored into custom
+    // claims by the server, so a client can never escalate its own role.
+    function isStaff() {
+      return signedIn() && (request.auth.token.role == 'admin' || request.auth.token.role == 'staff');
+    }
+
+    function isAdmin() {
+      return signedIn() && request.auth.token.role == 'admin';
+    }
+
+    // ---- Public catalogue (read-only for everyone, staff-managed) ----
+    match /sofas/{id}          { allow read: if resource.data.is_published == true || isStaff(); allow write: if isStaff(); }
+    match /categories/{id}     { allow read: if true; allow write: if isStaff(); }
+    match /fabrics/{id}        { allow read: if true; allow write: if isStaff(); }
+    match /colors/{id}         { allow read: if true; allow write: if isStaff(); }
+    match /sizes/{id}          { allow read: if true; allow write: if isStaff(); }
+    match /addons/{id}         { allow read: if true; allow write: if isStaff(); }
+    match /showrooms/{id}      { allow read: if true; allow write: if isStaff(); }
+    match /site_settings/{id}  { allow read: if true; allow write: if isAdmin(); }
+    match /blog_posts/{id}     { allow read: if resource.data.is_published == true || isStaff(); allow write: if isStaff(); }
+    match /reviews/{id} {
+      allow read: if resource.data.approved == true || isStaff() || isSelf(resource.data.user_id);
+      allow create: if isSelf(request.resource.data.user_id) && request.resource.data.approved == false;
+      allow update, delete: if isStaff() || isSelf(resource.data.user_id);
+    }
+
+    // ---- Per-customer data ----
+    match /profiles/{uid} {
+      allow read: if isSelf(uid) || isStaff();
+      allow create, update: if isSelf(uid) || isStaff();
+      allow delete: if false;
+    }
+
+    match /user_roles/{id} {
+      allow read: if isStaff() || isSelf(resource.data.user_id);
+      allow write: if false; // server only
+    }
+
+    match /user_addresses/{id} {
+      allow read, update, delete: if isSelf(resource.data.user_id) || isStaff();
+      allow create: if isSelf(request.resource.data.user_id);
+    }
+
+    match /orders/{id} {
+      allow read: if isSelf(resource.data.user_id) || isStaff();
+      allow create: if isSelf(request.resource.data.user_id);
+      allow update: if isStaff();
+      allow delete: if false;
+    }
+
+    match /order_status_history/{id} {
+      allow read: if isStaff() || isSelf(resource.data.user_id);
+      allow write: if false; // written by the server on status change
+    }
+
+    match /payment_events/{id} {
+      allow read: if isStaff();
+      allow write: if false; // webhook only
+    }
+
+    match /saved_designs/{id} {
+      allow read: if isStaff() || isSelf(resource.data.user_id);
+      allow create: if isSelf(request.resource.data.user_id);
+      allow update, delete: if isSelf(resource.data.user_id) || isStaff();
+    }
+
+    match /customer_messages/{id} {
+      allow read: if isStaff() || isSelf(resource.data.customer_id);
+      allow create: if isStaff() || isSelf(request.resource.data.customer_id);
+      allow update: if isStaff();
+      allow delete: if false;
+    }
+
+    match /customer_admin_notes/{id} { allow read, write: if isStaff(); }
+
+    // ---- Inbound forms (create-only for the public, staff-managed) ----
+    match /carpenter_requests/{id} {
+      allow read: if isStaff() || isSelf(resource.data.user_id);
+      allow create: if request.resource.data.full_name is string
+                    && request.resource.data.full_name.size() <= 120
+                    && request.resource.data.phone is string
+                    && request.resource.data.phone.size() <= 20
+                    && request.resource.data.status == 'new';
+      allow update, delete: if isStaff();
+    }
+
+    match /showroom_bookings/{id} {
+      allow read: if isStaff() || isSelf(resource.data.user_id);
+      allow create: if request.resource.data.full_name is string
+                    && request.resource.data.full_name.size() <= 120
+                    && request.resource.data.status == 'pending';
+      allow update, delete: if isStaff();
+    }
+
+    match /newsletter_subscribers/{id} {
+      allow read: if isStaff();
+      allow create: if request.resource.data.email is string
+                    && request.resource.data.email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$')
+                    && request.resource.data.email.size() <= 200;
+      allow update, delete: if isStaff();
+    }
+
+    match /coupons/{id} {
+      allow read: if resource.data.active == true || isStaff();
+      allow write: if isStaff();
+    }
+
+    match /visitors/{id} {
+      allow read: if isStaff();
+      allow create: if true;
+      allow update, delete: if false;
+    }
+
+    // Anything not listed above is closed.
+    match /{document=**} { allow read, write: if false; }
+  }
+}
