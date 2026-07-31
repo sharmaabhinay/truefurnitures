@@ -1,8 +1,9 @@
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { COL, fsGet, fsList, fsAdd, fsUpdate, where } from "@/lib/db/firestore";
+import { useAuth } from "@/lib/auth/auth-context";
 import { formatINR, formatDate, ORDER_STATUS_STEPS, statusIndex } from "@/lib/format";
 import { getAuthUserDetails } from "@/lib/admin-users.functions";
 import { sendOrderStatusEmail } from "@/lib/email.functions";
@@ -10,13 +11,6 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin/orders/$id")({
   ssr: false,
-  beforeLoad: async ({ context }) => {
-    const user = (context as { user?: { id: string } }).user;
-    if (!user) throw redirect({ to: "/auth" });
-    const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
-    const { data: isStaff } = await supabase.rpc("has_role", { _user_id: user.id, _role: "staff" });
-    if (!isAdmin && !isStaff) throw redirect({ to: "/dashboard" });
-  },
   head: () => ({ meta: [{ title: "Order — Admin · True Furniture's" }, { name: "robots", content: "noindex" }] }),
   component: OrderDetail,
 });
@@ -48,50 +42,40 @@ const NOTIFIABLE = new Set([
 
 function OrderDetail() {
   const { id } = Route.useParams();
+  const { isStaff, loading: authLoading } = useAuth();
   const qc = useQueryClient();
   const getAuth = useServerFn(getAuthUserDetails);
   const notifyCustomer = useServerFn(sendOrderStatusEmail);
 
   const { data: order, isLoading } = useQuery({
     queryKey: ["admin-order", id],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("orders").select("*").eq("id", id).maybeSingle();
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => fsGet<any>(COL.orders, id),
   });
 
   const { data: profile } = useQuery({
     queryKey: ["admin-order-profile", order?.user_id],
     enabled: !!order?.user_id,
-    queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("*").eq("id", order!.user_id).maybeSingle();
-      return data;
-    },
+    queryFn: () => fsGet<any>(COL.profiles, order!.user_id),
   });
 
   const { data: auth } = useQuery({
     queryKey: ["admin-order-auth", order?.user_id],
     enabled: !!order?.user_id,
     queryFn: () => getAuth({ data: { userId: order!.user_id } }),
+    retry: false,
   });
 
   const { data: history } = useQuery({
     queryKey: ["admin-order-history", id],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("order_status_history")
-        .select("id, status, note, created_at, changed_by")
-        .eq("order_id", id)
-        .order("created_at", { ascending: true });
-      return data ?? [];
+      const rows = await fsList<any>(COL.orderStatusHistory, where("order_id", "==", id));
+      return rows.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     },
   });
 
   const update = useMutation({
     mutationFn: async (patch: Record<string, unknown>) => {
-      const { error } = await supabase.from("orders").update(patch as any).eq("id", id);
-      if (error) throw error;
+      await fsUpdate(COL.orders, id, patch);
     },
     onSuccess: () => {
       toast.success("Updated");
@@ -105,11 +89,10 @@ function OrderDetail() {
   const [notify, setNotify] = useState(true);
   const advanceStatus = useMutation({
     mutationFn: async (newStatus: string) => {
-      const { error } = await supabase.from("orders").update({ status: newStatus } as any).eq("id", id);
-      if (error) throw error;
+      await fsUpdate(COL.orders, id, { status: newStatus });
       const note = statusNote.trim();
-      if (statusNote.trim()) {
-        await supabase.from("order_status_history").insert({ order_id: id, status: newStatus, note } as any);
+      if (note) {
+        await fsAdd(COL.orderStatusHistory, { order_id: id, status: newStatus, note });
       }
       if (notify && NOTIFIABLE.has(newStatus)) {
         const res = await notifyCustomer({ data: { orderId: id, status: newStatus, note: note || null } });
@@ -131,22 +114,17 @@ function OrderDetail() {
   const { data: paymentLogs } = useQuery({
     queryKey: ["admin-order-payments", id],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("payment_events")
-        .select("id, event_type, status, amount, currency, razorpay_payment_id, razorpay_order_id, error, created_at")
-        .eq("order_id", id)
-        .order("created_at", { ascending: false });
-      return data ?? [];
+      const rows = await fsList<any>(COL.paymentEvents, where("order_id", "==", id));
+      return rows.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     },
   });
 
   const approveCancel = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("orders").update({
+      await fsUpdate(COL.orders, id, {
         status: "cancelled",
         cancelled_at: new Date().toISOString(),
-      } as any).eq("id", id);
-      if (error) throw error;
+      });
     },
     onSuccess: () => { toast.success("Cancellation approved"); qc.invalidateQueries({ queryKey: ["admin-order", id] }); },
     onError: (e: Error) => toast.error(e.message),
@@ -154,17 +132,20 @@ function OrderDetail() {
 
   const markRefunded = useMutation({
     mutationFn: async (amount: number) => {
-      const { error } = await supabase.from("orders").update({
+      await fsUpdate(COL.orders, id, {
         status: "refunded",
         refund_amount: amount,
         refunded_at: new Date().toISOString(),
         balance_due: 0,
-      } as any).eq("id", id);
-      if (error) throw error;
+      });
     },
     onSuccess: () => { toast.success("Marked as refunded"); qc.invalidateQueries({ queryKey: ["admin-order", id] }); },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  if (!authLoading && !isStaff) {
+    return <div style={{ background: dark.bg, color: dark.text, minHeight: "100vh" }} className="p-10 text-center">Not authorized. <Link to="/dashboard" style={{ color: dark.accent }}>Back</Link></div>;
+  }
 
   if (isLoading) return <div style={{ background: dark.bg, color: dark.mute, minHeight: "100vh" }} className="p-10 text-center">Loading…</div>;
   if (!order) return <div style={{ background: dark.bg, color: dark.text, minHeight: "100vh" }} className="p-10 text-center">Order not found. <Link to="/admin" style={{ color: dark.accent }}>Back</Link></div>;
