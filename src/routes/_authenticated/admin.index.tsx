@@ -1618,15 +1618,21 @@ function Bookings() {
   const qc = useQueryClient();
   const { data } = useQuery({
     queryKey: ["admin-bookings"],
-    queryFn: async () =>
-      (await supabase
-        .from("showroom_bookings")
-        .select("*, showroom:showrooms(name, city)")
-        .order("preferred_date", { ascending: true })).data ?? [],
+    queryFn: async () => {
+      const [bookings, showrooms] = await Promise.all([
+        fsList<any>(COL.showroomBookings, orderBy("preferred_date", "asc")),
+        fsList<any>(COL.showrooms),
+      ]);
+      const byId = new Map(showrooms.map((s) => [s.id, s]));
+      return bookings.map((b) => ({ ...b, showroom: byId.get(b.showroom_id) }));
+    },
   });
   const update = async (id: string, status: string) => {
-    const { error } = await supabase.from("showroom_bookings").update({ status }).eq("id", id);
-    if (error) return toast.error(error.message);
+    try {
+      await fsUpdate(COL.showroomBookings, id, { status });
+    } catch (e) {
+      return toast.error(e instanceof Error ? e.message : "Update failed");
+    }
     qc.invalidateQueries({ queryKey: ["admin-bookings"] });
   };
   return (
@@ -1689,17 +1695,26 @@ function Reviews() {
   const qc = useQueryClient();
   const { data } = useQuery({
     queryKey: ["admin-reviews"],
-    queryFn: async () =>
-      (await supabase.from("reviews").select("*, sofa:sofas(name)").order("created_at", { ascending: false })).data ?? [],
+    queryFn: async () => {
+      const [reviews, sofas] = await Promise.all([
+        fsList<any>(COL.reviews, orderBy("created_at", "desc")),
+        fsList<any>(COL.sofas),
+      ]);
+      const byId = new Map(sofas.map((s) => [s.id, s]));
+      return reviews.map((r) => ({ ...r, sofa: byId.get(r.sofa_id) }));
+    },
   });
   const setApproved = async (id: string, approved: boolean) => {
-    const { error } = await supabase.from("reviews").update({ approved }).eq("id", id);
-    if (error) return toast.error(error.message);
+    try {
+      await fsUpdate(COL.reviews, id, { approved });
+    } catch (e) {
+      return toast.error(e instanceof Error ? e.message : "Update failed");
+    }
     qc.invalidateQueries({ queryKey: ["admin-reviews"] });
   };
   const del = async (id: string) => {
     if (!confirm("Delete review?")) return;
-    await supabase.from("reviews").delete().eq("id", id);
+    await fsDelete(COL.reviews, id);
     qc.invalidateQueries({ queryKey: ["admin-reviews"] });
   };
   return (
@@ -1747,8 +1762,7 @@ function Coupons() {
   const qc = useQueryClient();
   const { data } = useQuery({
     queryKey: ["admin-coupons"],
-    queryFn: async () =>
-      (await supabase.from("coupons").select("*").order("created_at", { ascending: false })).data ?? [],
+    queryFn: async () => fsList<any>(COL.coupons, orderBy("created_at", "desc")),
   });
   const create = async () => {
     const code = prompt("Coupon code (e.g. DIWALI10)")?.toUpperCase().trim();
@@ -1757,23 +1771,27 @@ function Coupons() {
     const value = Number(prompt(type === "percent" ? "Percent (1-100)" : "Flat amount in ₹") ?? "0");
     if (!value) return;
     const min = Number(prompt("Minimum order amount (₹) — 0 for none", "0") ?? "0");
-    const { error } = await supabase.from("coupons").insert({
-      code,
-      discount_type: type,
-      discount_value: value,
-      min_order_amount: min,
-      active: true,
-    });
-    if (error) return toast.error(error.message);
+    try {
+      await fsAdd(COL.coupons, {
+        code,
+        discount_type: type,
+        discount_value: value,
+        min_order_amount: min,
+        uses_count: 0,
+        active: true,
+      });
+    } catch (e) {
+      return toast.error(e instanceof Error ? e.message : "Create failed");
+    }
     qc.invalidateQueries({ queryKey: ["admin-coupons"] });
   };
   const toggle = async (id: string, active: boolean) => {
-    await supabase.from("coupons").update({ active }).eq("id", id);
+    await fsUpdate(COL.coupons, id, { active });
     qc.invalidateQueries({ queryKey: ["admin-coupons"] });
   };
   const del = async (id: string) => {
     if (!confirm("Delete coupon?")) return;
-    await supabase.from("coupons").delete().eq("id", id);
+    await fsDelete(COL.coupons, id);
     qc.invalidateQueries({ queryKey: ["admin-coupons"] });
   };
   return (
