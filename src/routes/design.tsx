@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, queryOptions } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { supabase } from "@/integrations/supabase/client";
+import { COL, fsList, where, orderBy } from "@/lib/db/firestore";
 import { formatINR } from "@/lib/format";
 import { CollectionsGridSkeleton } from "@/components/skeleton";
 import sofaMalwa from "@/assets/sofa-malwa.jpg";
@@ -33,13 +33,7 @@ type Sofa = {
 const sofasQuery = queryOptions({
   queryKey: ["design-sofas"],
   queryFn: async (): Promise<Sofa[]> => {
-    const { data, error } = await supabase
-      .from("sofas")
-      .select("id, slug, name, tagline, base_price, hero_image")
-      .eq("is_published", true)
-      .order("sort_order");
-    if (error) throw error;
-    return data ?? [];
+    return fsList<Sofa>(COL.sofas, where("is_published", "==", true), orderBy("sort_order"));
   },
 });
 
