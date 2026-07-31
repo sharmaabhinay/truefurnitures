@@ -4,6 +4,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
 import { sendWelcomeEmail } from "@/lib/email.functions";
 
 export const Route = createFileRoute("/auth")({
@@ -29,6 +30,27 @@ function Auth() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  async function handleGoogle() {
+    setError(null);
+    setGoogleLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        setError(result.error.message ?? "Google sign-in failed");
+        setGoogleLoading(false);
+        return;
+      }
+      if (result.redirected) return;
+      navigate({ to: "/" });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Google sign-in failed");
+      setGoogleLoading(false);
+    }
+  }
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
