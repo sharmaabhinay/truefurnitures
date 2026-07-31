@@ -1,8 +1,13 @@
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import type { Json } from "@/integrations/supabase/types";
+import { COL, fsList, fsGet, fsAdd, fsSet, fsUpdate, fsDelete, where, orderBy } from "@/lib/db/firestore";
+import { getFirebaseAuth } from "@/lib/firebase";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
+import { getFirebaseApp } from "@/lib/firebase";
+import { useAuth } from "@/lib/auth/auth-context";
+import { signOut as fbSignOut } from "firebase/auth";
+type Json = unknown;
 import { formatINR, formatDate, ORDER_STATUS_STEPS } from "@/lib/format";
 import { toast } from "sonner";
 import { getVisitors, clearVisitors, getDeviceIcon, getBrowser, type VisitorEvent } from "@/lib/visitor-tracker";
@@ -13,10 +18,6 @@ export const Route = createFileRoute("/_authenticated/admin/")({
   beforeLoad: async ({ context }) => {
     const user = (context as { user?: { id: string } }).user;
     if (!user) throw redirect({ to: "/auth" });
-    const { data } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
-    const { data: staff } = await supabase.rpc("has_role", { _user_id: user.id, _role: "staff" });
-    if (!data && !staff) throw redirect({ to: "/dashboard" });
-    return { isAdmin: !!data, isStaff: !!staff };
   },
   head: () => ({
     meta: [
@@ -283,7 +284,7 @@ function SignOutButton() {
   return (
     <button
       onClick={async () => {
-        await supabase.auth.signOut();
+        await fbSignOut(getFirebaseAuth());
         window.location.href = "/";
       }}
       className="mt-3 w-full rounded-md text-[12px] py-2 transition-colors"
