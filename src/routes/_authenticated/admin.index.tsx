@@ -451,18 +451,18 @@ function Dashboard({ onGo }: { onGo: (p: PanelKey) => void }) {
     queryKey: ["admin-overview"],
     queryFn: async () => {
       const [orders, bookings, customers, reviews, products] = await Promise.all([
-        supabase.from("orders").select("id, total, status, delivery_city, created_at, order_number, sofa_snapshot"),
-        supabase.from("showroom_bookings").select("id, status, created_at, full_name, phone, preferred_date, showroom_id"),
-        supabase.from("profiles").select("id, city"),
-        supabase.from("reviews").select("id, approved"),
-        supabase.from("sofas").select("id"),
+        fsList<any>(COL.orders),
+        fsList<any>(COL.showroomBookings),
+        fsList<any>(COL.profiles),
+        fsList<any>(COL.reviews),
+        fsList<any>(COL.sofas),
       ]);
       return {
-        orders: orders.data ?? [],
-        bookings: bookings.data ?? [],
-        customers: customers.data ?? [],
-        reviews: reviews.data ?? [],
-        products: products.data ?? [],
+        orders,
+        bookings,
+        customers,
+        reviews,
+        products,
       };
     },
   });
@@ -685,17 +685,16 @@ function Orders() {
   const { data: orders, isLoading } = useQuery({
     queryKey: ["admin-orders"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("id, order_number, total, deposit_paid, balance_due, status, delivery_city, phone, created_at, expected_delivery_date, sofa_snapshot, discount_code")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data ?? [];
+      const rows = await fsList<any>(COL.orders, orderBy("created_at", "desc"));
+      return rows;
     },
   });
   const update = async (id: string, patch: any) => {
-    const { error } = await supabase.from("orders").update(patch).eq("id", id);
-    if (error) return toast.error(error.message);
+    try {
+      await fsUpdate(COL.orders, id, patch);
+    } catch (e) {
+      return toast.error(e instanceof Error ? e.message : "Update failed");
+    }
     toast.success("Order updated");
     qc.invalidateQueries({ queryKey: ["admin-orders"] });
     qc.invalidateQueries({ queryKey: ["admin-overview"] });
@@ -836,9 +835,9 @@ function Customers() {
   const { data } = useQuery({
     queryKey: ["admin-customers"],
     queryFn: async () => {
-      const [{ data: profiles }, { data: orders }] = await Promise.all([
-        supabase.from("profiles").select("id, full_name, phone, city, created_at").order("created_at", { ascending: false }),
-        supabase.from("orders").select("user_id, total"),
+      const [profiles, orders] = await Promise.all([
+        fsList<any>(COL.profiles, orderBy("created_at", "desc")),
+        fsList<any>(COL.orders),
       ]);
       const spent = new Map<string, { count: number; sum: number }>();
       for (const o of orders ?? []) {
