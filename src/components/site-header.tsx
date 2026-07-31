@@ -49,6 +49,7 @@ const STATIC_SUGGESTIONS = [
 ] as const;
 
 export function SiteHeader() {
+  const brand = useBrand();
   const [signedIn, setSignedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [open, setOpen] = useState(false);
