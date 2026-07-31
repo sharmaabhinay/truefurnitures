@@ -1992,7 +1992,7 @@ function Settings() {
     hero_subtext:
       "Every sofa is custom-built to your exact fabric, colour, size, and leg choice by master craftsmen at our Indore workshop.",
     hero_image: "",
-    hero_badge: "Indore's Custom Sofa Studio · Est. 2007",
+    hero_badge: "True Furniture's · Indore & Ujjain · Est. 2007",
     hero_cta1: "Browse All Sofas",
     hero_cta2: "Get Free Quote",
     announcement: "",
