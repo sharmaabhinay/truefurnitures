@@ -2287,6 +2287,37 @@ function fmtRel(iso: string) {
   return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 }
 
+const V_ALL_TYPES = [
+  "all",
+  "session",
+  "visit",
+  "product_view",
+  "view_3d",
+  "add_to_cart",
+  "quote",
+  "newsletter",
+] as const;
+
+const V_TYPE_ICONS: Record<string, string> = {
+  session: "👤",
+  visit: "👁️",
+  product_view: "🛋️",
+  view_3d: "🧊",
+  add_to_cart: "🛒",
+  quote: "📝",
+  newsletter: "✉️",
+};
+
+const V_TYPE_COLORS: Record<string, string> = {
+  session: "#C8A86B",
+  visit: "#6BA8C8",
+  product_view: "#4CAF82",
+  view_3d: "#A86BC8",
+  add_to_cart: "#E0A458",
+  quote: "#E5484D",
+  newsletter: "#6BC8B4",
+};
+
 function Visitors() {
   const [visitors, setVisitors] = useState<VisitorEvent[]>([]);
   const [filter, setFilter] = useState<string>("all");
