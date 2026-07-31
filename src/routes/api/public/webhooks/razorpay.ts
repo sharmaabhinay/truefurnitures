@@ -35,12 +35,41 @@ export const Route = createFileRoute("/api/public/webhooks/razorpay")({
         const rzpOrderId: string | undefined = paymentEntity?.order_id;
         const rzpPaymentId: string | undefined = paymentEntity?.id;
 
-        // We only need to react to successful captures. Ignore other events (authorized/failed/refund handled elsewhere).
-        if (event !== "payment.captured" || !rzpOrderId || !rzpPaymentId) {
-          return new Response("ok", { status: 200 });
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+        // Idempotency: Razorpay retries the same event id. The unique constraint on
+        // payment_events.event_id makes a duplicate insert fail, and we bail out.
+        const eventId =
+          request.headers.get("x-razorpay-event-id") ??
+          `${event}:${rzpPaymentId ?? "none"}:${rzpOrderId ?? "none"}`;
+
+        const { error: logErr } = await supabaseAdmin.from("payment_events").insert({
+          event_id: eventId,
+          event_type: event || "unknown",
+          razorpay_order_id: rzpOrderId ?? null,
+          razorpay_payment_id: rzpPaymentId ?? null,
+          amount: paymentEntity?.amount ? Number(paymentEntity.amount) / 100 : null,
+          currency: paymentEntity?.currency ?? null,
+          status: "received",
+          payload,
+        });
+        if (logErr) {
+          if (logErr.code === "23505") {
+            console.log("[razorpay-webhook] duplicate event ignored", eventId);
+            return new Response("ok (duplicate)", { status: 200 });
+          }
+          console.error("[razorpay-webhook] log insert failed", logErr);
         }
 
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const markEvent = async (status: string, patch: Record<string, unknown> = {}) => {
+          await supabaseAdmin.from("payment_events").update({ status, ...patch }).eq("event_id", eventId);
+        };
+
+        // We only need to react to successful captures. Other events are logged only.
+        if (event !== "payment.captured" || !rzpOrderId || !rzpPaymentId) {
+          await markEvent("ignored");
+          return new Response("ok", { status: 200 });
+        }
 
         const { data: orders, error } = await supabaseAdmin
           .from("orders")
@@ -48,10 +77,12 @@ export const Route = createFileRoute("/api/public/webhooks/razorpay")({
           .eq("razorpay_order_id", rzpOrderId);
         if (error) {
           console.error("[razorpay-webhook] lookup failed", error);
+          await markEvent("failed", { error: error.message });
           return new Response("Lookup failed", { status: 500 });
         }
         if (!orders || orders.length === 0) {
           // Unknown order — acknowledge so Razorpay stops retrying.
+          await markEvent("order_not_found");
           return new Response("ok", { status: 200 });
         }
 
@@ -85,6 +116,10 @@ export const Route = createFileRoute("/api/public/webhooks/razorpay")({
             console.error("[razorpay-webhook] email failed", id, e);
           }
         }
+
+        await markEvent(confirmedIds.length > 0 ? "processed" : "already_processed", {
+          order_id: (orders as Array<{ id: string }>)[0]?.id ?? null,
+        });
 
         return new Response("ok", { status: 200 });
       },
