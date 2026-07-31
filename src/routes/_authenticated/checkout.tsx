@@ -135,6 +135,7 @@ function Checkout() {
 
   const deposit = Math.round(total * 0.2);
   const balance = total - deposit;
+  const phoneVerified = !!verifiedPhone && verifiedPhone === form.phone.replace(/\D/g, "").slice(-10);
 
   if (items.length === 0) {
     return (
@@ -168,6 +169,11 @@ function Checkout() {
       }
       setErrors(errs);
       toast.error("Please fix the highlighted fields");
+      return;
+    }
+    if (!phoneVerified) {
+      toast.error("Please verify your mobile number with the OTP before placing the order");
+      document.getElementById("tf-phone-verify")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
     setSubmitting(true);
