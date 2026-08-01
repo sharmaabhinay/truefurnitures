@@ -1,4 +1,4 @@
-import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { COL, fsList, fsGet, fsAdd, fsSet, fsUpdate, fsDelete, where, orderBy } from "@/lib/db/firestore";
@@ -15,10 +15,6 @@ import { brandQueryKey, fetchBrand, DEFAULT_BRAND, type BrandSettings } from "@/
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   ssr: false,
-  beforeLoad: async ({ context }) => {
-    const user = (context as { user?: { id: string } }).user;
-    if (!user) throw redirect({ to: "/auth" });
-  },
   head: () => ({
     meta: [
       { title: "Admin Panel — True Furniture's" },
