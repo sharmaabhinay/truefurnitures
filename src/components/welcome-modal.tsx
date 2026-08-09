@@ -125,7 +125,7 @@ export function WelcomeModal() {
                     <span className="text-[10px] uppercase tracking-widest text-[color:var(--brand-accent)]">Detected · {detectedCity}</span>
                   )}
                   {geoState === "failed" && (
-                    <button type="button" onClick={retryDetect} className="text-[10px] uppercase tracking-widest underline text-[color:var(--brand-dark)]/50 hover:text-[color:var(--brand-dark)]">
+                    <button type="button" onClick={() => void runDetect()} className="text-[10px] uppercase tracking-widest underline text-[color:var(--brand-dark)]/50 hover:text-[color:var(--brand-dark)]">
                       Use my location
                     </button>
                   )}
