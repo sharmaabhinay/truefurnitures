@@ -53,7 +53,7 @@ function Gallery() {
         "created_at",
         "desc",
       );
-      const sofas = await fsList<SofaLite>(COL.sofas);
+      const sofas = await fsList<SofaLite>(COL.sofas, where("is_published", "==", true));
       const sofaMap = new Map(sofas.map((s) => [s.id, { name: s.name, slug: s.slug }]));
       return rows.map((r) => ({ ...r, sofa: r.sofa_id ? sofaMap.get(r.sofa_id) ?? null : null }));
     },

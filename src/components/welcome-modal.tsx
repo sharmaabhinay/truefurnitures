@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { COL, fsAdd, fsFindOne, where } from "@/lib/db/firestore";
+import { detectCity, geolocationPermission, rememberCity } from "@/lib/geo";
 
 const KEY = "tf_welcome_v1";
 
@@ -7,6 +8,8 @@ export function WelcomeModal() {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [city, setCity] = useState<"Indore" | "Ujjain" | "Other">("Indore");
+  const [detectedCity, setDetectedCity] = useState<string | null>(null);
+  const [geoState, setGeoState] = useState<"idle" | "detecting" | "done" | "failed">("idle");
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [message, setMessage] = useState("");
 
@@ -16,6 +19,33 @@ export function WelcomeModal() {
     const t = setTimeout(() => setOpen(true), 1800);
     return () => clearTimeout(t);
   }, []);
+
+  const started = useRef(false);
+
+  const runDetect = useCallback(async () => {
+    setGeoState("detecting");
+    const found = await detectCity();
+    if (found) {
+      setDetectedCity(found.city);
+      setCity(found.nearest);
+      setGeoState("done");
+    } else {
+      setGeoState("failed");
+    }
+  }, []);
+
+  // Ask for location once the popup is visible so the browser prompt has context.
+  useEffect(() => {
+    if (!open || started.current) return;
+    started.current = true;
+    void (async () => {
+      if ((await geolocationPermission()) === "denied") {
+        setGeoState("failed");
+        return;
+      }
+      await runDetect();
+    })();
+  }, [open, runDetect]);
 
   function dismiss() {
     localStorage.setItem(KEY, "1");
@@ -42,7 +72,7 @@ export function WelcomeModal() {
       setMessage(e instanceof Error ? e.message : "Something went wrong");
       return;
     }
-    localStorage.setItem("tf_location", city);
+    rememberCity(detectedCity ?? city);
     localStorage.setItem("tf_discount", code);
     setStatus("done");
     setMessage(code);
@@ -86,15 +116,31 @@ export function WelcomeModal() {
                 />
               </div>
               <div>
-                <label className="text-[10px] font-black uppercase tracking-widest block mb-2">Nearest City</label>
+                <div className="flex items-center justify-between mb-2 gap-3">
+                  <label className="text-[10px] font-black uppercase tracking-widest">Nearest City</label>
+                  {geoState === "detecting" && (
+                    <span className="text-[10px] uppercase tracking-widest text-[color:var(--brand-dark)]/40">Detecting…</span>
+                  )}
+                  {geoState === "done" && detectedCity && (
+                    <span className="text-[10px] uppercase tracking-widest text-[color:var(--brand-accent)]">Detected · {detectedCity}</span>
+                  )}
+                  {geoState === "failed" && (
+                    <button type="button" onClick={() => void runDetect()} className="text-[10px] uppercase tracking-widest underline text-[color:var(--brand-dark)]/50 hover:text-[color:var(--brand-dark)]">
+                      Use my location
+                    </button>
+                  )}
+                </div>
                 <div className="grid grid-cols-3 gap-2">
                   {(["Indore", "Ujjain", "Other"] as const).map((c) => (
-                    <button type="button" key={c} onClick={() => setCity(c)}
+                    <button type="button" key={c} onClick={() => { setCity(c); setDetectedCity(null); }}
                       className={`py-3 text-[10px] font-bold uppercase tracking-widest border transition-colors ${city === c ? "bg-[color:var(--brand-dark)] text-white border-[color:var(--brand-dark)]" : "border-[color:var(--brand-dark)]/20 hover:border-[color:var(--brand-dark)]"}`}>
                       {c}
                     </button>
                   ))}
                 </div>
+                {geoState === "failed" && (
+                  <p className="text-[10px] text-[color:var(--brand-dark)]/40 mt-2">Couldn’t detect your location — please pick your nearest city.</p>
+                )}
               </div>
               {status === "error" && <p className="text-xs text-red-600">{message}</p>}
               <button
