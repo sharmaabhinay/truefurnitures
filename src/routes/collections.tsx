@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { useQuery, queryOptions } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { COL, fsList, where, orderBy } from "@/lib/db/firestore";
+import { COL, fsList, where, sortRows } from "@/lib/db/firestore";
 import { formatINR } from "@/lib/format";
 import { CollectionsGridSkeleton } from "@/components/skeleton";
 import sofaMalwa from "@/assets/sofa-malwa.jpg";
@@ -34,7 +34,7 @@ type Sofa = {
 const sofasQuery = queryOptions({
   queryKey: ["sofas", "published"],
   queryFn: async (): Promise<Sofa[]> => {
-    return fsList<Sofa>(COL.sofas, where("is_published", "==", true), orderBy("sort_order"));
+    return sortRows(await fsList<Sofa>(COL.sofas, where("is_published", "==", true)), "sort_order");
   },
 });
 

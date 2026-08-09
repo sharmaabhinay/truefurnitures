@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { COL, fsList, where, orderBy, limit } from "@/lib/db/firestore";
+import { COL, fsList, where, limit, sortRows } from "@/lib/db/firestore";
 import { formatDate } from "@/lib/format";
 
 export const Route = createFileRoute("/gallery")({
@@ -48,11 +48,10 @@ function Gallery() {
   const { data: reviews, isLoading } = useQuery({
     queryKey: ["public-reviews"],
     queryFn: async (): Promise<Review[]> => {
-      const rows = await fsList<RawReview>(
-        COL.reviews,
-        where("approved", "==", true),
-        orderBy("created_at", "desc"),
-        limit(60),
+      const rows = sortRows(
+        await fsList<RawReview>(COL.reviews, where("approved", "==", true), limit(60)),
+        "created_at",
+        "desc",
       );
       const sofas = await fsList<SofaLite>(COL.sofas);
       const sofaMap = new Map(sofas.map((s) => [s.id, { name: s.name, slug: s.slug }]));

@@ -4,7 +4,7 @@ import { z } from "zod";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { useAuth } from "@/lib/auth/auth-context";
-import { COL, fsAdd, fsList, fsUpdate, orderBy, where } from "@/lib/db/firestore";
+import { COL, fsAdd, fsList, fsUpdate, sortRows, where } from "@/lib/db/firestore";
 import { useCart } from "@/lib/cart";
 import { formatINR, estimatedDelivery } from "@/lib/format";
 import { toast } from "sonner";
@@ -84,12 +84,9 @@ function Checkout() {
     }
     (async () => {
       setEmailVerified(!!user.emailVerified);
-      const list = await fsList<SavedAddress>(
-        COL.userAddresses,
-        where("user_id", "==", user.uid),
-        orderBy("is_default", "desc"),
-        orderBy("created_at", "desc"),
-      ).catch(() => []);
+      const list = await fsList<SavedAddress>(COL.userAddresses, where("user_id", "==", user.uid))
+        .then((r) => sortRows(sortRows(r, "created_at", "desc"), "is_default", "desc"))
+        .catch(() => []);
       setAddresses(list);
       if (profile?.phone_verified && profile.phone) setVerifiedPhone(profile.phone.replace(/\D/g, "").slice(-10));
       const authEmail = user.email ?? "";
