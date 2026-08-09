@@ -117,3 +117,21 @@ export async function fsDelete(col: string, id: string): Promise<void> {
 }
 
 export { serverTimestamp as fsNow };
+
+/**
+ * Client-side sort. Firestore needs a composite index for `where` + `orderBy`
+ * combinations, so filtered lists are sorted here instead.
+ */
+export function sortRows<T>(rows: T[], field: string, dir: "asc" | "desc" = "asc"): T[] {
+  const sign = dir === "desc" ? -1 : 1;
+  return [...rows].sort((a, b) => {
+    const av = (a as Record<string, unknown>)[field];
+    const bv = (b as Record<string, unknown>)[field];
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1;
+    if (bv == null) return -1;
+    if (typeof av === "number" && typeof bv === "number") return (av - bv) * sign;
+    if (typeof av === "boolean" && typeof bv === "boolean") return (Number(av) - Number(bv)) * sign;
+    return String(av).localeCompare(String(bv)) * sign;
+  });
+}
