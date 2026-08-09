@@ -3,7 +3,7 @@ import { useQuery, queryOptions } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { COL, fsFindOne, fsList, where, orderBy, limit } from "@/lib/db/firestore";
+import { COL, fsFindOne, fsList, where, limit, sortRows } from "@/lib/db/firestore";
 import { formatINR, estimatedDelivery } from "@/lib/format";
 import { useCart } from "@/lib/cart";
 import { toast } from "sonner";
@@ -209,11 +209,9 @@ const relatedQuery = (slug: string) =>
     queryKey: ["sofa-related", slug],
     queryFn: async (): Promise<RelatedSofa[]> => {
       try {
-        const rows = await fsList<RelatedSofa & { slug: string }>(
-          COL.sofas,
-          where("is_published", "==", true),
-          orderBy("sort_order"),
-          limit(4),
+        const rows = sortRows(
+          await fsList<RelatedSofa & { slug: string }>(COL.sofas, where("is_published", "==", true)),
+          "sort_order",
         );
         return rows.filter((r) => r.slug !== slug).slice(0, 3);
       } catch {
@@ -285,14 +283,12 @@ function ProductPage() {
     queryFn: async (): Promise<Review[]> => {
       if (!sofaId) return [];
       try {
-        const rows = await fsList<Review>(
-          COL.reviews,
-          where("sofa_id", "==", sofaId),
-          where("approved", "==", true),
-          orderBy("created_at", "desc"),
-          limit(6),
+        const rows = sortRows(
+          await fsList<Review>(COL.reviews, where("sofa_id", "==", sofaId), where("approved", "==", true)),
+          "created_at",
+          "desc",
         );
-        return rows;
+        return rows.slice(0, 6);
       } catch {
         return [];
       }

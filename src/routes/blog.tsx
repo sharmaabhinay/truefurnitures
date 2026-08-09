@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, queryOptions } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { COL, fsList, where, orderBy } from "@/lib/db/firestore";
+import { COL, fsList, where, sortRows } from "@/lib/db/firestore";
 import { formatDate } from "@/lib/format";
 
 type Post = { id: string; slug: string; title: string; excerpt: string | null; cover_image: string | null; reading_minutes: number | null; published_at: string | null };
@@ -10,7 +10,7 @@ type Post = { id: string; slug: string; title: string; excerpt: string | null; c
 const postsQuery = queryOptions({
   queryKey: ["blog-posts"],
   queryFn: async (): Promise<Post[]> => {
-    return fsList<Post>(COL.blogPosts, where("is_published", "==", true), orderBy("published_at", "desc"));
+    return sortRows(await fsList<Post>(COL.blogPosts, where("is_published", "==", true)), "published_at", "desc");
   },
 });
 

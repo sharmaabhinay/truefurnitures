@@ -3,7 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, queryOptions } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth/auth-context";
-import { COL, fsList, orderBy, where } from "@/lib/db/firestore";
+import { COL, fsList, sortRows, where } from "@/lib/db/firestore";
 import { useCart } from "@/lib/cart";
 
 type SearchItem = {
@@ -19,8 +19,7 @@ const searchQuery = queryOptions({
     const data = await fsList<{ slug: string; name: string; tagline: string | null }>(
       COL.sofas,
       where("is_published", "==", true),
-      orderBy("sort_order"),
-    ).catch(() => []);
+    ).then((r) => sortRows(r, "sort_order")).catch(() => []);
     return (data ?? []).map((s) => ({
       slug: s.slug,
       name: s.name,
