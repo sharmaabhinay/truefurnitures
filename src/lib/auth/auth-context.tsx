@@ -5,6 +5,7 @@ import {
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
   signOut as fbSignOut,
   updateProfile as fbUpdateProfile,
   type User,
@@ -119,7 +120,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signInWithGoogle: async () => {
         const provider = new GoogleAuthProvider();
         provider.setCustomParameters({ prompt: "select_account" });
-        await signInWithPopup(getFirebaseAuth(), provider);
+        try {
+          await signInWithPopup(getFirebaseAuth(), provider);
+        } catch (err) {
+          const code = (err as { code?: string })?.code ?? "";
+          // Preview iframes and strict browsers block popups — fall back to a full-page redirect.
+          if (
+            code === "auth/popup-blocked" ||
+            code === "auth/popup-closed-by-user" ||
+            code === "auth/cancelled-popup-request" ||
+            code === "auth/operation-not-supported-in-this-environment"
+          ) {
+            await signInWithRedirect(getFirebaseAuth(), provider);
+            return;
+          }
+          throw err;
+        }
       },
       signOut: async () => {
         await fbSignOut(getFirebaseAuth());
