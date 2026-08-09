@@ -73,15 +73,14 @@ export function SiteHeader() {
   // Minimal top nav — only the essentials are shown on desktop.
   const primaryNav = [
     { to: "/collections", label: "Collections" },
-    { to: "/design", label: "Design 3D" },
     { to: "/hire-carpenter", label: "Hire a Carpenter" },
-    { to: "/showrooms", label: "Showrooms" },
     { to: "/contact", label: "Contact" },
   ] as const;
   // Everything else lives in the mobile drawer + footer.
   const secondaryNav = [
     { to: "/about", label: "The Atelier" },
     { to: "/gallery", label: "Gallery" },
+    { to: "/showrooms", label: "Showrooms" },
     { to: "/book-visit", label: "Book Visit" },
     { to: "/blog", label: "Journal" },
     { to: "/faq", label: "FAQ" },
