@@ -34,7 +34,7 @@ type Sofa = {
 const sofasQuery = queryOptions({
   queryKey: ["sofas", "published"],
   queryFn: async (): Promise<Sofa[]> => {
-    return fsList<Sofa>(COL.sofas, where("is_published", "==", true), orderBy("sort_order"));
+    return sortRows(await fsList<Sofa>(COL.sofas, where("is_published", "==", true)), "sort_order");
   },
 });
 
