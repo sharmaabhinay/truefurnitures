@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { COL, fsAdd, fsFindOne, where } from "@/lib/db/firestore";
 import { detectCity, geolocationPermission, rememberCity } from "@/lib/geo";
 
@@ -20,33 +20,9 @@ export function WelcomeModal() {
     return () => clearTimeout(t);
   }, []);
 
-  // Ask for location once the popup is visible so the browser prompt has context.
-  useEffect(() => {
-    if (!open || geoState !== "idle") return;
-    let cancelled = false;
-    (async () => {
-      const perm = await geolocationPermission();
-      if (perm === "denied") {
-        if (!cancelled) setGeoState("failed");
-        return;
-      }
-      setGeoState("detecting");
-      const found = await detectCity();
-      if (cancelled) return;
-      if (found) {
-        setDetectedCity(found.city);
-        setCity(found.nearest);
-        setGeoState("done");
-      } else {
-        setGeoState("failed");
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [open, geoState]);
+  const started = useRef(false);
 
-  async function retryDetect() {
+  const runDetect = useCallback(async () => {
     setGeoState("detecting");
     const found = await detectCity();
     if (found) {
@@ -56,7 +32,20 @@ export function WelcomeModal() {
     } else {
       setGeoState("failed");
     }
-  }
+  }, []);
+
+  // Ask for location once the popup is visible so the browser prompt has context.
+  useEffect(() => {
+    if (!open || started.current) return;
+    started.current = true;
+    void (async () => {
+      if ((await geolocationPermission()) === "denied") {
+        setGeoState("failed");
+        return;
+      }
+      await runDetect();
+    })();
+  }, [open, runDetect]);
 
   function dismiss() {
     localStorage.setItem(KEY, "1");
