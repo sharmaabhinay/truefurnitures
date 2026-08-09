@@ -42,7 +42,8 @@ function fromCoords(lat: number, lon: number): DetectedCity {
 
 async function ipLookup(): Promise<DetectedCity | null> {
   try {
-    const res = await fetch("https://ipapi.co/json/");
+    // Best-effort only: never let a slow/blocked provider stall the UI.
+    const res = await fetch("https://ipapi.co/json/", { signal: AbortSignal.timeout(4000) });
     if (!res.ok) return null;
     const j = (await res.json()) as { city?: string; region?: string };
     if (!j.city) return null;
