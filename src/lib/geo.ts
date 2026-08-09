@@ -57,7 +57,12 @@ async function ipLookup(): Promise<DetectedCity | null> {
 export async function detectCity(opts: { timeoutMs?: number } = {}): Promise<DetectedCity | null> {
   if (typeof window === "undefined") return null;
   const timeout = opts.timeoutMs ?? 8000;
+  // Hard ceiling so the UI can always fall back to manual selection.
+  const guard = new Promise<null>((r) => setTimeout(() => r(null), timeout + 6000));
+  return Promise.race([detectCityInner(timeout), guard]);
+}
 
+async function detectCityInner(timeout: number): Promise<DetectedCity | null> {
   const coords = await new Promise<GeolocationPosition | null>((resolve) => {
     if (!("geolocation" in navigator)) return resolve(null);
     navigator.geolocation.getCurrentPosition(
