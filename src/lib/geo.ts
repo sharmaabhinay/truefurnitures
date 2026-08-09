@@ -14,15 +14,30 @@ function nearestBrand(city: string, region = ""): DetectedCity["nearest"] {
   return "Other";
 }
 
-async function reverseGeocode(lat: number, lon: number): Promise<DetectedCity | null> {
-  const res = await fetch(
-    `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`,
+// Our service area. Coordinates are enough to name the city without a paid
+// geocoding provider — anything far from both is reported as "Other".
+const SERVICE_CITIES = [
+  { name: "Indore", lat: 22.7196, lon: 75.8577 },
+  { name: "Ujjain", lat: 23.1765, lon: 75.7885 },
+] as const;
+
+function distanceKm(aLat: number, aLon: number, bLat: number, bLon: number) {
+  const R = 6371;
+  const dLat = ((bLat - aLat) * Math.PI) / 180;
+  const dLon = ((bLon - aLon) * Math.PI) / 180;
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((aLat * Math.PI) / 180) * Math.cos((bLat * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+function fromCoords(lat: number, lon: number): DetectedCity {
+  const ranked = SERVICE_CITIES.map((c) => ({ c, d: distanceKm(lat, lon, c.lat, c.lon) })).sort(
+    (a, b) => a.d - b.d,
   );
-  if (!res.ok) return null;
-  const j = (await res.json()) as { city?: string; locality?: string; principalSubdivision?: string };
-  const city = j.city || j.locality || "";
-  if (!city) return null;
-  return { city, nearest: nearestBrand(city, j.principalSubdivision ?? ""), source: "gps" };
+  const best = ranked[0]!;
+  if (best.d <= 60) return { city: best.c.name, nearest: best.c.name, source: "gps" };
+  return { city: "Other", nearest: "Other", source: "gps" };
 }
 
 async function ipLookup(): Promise<DetectedCity | null> {
@@ -52,12 +67,11 @@ export async function detectCity(opts: { timeoutMs?: number } = {}): Promise<Det
   });
 
   if (coords) {
-    try {
-      const via = await reverseGeocode(coords.coords.latitude, coords.coords.longitude);
-      if (via) return via;
-    } catch {
-      /* fall through to IP */
-    }
+    const via = fromCoords(coords.coords.latitude, coords.coords.longitude);
+    // Outside the service area: try to name the actual city for the record.
+    if (via.nearest !== "Other") return via;
+    const byIp = await ipLookup();
+    return byIp ?? via;
   }
   return ipLookup();
 }
