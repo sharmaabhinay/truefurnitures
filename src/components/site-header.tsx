@@ -200,6 +200,8 @@ export function SiteHeader() {
                 <Link to="/messages" className="hidden sm:inline-block px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-dark)] hover:text-[color:var(--brand-accent)] transition-colors">
                   Messages
                 </Link>
+              )}
+              {!isAdmin && (
                 <Link to="/profile" className="hidden sm:inline-block px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-dark)] hover:text-[color:var(--brand-accent)] transition-colors">
                   Profile
                 </Link>
