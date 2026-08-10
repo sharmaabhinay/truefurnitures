@@ -53,6 +53,7 @@ export const COL = {
   customerAdminNotes: "customer_admin_notes",
   siteSettings: "site_settings",
   visitors: "visitors",
+  carpenters: "carpenters",
 } as const;
 
 export type CollectionName = (typeof COL)[keyof typeof COL];

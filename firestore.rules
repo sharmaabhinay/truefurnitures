@@ -58,14 +58,21 @@ service cloud.firestore {
 
     match /orders/{id} {
       allow read: if isSelf(resource.data.user_id) || isStaff();
-      allow create: if isSelf(request.resource.data.user_id);
+      allow create: if isSelf(request.resource.data.user_id) || isStaff();
       allow update: if isStaff();
       allow delete: if false;
     }
 
     match /order_status_history/{id} {
       allow read: if isStaff() || isSelf(resource.data.user_id);
-      allow write: if false; // written by the server on status change
+      allow create: if isStaff() || isSelf(request.resource.data.user_id);
+      allow update, delete: if false;
+    }
+
+    // Craftsman roster used when assigning orders.
+    match /carpenters/{id} {
+      allow read: if isStaff();
+      allow write: if isStaff();
     }
 
     match /payment_events/{id} {

@@ -47,8 +47,30 @@ export function logVisitor(evt: Omit<VisitorEvent, "time"> & { time?: string }) 
     });
     if (list.length > MAX) list.splice(0, list.length - MAX);
     window.localStorage.setItem(KEY, JSON.stringify(list));
+    void persist(list[list.length - 1]!);
   } catch {
     /* ignore */
+  }
+}
+
+/** Mirror the event into Firestore so admins see traffic from every device. */
+async function persist(evt: VisitorEvent) {
+  try {
+    const { COL, fsAdd } = await import("@/lib/db/firestore");
+    await fsAdd(COL.visitors, { ...evt, created_at: evt.time });
+  } catch {
+    /* analytics is best-effort */
+  }
+}
+
+/** Read the shared (cross-device) event log — staff only, per Firestore rules. */
+export async function getRemoteVisitors(): Promise<VisitorEvent[]> {
+  try {
+    const { COL, fsList } = await import("@/lib/db/firestore");
+    const rows = await fsList<VisitorEvent & { id: string }>(COL.visitors);
+    return rows.sort((a, b) => (a.time > b.time ? 1 : -1)).slice(-500);
+  } catch {
+    return [];
   }
 }
 
