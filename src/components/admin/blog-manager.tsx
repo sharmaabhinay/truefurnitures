@@ -351,7 +351,7 @@ function PostEditor({ post, onClose, onSaved }: { post: Post; onClose: () => voi
               </div>
             ) : (
               <ATextarea
-                ref={areaRef as never}
+                ref={areaRef}
                 rows={16}
                 value={form.content ?? ""}
                 onChange={(e) => set("content", e.target.value)}

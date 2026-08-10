@@ -32,7 +32,9 @@ export function AInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   );
 }
 
-export function ATextarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+export function ATextarea(
+  props: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { ref?: React.Ref<HTMLTextAreaElement> },
+) {
   const { className = "", style, ...rest } = props;
   return (
     <textarea
