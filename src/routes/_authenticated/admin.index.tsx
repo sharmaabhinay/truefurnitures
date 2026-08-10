@@ -12,6 +12,11 @@ import { formatINR, formatDate, ORDER_STATUS_STEPS } from "@/lib/format";
 import { toast } from "sonner";
 import { getVisitors, clearVisitors, getDeviceIcon, getBrowser, type VisitorEvent } from "@/lib/visitor-tracker";
 import { brandQueryKey, fetchBrand, DEFAULT_BRAND, type BrandSettings } from "@/lib/brand";
+import { getRemoteVisitors } from "@/lib/visitor-tracker";
+import { BlogManager } from "@/components/admin/blog-manager";
+import { CouponManager } from "@/components/admin/coupon-manager";
+import { CarpenterManager } from "@/components/admin/carpenter-manager";
+import { OrderCreateModal } from "@/components/admin/order-create-modal";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   ssr: false,
@@ -35,6 +40,7 @@ type PanelKey =
   | "reviews"
   | "coupons"
   | "blog"
+  | "carpenters"
   | "designs"
   | "showrooms"
   | "settings";
@@ -55,6 +61,7 @@ const NAV: NavGroup[] = [
       { key: "visitors", label: "Visitor Analytics", icon: "👁️" },
       { key: "orders", label: "Orders", icon: "📦" },
       { key: "customers", label: "Customers", icon: "👥" },
+      { key: "carpenters", label: "Carpenters", icon: "🪚" },
     ],
   },
   {
@@ -91,7 +98,8 @@ const TITLES: Record<PanelKey, string> = {
   bookings: "Quote Requests",
   reviews: "Reviews",
   coupons: "Coupons",
-  blog: "Blog",
+  blog: "Blog & Journal",
+  carpenters: "Carpenter Team",
   designs: "Saved Designs",
   showrooms: "Showrooms",
   settings: "Settings",
@@ -265,8 +273,9 @@ function AdminHome() {
           {panel === "products" && <Products />}
           {panel === "bookings" && <Bookings />}
           {panel === "reviews" && <Reviews />}
-          {panel === "coupons" && <Coupons />}
-          {panel === "blog" && <Blog />}
+          {panel === "coupons" && <CouponManager />}
+          {panel === "blog" && <BlogManager />}
+          {panel === "carpenters" && <CarpenterManager />}
           {panel === "designs" && <Designs />}
           {panel === "showrooms" && <Showrooms />}
           {panel === "settings" && <Settings />}
@@ -676,6 +685,8 @@ function Dashboard({ onGo }: { onGo: (p: PanelKey) => void }) {
 function Orders() {
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [createOpen, setCreateOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [q, setQ] = useState("");
   const { data: orders, isLoading } = useQuery({
@@ -722,6 +733,13 @@ function Orders() {
           onChange={(e) => setQ(e.target.value)}
           style={{ flex: "1 1 220px", minWidth: 200, background: "#16161D", border: "1px solid #2A2A38", color: "#E8E8F0" }}
         />
+        <button
+          onClick={() => setCreateOpen(true)}
+          className="rounded-md px-4 py-2 text-[13px] font-semibold"
+          style={{ background: "#C8A86B", color: "#1a1a1a" }}
+        >
+          ＋ New Order
+        </button>
         <DarkSelect value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           {statuses.map((s) => (
             <option key={s} value={s}>
@@ -820,6 +838,17 @@ function Orders() {
           </DataTable>
         )}
       </Card>
+
+      <OrderCreateModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        adminId={user?.uid ?? ""}
+        onCreated={() => {
+          qc.invalidateQueries({ queryKey: ["admin-orders"] });
+          qc.invalidateQueries({ queryKey: ["admin-overview"] });
+          qc.invalidateQueries({ queryKey: ["admin-customers"] });
+        }}
+      />
     </div>
   );
 }
@@ -1752,164 +1781,6 @@ function Reviews() {
   );
 }
 
-/* ================= COUPONS ================= */
-
-function Coupons() {
-  const qc = useQueryClient();
-  const { data } = useQuery({
-    queryKey: ["admin-coupons"],
-    queryFn: async () => fsList<any>(COL.coupons, orderBy("created_at", "desc")),
-  });
-  const create = async () => {
-    const code = prompt("Coupon code (e.g. DIWALI10)")?.toUpperCase().trim();
-    if (!code) return;
-    const type = confirm("OK = Percent off, Cancel = Flat amount off") ? "percent" : "flat";
-    const value = Number(prompt(type === "percent" ? "Percent (1-100)" : "Flat amount in ₹") ?? "0");
-    if (!value) return;
-    const min = Number(prompt("Minimum order amount (₹) — 0 for none", "0") ?? "0");
-    try {
-      await fsAdd(COL.coupons, {
-        code,
-        discount_type: type,
-        discount_value: value,
-        min_order_amount: min,
-        uses_count: 0,
-        active: true,
-      });
-    } catch (e) {
-      return toast.error(e instanceof Error ? e.message : "Create failed");
-    }
-    qc.invalidateQueries({ queryKey: ["admin-coupons"] });
-  };
-  const toggle = async (id: string, active: boolean) => {
-    await fsUpdate(COL.coupons, id, { active });
-    qc.invalidateQueries({ queryKey: ["admin-coupons"] });
-  };
-  const del = async (id: string) => {
-    if (!confirm("Delete coupon?")) return;
-    await fsDelete(COL.coupons, id);
-    qc.invalidateQueries({ queryKey: ["admin-coupons"] });
-  };
-  return (
-    <div className="space-y-4">
-      <button
-        onClick={create}
-        className="rounded-md px-4 py-2 text-[13px] font-semibold"
-        style={{ background: "#C8A86B", color: "#1a1a1a" }}
-      >
-        + New Coupon
-      </button>
-      <Card className="!p-0">
-        <div className="divide-y" style={{ borderColor: "#2A2A38" }}>
-          {(data ?? []).map((c) => (
-            <div key={c.id} className="flex flex-wrap items-center gap-3 p-4" style={{ borderTop: "1px solid rgba(42,42,56,0.5)" }}>
-              <div className="flex-1 min-w-[180px]">
-                <div className="font-mono font-semibold">{c.code}</div>
-                <div className="text-[11px]" style={{ color: "#888899" }}>
-                  {c.discount_type === "percent" ? `${c.discount_value}% off` : `${formatINR(Number(c.discount_value))} off`}
-                  {Number(c.min_order_amount) > 0 && ` · min ${formatINR(Number(c.min_order_amount))}`}
-                  {" · "}used {c.uses_count} times
-                </div>
-              </div>
-              <label className="text-[12px] flex items-center gap-2" style={{ color: "#888899" }}>
-                <input type="checkbox" checked={c.active} onChange={(e) => toggle(c.id, e.target.checked)} />
-                Active
-              </label>
-              <button onClick={() => del(c.id)} className="text-[11px]" style={{ color: "#E05050" }}>
-                Delete
-              </button>
-            </div>
-          ))}
-          {(data ?? []).length === 0 && (
-            <div className="p-8 text-center text-[13px]" style={{ color: "#888899" }}>
-              No coupons yet.
-            </div>
-          )}
-        </div>
-      </Card>
-    </div>
-  );
-}
-
-/* ================= BLOG ================= */
-
-function Blog() {
-  const qc = useQueryClient();
-  const { data } = useQuery({
-    queryKey: ["admin-blog"],
-    queryFn: async () => fsList<any>(COL.blogPosts, orderBy("created_at", "desc")),
-  });
-  const create = async () => {
-    const title = prompt("Post title");
-    if (!title) return;
-    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    try {
-      await fsAdd(COL.blogPosts, {
-        title,
-        slug,
-        content: "Write your post here…",
-        excerpt: "",
-        is_published: false,
-      });
-    } catch (e) {
-      return toast.error(e instanceof Error ? e.message : "Create failed");
-    }
-    qc.invalidateQueries({ queryKey: ["admin-blog"] });
-  };
-  const toggle = async (id: string, published: boolean) => {
-    try {
-      await fsUpdate(COL.blogPosts, id, { is_published: published, published_at: published ? new Date().toISOString() : null });
-    } catch (e) {
-      return toast.error(e instanceof Error ? e.message : "Update failed");
-    }
-    qc.invalidateQueries({ queryKey: ["admin-blog"] });
-  };
-  const del = async (id: string) => {
-    if (!confirm("Delete post?")) return;
-    await fsDelete(COL.blogPosts, id);
-    qc.invalidateQueries({ queryKey: ["admin-blog"] });
-  };
-  return (
-    <div className="space-y-4">
-      <button
-        onClick={create}
-        className="rounded-md px-4 py-2 text-[13px] font-semibold"
-        style={{ background: "#C8A86B", color: "#1a1a1a" }}
-      >
-        + New Post
-      </button>
-      <Card className="!p-0">
-        {(data ?? []).map((p) => (
-          <div
-            key={p.id}
-            className="flex flex-wrap items-center gap-3 p-4 border-t first:border-t-0"
-            style={{ borderColor: "rgba(42,42,56,0.5)" }}
-          >
-            <div className="flex-1 min-w-0">
-              <Link to="/blog/$slug" params={{ slug: p.slug }} className="font-semibold hover:text-[color:#C8A86B]">
-                {p.title}
-              </Link>
-              <div className="text-[11px]" style={{ color: "#888899" }}>/{p.slug}</div>
-            </div>
-            <label className="text-[12px] flex items-center gap-2" style={{ color: "#888899" }}>
-              <input type="checkbox" defaultChecked={p.is_published} onChange={(e) => toggle(p.id, e.target.checked)} />
-              Published
-            </label>
-            <button onClick={() => del(p.id)} className="text-[11px]" style={{ color: "#E05050" }}>
-              Delete
-            </button>
-          </div>
-        ))}
-        {(data ?? []).length === 0 && (
-          <div className="p-8 text-center text-[13px]" style={{ color: "#888899" }}>
-            No posts yet.
-          </div>
-        )}
-      </Card>
-    </div>
-  );
-}
-
 /* ================= DESIGNS ================= */
 
 function Designs() {
@@ -2351,8 +2222,23 @@ function Visitors() {
   const [visitors, setVisitors] = useState<VisitorEvent[]>([]);
   const [filter, setFilter] = useState<string>("all");
 
-  useEffect(() => {
+  const load = () => {
     setVisitors(getVisitors());
+    void getRemoteVisitors().then((remote) => {
+      const local = getVisitors();
+      const seen = new Set<string>();
+      const merged = [...remote, ...local].filter((v) => {
+        const k = `${v.time}|${v.type}|${v.page ?? ""}`;
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
+      setVisitors(merged.sort((a, b) => (a.time > b.time ? 1 : -1)));
+    });
+  };
+
+  useEffect(() => {
+    load();
   }, []);
 
   const filtered = filter === "all" ? visitors : visitors.filter((v) => v.type === filter);
@@ -2381,7 +2267,7 @@ function Visitors() {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => setVisitors(getVisitors())}
+            onClick={load}
             className="rounded-md px-3 py-1.5 text-[12px]"
             style={{ background: "rgba(255,255,255,0.05)", border: "1px solid #2A2A38", color: "#E8E8F0" }}
           >

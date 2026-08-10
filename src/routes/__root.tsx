@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { WelcomeModal } from "@/components/welcome-modal";
+import { VisitorTrackerBoot } from "@/components/visitor-tracker-boot";
 import { CartProvider } from "@/lib/cart";
 import { AuthProvider } from "@/lib/auth/auth-context";
 import { Toaster } from "@/components/ui/sonner";
@@ -161,7 +162,8 @@ function RootComponent() {
        <CartProvider>
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
-        <WelcomeModal />
+        <VisitorTrackerBoot />
+            <WelcomeModal />
         <Toaster position="top-center" richColors />
        </CartProvider>
       </AuthProvider>
