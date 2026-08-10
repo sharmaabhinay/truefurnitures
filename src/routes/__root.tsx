@@ -162,7 +162,7 @@ function RootComponent() {
        <CartProvider>
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
-        <VisitorTrackerBoot />
+            <VisitorTrackerBoot />
             <WelcomeModal />
         <Toaster position="top-center" richColors />
        </CartProvider>
