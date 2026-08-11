@@ -1,6 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
+import { FiArrowRight } from "react-icons/fi";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { CareersApplyModal } from "@/components/careers-apply-modal";
+import { logVisitor } from "@/lib/visitor-tracker";
 
 const roles = [
   { title: "Master Upholsterer", city: "Indore", type: "Full-time", desc: "Hand-cut, hand-stitch and hand-finish premium fabrics for our signature collections. 5+ years experience on high-end upholstery." },
@@ -24,6 +28,7 @@ export const Route = createFileRoute("/careers")({
 });
 
 function Careers() {
+  const [applying, setApplying] = useState<{ title: string; city: string } | null>(null);
   return (
     <div className="min-h-screen bg-[color:var(--brand-cream)] text-[color:var(--brand-dark)] flex flex-col">
       <SiteHeader />
@@ -42,9 +47,15 @@ function Careers() {
                 <p className="text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-accent)] mb-3">{r.city} · {r.type}</p>
                 <p className="text-sm text-[color:var(--brand-dark)]/70 leading-relaxed">{r.desc}</p>
               </div>
-              <a href={`mailto:careers@truefurnitures.in?subject=${encodeURIComponent(r.title)}`} className="text-center px-6 py-3 border border-[color:var(--brand-dark)] text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-dark)] hover:text-white transition-colors whitespace-nowrap">
-                Apply
-              </a>
+              <button
+                onClick={() => {
+                  logVisitor({ type: "visit", page: `/careers/apply/${r.title}` });
+                  setApplying({ title: r.title, city: r.city });
+                }}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-[color:var(--brand-dark)] text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-dark)] hover:text-white transition-colors whitespace-nowrap active:scale-95"
+              >
+                Apply <FiArrowRight />
+              </button>
             </article>
           ))}
         </div>
@@ -54,6 +65,9 @@ function Careers() {
           <Link to="/contact" className="mt-4 inline-block text-xs font-bold uppercase tracking-widest border-b border-[color:var(--brand-dark)] pb-1">Say hello</Link>
         </div>
       </section>
+      {applying && (
+        <CareersApplyModal role={applying.title} city={applying.city} onClose={() => setApplying(null)} />
+      )}
       <SiteFooter />
     </div>
   );

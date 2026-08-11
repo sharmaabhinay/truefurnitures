@@ -1,4 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useAuth } from "@/lib/auth/auth-context";
+import { COL, fsGet, fsSet } from "@/lib/db/firestore";
 
 export type AppliedCoupon = {
   code: string;
@@ -41,10 +43,28 @@ const CartContext = createContext<CartContextValue | null>(null);
 const STORAGE_KEY = "tf_cart_v1";
 const COUPON_KEY = "tf_coupon_v1";
 
+/** Stable identity of a configured line, used when merging carts across devices. */
+function lineKey(i: CartItem) {
+  return [i.sofaId, i.fabric, i.size ?? "", i.color ?? "", (i.addons ?? []).join("|")].join("::");
+}
+
+function mergeCarts(a: CartItem[], b: CartItem[]): CartItem[] {
+  const out = new Map<string, CartItem>();
+  for (const item of [...a, ...b]) {
+    const key = lineKey(item);
+    const existing = out.get(key);
+    if (existing) existing.quantity = Math.max(existing.quantity, item.quantity);
+    else out.set(key, { ...item });
+  }
+  return [...out.values()];
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [items, setItems] = useState<CartItem[]>([]);
   const [coupon, setCoupon] = useState<AppliedCoupon | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [syncedUid, setSyncedUid] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -64,6 +84,34 @@ export function CartProvider({ children }: { children: ReactNode }) {
       else localStorage.removeItem(COUPON_KEY);
     } catch {}
   }, [items, coupon, hydrated]);
+
+  // Pull the signed-in user's cart and merge it with whatever is on this device.
+  useEffect(() => {
+    if (!hydrated || !user) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const remote = await fsGet<{ items?: CartItem[]; coupon?: AppliedCoupon | null }>(COL.carts, user.uid);
+        if (cancelled) return;
+        if (remote?.items?.length) setItems((cur) => mergeCarts(cur, remote.items ?? []));
+        if (remote?.coupon) setCoupon((cur) => cur ?? remote.coupon!);
+      } catch {
+        /* offline / rules — keep the local cart */
+      } finally {
+        if (!cancelled) setSyncedUid(user.uid);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [hydrated, user]);
+
+  // Push every change back so other devices see the same cart.
+  useEffect(() => {
+    if (!hydrated || !user || syncedUid !== user.uid) return;
+    const t = setTimeout(() => {
+      void fsSet(COL.carts, user.uid, { items, coupon, updated_at: new Date().toISOString() }).catch(() => {});
+    }, 400);
+    return () => clearTimeout(t);
+  }, [items, coupon, hydrated, user, syncedUid]);
 
   const value = useMemo<CartContextValue>(() => {
     const subtotal = items.reduce((n, i) => n + i.quantity * i.unitPrice, 0);

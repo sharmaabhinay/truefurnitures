@@ -1,5 +1,4 @@
 import {
-  addDoc,
   collection,
   deleteDoc,
   doc,
@@ -54,6 +53,9 @@ export const COL = {
   siteSettings: "site_settings",
   visitors: "visitors",
   carpenters: "carpenters",
+  careerApplications: "career_applications",
+  campaigns: "campaigns",
+  carts: "carts",
 } as const;
 
 export type CollectionName = (typeof COL)[keyof typeof COL];
@@ -87,13 +89,18 @@ export async function fsFindOne<T = DocumentData>(
   return rows[0] ?? null;
 }
 
-/** Create a document with a generated id; returns the new id. */
+/**
+ * Create a document with a generated id; returns the new id.
+ * The id is written in the same `setDoc` call — a follow-up `updateDoc` would
+ * be rejected by create-only security rules (newsletter, messages, visitors…).
+ */
 export async function fsAdd(col: string, data: DocumentData): Promise<string> {
-  const ref = await addDoc(collection(getDb(), col), {
+  const ref = doc(collection(getDb(), col));
+  await setDoc(ref, {
     ...data,
+    id: ref.id,
     created_at: data['created_at'] ?? new Date().toISOString(),
   });
-  await updateDoc(ref, { id: ref.id });
   return ref.id;
 }
 
@@ -118,6 +125,19 @@ export async function fsDelete(col: string, id: string): Promise<void> {
 }
 
 export { serverTimestamp as fsNow };
+
+/** Simple client-side pagination over an already-fetched list. */
+export function paginate<T>(rows: T[], page: number, pageSize: number) {
+  const total = rows.length;
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  const safe = Math.min(Math.max(1, page), pages);
+  return {
+    rows: rows.slice((safe - 1) * pageSize, safe * pageSize),
+    page: safe,
+    pages,
+    total,
+  };
+}
 
 /**
  * Client-side sort. Firestore needs a composite index for `where` + `orderBy`

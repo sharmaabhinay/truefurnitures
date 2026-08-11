@@ -5,6 +5,8 @@ import { useQuery, queryOptions } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth/auth-context";
 import { COL, fsList, sortRows, where } from "@/lib/db/firestore";
 import { useCart } from "@/lib/cart";
+import { useCustomerUnread, useAdminUnread } from "@/lib/messages";
+import { FiSearch, FiShoppingBag, FiMenu, FiX, FiChevronDown, FiMessageSquare } from "react-icons/fi";
 
 type SearchItem = {
   slug: string;
@@ -59,6 +61,9 @@ export function SiteHeader() {
   const navigate = useNavigate();
   const { count } = useCart();
   const { data: searchItems } = useQuery(searchQuery);
+  const { data: unread = 0 } = useCustomerUnread(!isAdmin ? user?.uid : undefined);
+  const { data: adminUnread } = useAdminUnread(!!isAdmin);
+  const [openGroup, setOpenGroup] = useState<string | null>("Shop");
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -76,17 +81,36 @@ export function SiteHeader() {
     { to: "/hire-carpenter", label: "Hire a Carpenter" },
     { to: "/contact", label: "Contact" },
   ] as const;
-  // Everything else lives in the mobile drawer + footer.
-  const secondaryNav = [
-    { to: "/about", label: "The Atelier" },
-    { to: "/gallery", label: "Gallery" },
-    { to: "/showrooms", label: "Showrooms" },
-    { to: "/book-visit", label: "Book Visit" },
-    { to: "/blog", label: "Journal" },
-    { to: "/faq", label: "FAQ" },
-    { to: "/careers", label: "Careers" },
+  // The drawer groups everything into collapsible submenus so it never overflows.
+  const drawerGroups = [
+    {
+      title: "Shop",
+      items: [
+        { to: "/collections", label: "Collections" },
+        { to: "/design", label: "Design Yours" },
+        { to: "/gallery", label: "Gallery" },
+        { to: "/cart", label: "Cart" },
+      ],
+    },
+    {
+      title: "Services",
+      items: [
+        { to: "/hire-carpenter", label: "Hire a Carpenter" },
+        { to: "/book-visit", label: "Book a Visit" },
+        { to: "/showrooms", label: "Showrooms" },
+      ],
+    },
+    {
+      title: "Company",
+      items: [
+        { to: "/about", label: "The Atelier" },
+        { to: "/blog", label: "Journal" },
+        { to: "/careers", label: "Careers" },
+        { to: "/faq", label: "FAQ" },
+        { to: "/contact", label: "Contact" },
+      ],
+    },
   ] as const;
-  const drawerNav = [...primaryNav, ...secondaryNav];
 
   const suggestions = useMemo(() => {
     const query = q.trim().toLowerCase();
@@ -124,7 +148,7 @@ export function SiteHeader() {
         <div className="flex items-center gap-2 sm:gap-3">
           <div ref={searchRef} className="relative hidden md:block">
             <div className="flex items-center border border-[color:var(--brand-dark)]/15 bg-white/70 focus-within:border-[color:var(--brand-dark)] transition-colors">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="ml-2.5 text-[color:var(--brand-dark)]/50 shrink-0"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+              <FiSearch className="ml-2.5 text-[color:var(--brand-dark)]/50 shrink-0" size={14} />
               <input
                 type="text"
                 value={q}
@@ -177,18 +201,37 @@ export function SiteHeader() {
             aria-label="Cart"
             className="relative p-2 text-[color:var(--brand-dark)] hover:text-[color:var(--brand-accent)] transition-colors"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 4h2l2.2 11.3a2 2 0 0 0 2 1.7h8.2a2 2 0 0 0 2-1.6L21 8H6"/><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/></svg>
+            <FiShoppingBag size={20} />
             {count > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[color:var(--brand-accent)] text-white text-[10px] font-bold flex items-center justify-center">
+              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[color:var(--brand-accent)] text-white text-[10px] font-bold flex items-center justify-center animate-scale-in">
                 {count}
               </span>
             )}
           </Link>
+          {signedIn && (
+            <Link
+              to={isAdmin ? "/admin" : "/messages"}
+              aria-label="Messages"
+              className="relative p-2 sm:hidden text-[color:var(--brand-dark)] hover:text-[color:var(--brand-accent)] transition-colors"
+            >
+              <FiMessageSquare size={20} />
+              {((isAdmin ? adminUnread?.count ?? 0 : unread) > 0) && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[color:var(--brand-accent)] text-white text-[10px] font-bold flex items-center justify-center animate-scale-in">
+                  {isAdmin ? adminUnread?.count : unread}
+                </span>
+              )}
+            </Link>
+          )}
           {signedIn ? (
             <>
               {isAdmin && (
-                <Link to="/admin" className="hidden sm:inline-block px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-accent)] hover:text-[color:var(--brand-dark)] transition-colors">
+                <Link to="/admin" className="relative hidden sm:inline-block px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-accent)] hover:text-[color:var(--brand-dark)] transition-colors">
                   Admin
+                  {(adminUnread?.count ?? 0) > 0 && (
+                    <span className="absolute top-0 right-0 min-w-[16px] h-[16px] px-1 rounded-full bg-[color:var(--brand-accent)] text-white text-[9px] font-bold flex items-center justify-center animate-scale-in">
+                      {adminUnread?.count}
+                    </span>
+                  )}
                 </Link>
               )}
               {!isAdmin && (
@@ -197,8 +240,13 @@ export function SiteHeader() {
                 </Link>
               )}
               {!isAdmin && (
-                <Link to="/messages" className="hidden sm:inline-block px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-dark)] hover:text-[color:var(--brand-accent)] transition-colors">
+                <Link to="/messages" className="relative hidden sm:inline-block px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-dark)] hover:text-[color:var(--brand-accent)] transition-colors">
                   Messages
+                  {unread > 0 && (
+                    <span className="absolute top-0 right-0 min-w-[16px] h-[16px] px-1 rounded-full bg-[color:var(--brand-accent)] text-white text-[9px] font-bold flex items-center justify-center animate-scale-in">
+                      {unread}
+                    </span>
+                  )}
                 </Link>
               )}
               {!isAdmin && (
@@ -229,7 +277,7 @@ export function SiteHeader() {
             onClick={() => setOpen(true)}
             className="lg:hidden p-2 -mr-2 text-[color:var(--brand-dark)]"
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+            <FiMenu size={22} />
           </button>
         </div>
       </nav>
@@ -239,12 +287,12 @@ export function SiteHeader() {
           <div className="absolute right-0 top-0 h-full w-[86%] max-w-sm bg-[color:var(--brand-cream)] p-6 flex flex-col animate-slide-in">
             <div className="flex items-center justify-between mb-8">
               <span className="font-display text-xl">{brand.brand_name}</span>
-              <button aria-label="Close menu" onClick={() => setOpen(false)} className="p-2 -mr-2">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M6 6l12 12M18 6L6 18"/></svg>
+              <button aria-label="Close menu" onClick={() => setOpen(false)} className="p-2 -mr-2 active:scale-90 transition-transform">
+                <FiX size={22} />
               </button>
             </div>
             <div className="flex items-center border border-[color:var(--brand-dark)]/15 bg-white mb-5">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="ml-3 text-[color:var(--brand-dark)]/50 shrink-0"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+              <FiSearch className="ml-3 text-[color:var(--brand-dark)]/50 shrink-0" size={14} />
               <input
                 type="text"
                 value={q}
@@ -268,17 +316,48 @@ export function SiteHeader() {
                 ))}
               </ul>
             )}
-            <div className="flex flex-col gap-1">
-              {drawerNav.map((n) => (
-                <Link key={n.to} to={n.to} onClick={() => setOpen(false)} className="py-3 border-b border-[color:var(--brand-dark)]/10 text-sm font-semibold uppercase tracking-widest">
-                  {n.label}
-                </Link>
-              ))}
+            <div className="flex flex-col gap-1 overflow-y-auto -mx-1 px-1">
+              {drawerGroups.map((g) => {
+                const expanded = openGroup === g.title;
+                return (
+                  <div key={g.title} className="border-b border-[color:var(--brand-dark)]/10">
+                    <button
+                      onClick={() => setOpenGroup(expanded ? null : g.title)}
+                      aria-expanded={expanded}
+                      className="w-full py-3 flex items-center justify-between text-sm font-semibold uppercase tracking-widest"
+                    >
+                      {g.title}
+                      <FiChevronDown className={`transition-transform duration-200 ${expanded ? "rotate-180" : ""}`} />
+                    </button>
+                    {expanded && (
+                      <div className="pb-2 flex flex-col animate-fade-up">
+                        {g.items.map((n) => (
+                          <Link
+                            key={n.to}
+                            to={n.to}
+                            onClick={() => setOpen(false)}
+                            className="py-2.5 pl-3 text-sm text-[color:var(--brand-dark)]/75 hover:text-[color:var(--brand-accent)] transition-colors"
+                          >
+                            {n.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
               {signedIn ? (
                 <>
                   {isAdmin && <Link to="/admin" onClick={() => setOpen(false)} className="py-3 border-b border-[color:var(--brand-dark)]/10 text-sm font-semibold uppercase tracking-widest text-[color:var(--brand-accent)]">Admin</Link>}
                   {!isAdmin && <Link to="/dashboard" onClick={() => setOpen(false)} className="py-3 border-b border-[color:var(--brand-dark)]/10 text-sm font-semibold uppercase tracking-widest">My Orders</Link>}
-                  {!isAdmin && <Link to="/messages" onClick={() => setOpen(false)} className="py-3 border-b border-[color:var(--brand-dark)]/10 text-sm font-semibold uppercase tracking-widest">Messages</Link>}
+                  {!isAdmin && (
+                    <Link to="/messages" onClick={() => setOpen(false)} className="py-3 border-b border-[color:var(--brand-dark)]/10 text-sm font-semibold uppercase tracking-widest flex items-center gap-2">
+                      Messages
+                      {unread > 0 && (
+                        <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-[color:var(--brand-accent)] text-white text-[10px] font-bold flex items-center justify-center">{unread}</span>
+                      )}
+                    </Link>
+                  )}
                   {!isAdmin && <Link to="/profile" onClick={() => setOpen(false)} className="py-3 border-b border-[color:var(--brand-dark)]/10 text-sm font-semibold uppercase tracking-widest">Profile</Link>}
                   <Link to="/my-designs" onClick={() => setOpen(false)} className="py-3 border-b border-[color:var(--brand-dark)]/10 text-sm font-semibold uppercase tracking-widest">Saved Designs</Link>
                   <button onClick={async () => { await signOut(); setOpen(false); }} className="py-3 border-b border-[color:var(--brand-dark)]/10 text-left text-sm font-semibold uppercase tracking-widest text-[color:var(--brand-dark)]/60">Sign out</button>
