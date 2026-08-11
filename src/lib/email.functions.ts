@@ -6,6 +6,7 @@ import {
   statusHtml,
   STATUS_EMAIL_COPY,
   welcomeHtml,
+  messageReplyHtml,
 } from "@/lib/email-templates";
 
 export const sendWelcomeEmail = createServerFn({ method: "POST" })
@@ -77,6 +78,22 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
         eta: (order['expected_delivery_date'] as string | null) ?? null,
         orderId: order.id,
       }),
+      brand,
+    );
+  });
+
+export const sendMessageReplyEmail = createServerFn({ method: "POST" })
+  .inputValidator((d: { customerId: string; body: string }) => d)
+  .handler(async ({ data }) => {
+    const { adminGetDoc } = await import("@/lib/firebase-admin.server");
+    const brand = await getBrand();
+    const profile = await adminGetDoc("profiles", data.customerId);
+    const email = typeof profile?.['email'] === "string" ? (profile['email'] as string) : null;
+    if (!email) return { sent: false as const, error: "no_email" };
+    return sendResend(
+      email,
+      `New message from ${brand.brand_name}`,
+      messageReplyHtml(brand, { name: (profile?.['full_name'] as string | null) ?? null, body: data.body }),
       brand,
     );
   });

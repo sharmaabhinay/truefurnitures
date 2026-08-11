@@ -3,6 +3,7 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { COL, fsList, fsGet, fsAdd, where, orderBy } from "@/lib/db/firestore";
+import { sendMessageReplyEmail } from "@/lib/email.functions";
 import { useAuth } from "@/lib/auth/auth-context";
 import { formatINR, formatDate, ORDER_STATUS_STEPS } from "@/lib/format";
 import { getAuthUserDetails } from "@/lib/admin-users.functions";
@@ -141,7 +142,10 @@ function CustomerDetail() {
         sender_id: adminUserId,
         sender_role: role,
         body,
+        read_at: null,
       });
+      // Best-effort email nudge so the customer sees the reply off-site too.
+      void sendMessageReplyEmail({ data: { customerId: id, body } }).catch(() => {});
     },
     onSuccess: () => {
       setMsgBody("");

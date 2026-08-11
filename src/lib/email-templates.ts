@@ -216,6 +216,6 @@ export function messageReplyHtml(brand: Brand, args: { name?: string | null; bod
     `<p style="margin:0 0 14px">${greeting}</p>
      <p style="margin:0 0 14px">You have a new reply from the ${brand.brand_name} team:</p>
      <blockquote style="margin:0 0 18px;padding:12px 16px;background:#f6f3ee;border-left:3px solid #C8A86B;white-space:pre-wrap">${safe}</blockquote>
-     <p style="margin:0"><a href="${brand.site_url ?? ""}/messages" style="color:#C8A86B">Open your messages</a></p>`,
+     <p style="margin:0"><a href="https://truefurnitures.lovable.app/messages" style="color:#C8A86B">Open your messages</a></p>`,
   );
 }
