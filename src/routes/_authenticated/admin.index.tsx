@@ -17,6 +17,13 @@ import { BlogManager } from "@/components/admin/blog-manager";
 import { CouponManager } from "@/components/admin/coupon-manager";
 import { CarpenterManager } from "@/components/admin/carpenter-manager";
 import { OrderCreateModal } from "@/components/admin/order-create-modal";
+import { CareersManager } from "@/components/admin/careers-manager";
+import { CampaignManager } from "@/components/admin/campaign-manager";
+import {
+  FiBarChart2, FiEye, FiPackage, FiUsers, FiTool, FiShoppingBag, FiMessageCircle,
+  FiSettings, FiStar, FiTag, FiEdit3, FiMapPin, FiFeather, FiBriefcase, FiTrendingUp,
+  FiGlobe, FiMenu, FiRefreshCw, FiExternalLink,
+} from "react-icons/fi";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   ssr: false,
@@ -43,48 +50,57 @@ type PanelKey =
   | "carpenters"
   | "designs"
   | "showrooms"
+  | "careers"
+  | "campaigns"
   | "settings";
 
-type NavItem = { key: PanelKey; label: string; icon: string };
+type NavItem = { key: PanelKey; label: string; icon: React.ReactNode };
 type NavGroup = { title: string; items: NavItem[] };
 
 const NAV: NavGroup[] = [
   {
     title: "Overview",
     items: [
-      { key: "dashboard", label: "Dashboard", icon: "📊" },
+      { key: "dashboard", label: "Dashboard", icon: <FiBarChart2 /> },
     ],
   },
   {
     title: "",
     items: [
-      { key: "visitors", label: "Visitor Analytics", icon: "👁️" },
-      { key: "orders", label: "Orders", icon: "📦" },
-      { key: "customers", label: "Customers", icon: "👥" },
-      { key: "carpenters", label: "Carpenters", icon: "🪚" },
+      { key: "visitors", label: "Visitor Analytics", icon: <FiEye /> },
+      { key: "orders", label: "Orders", icon: <FiPackage /> },
+      { key: "customers", label: "Customers", icon: <FiUsers /> },
+      { key: "carpenters", label: "Carpenters", icon: <FiTool /> },
     ],
   },
   {
     title: "Store",
     items: [
-      { key: "products", label: "Products", icon: "🛋️" },
-      { key: "bookings", label: "Quote Requests", icon: "💬" },
+      { key: "products", label: "Products", icon: <FiShoppingBag /> },
+      { key: "bookings", label: "Quote Requests", icon: <FiMessageCircle /> },
+    ],
+  },
+  {
+    title: "Growth",
+    items: [
+      { key: "campaigns", label: "Ad Campaigns", icon: <FiTrendingUp /> },
+      { key: "careers", label: "Careers", icon: <FiBriefcase /> },
     ],
   },
   {
     title: "Settings",
     items: [
-      { key: "settings", label: "Settings", icon: "⚙️" },
+      { key: "settings", label: "Settings", icon: <FiSettings /> },
     ],
   },
   {
     title: "Extras",
     items: [
-      { key: "reviews", label: "Reviews", icon: "⭐" },
-      { key: "coupons", label: "Coupons", icon: "🏷️" },
-      { key: "designs", label: "Saved Designs", icon: "🎨" },
-      { key: "blog", label: "Blog", icon: "📝" },
-      { key: "showrooms", label: "Showrooms", icon: "📍" },
+      { key: "reviews", label: "Reviews", icon: <FiStar /> },
+      { key: "coupons", label: "Coupons", icon: <FiTag /> },
+      { key: "designs", label: "Saved Designs", icon: <FiFeather /> },
+      { key: "blog", label: "Blog", icon: <FiEdit3 /> },
+      { key: "showrooms", label: "Showrooms", icon: <FiMapPin /> },
     ],
   },
 ];
@@ -102,6 +118,8 @@ const TITLES: Record<PanelKey, string> = {
   carpenters: "Carpenter Team",
   designs: "Saved Designs",
   showrooms: "Showrooms",
+  careers: "Careers & Applications",
+  campaigns: "Ad Campaigns",
   settings: "Settings",
 };
 
@@ -178,7 +196,7 @@ function AdminHome() {
                       borderLeftColor: active ? "#C8A86B" : "transparent",
                     }}
                   >
-                    <span className="text-base w-4">{item.icon}</span>
+                    <span className="text-base w-4 flex items-center">{item.icon}</span>
                     <span>{item.label}</span>
                   </button>
                 );
@@ -192,7 +210,7 @@ function AdminHome() {
             className="w-full flex items-center gap-3 px-6 py-2.5 text-[13px] text-left transition-colors border-l-2 border-l-transparent"
             style={{ color: "#888899" }}
           >
-            <span className="text-base w-4">🌐</span>
+            <span className="text-base w-4 flex items-center"><FiGlobe /></span>
             <span>View Store</span>
           </a>
         </nav>
@@ -226,7 +244,7 @@ function AdminHome() {
               className="lg:hidden text-lg px-2 -ml-2"
               aria-label="Open menu"
             >
-              ☰
+              <FiMenu />
             </button>
             <div className="text-[15px] font-semibold truncate">{TITLES[panel]}</div>
           </div>
@@ -250,17 +268,17 @@ function AdminHome() {
             </div>
             <Link
               to="/"
-              className="rounded-md px-3 py-1.5 text-[12px] font-medium"
+              className="rounded-md px-3 py-1.5 text-[12px] font-medium inline-flex items-center gap-1.5"
               style={{ background: "#C8A86B", color: "#1a1a1a" }}
             >
-              View Store ↗
+              View Store <FiExternalLink />
             </Link>
             <button
               onClick={() => window.location.reload()}
-              className="rounded-md px-3 py-1.5 text-[12px] font-medium"
+              className="rounded-md px-3 py-1.5 text-[12px] font-medium inline-flex items-center gap-1.5"
               style={{ background: "rgba(255,255,255,0.05)", border: "1px solid #2A2A38", color: "#E8E8F0" }}
             >
-              ↺ Refresh
+              <FiRefreshCw /> Refresh
             </button>
           </div>
         </header>
@@ -278,6 +296,8 @@ function AdminHome() {
           {panel === "carpenters" && <CarpenterManager />}
           {panel === "designs" && <Designs />}
           {panel === "showrooms" && <Showrooms />}
+          {panel === "careers" && <CareersManager />}
+          {panel === "campaigns" && <CampaignManager />}
           {panel === "settings" && <Settings />}
         </main>
       </div>

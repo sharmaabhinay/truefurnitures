@@ -37,7 +37,8 @@ function CartPage() {
     setChecking(true);
     try {
       type CouponDoc = { code: string; discount_type: "percent" | "flat"; discount_value: number; min_order_amount: number; active: boolean; valid_until: string | null };
-      const data = await fsFindOne<CouponDoc>(COL.coupons, where("code", "==", c));
+      // Rules only expose active coupons to shoppers, so the query must say so.
+      const data = await fsFindOne<CouponDoc>(COL.coupons, where("active", "==", true), where("code", "==", c));
       if (!data || !data.active) return toast.error("Invalid or inactive coupon");
       if (data.valid_until && new Date(data.valid_until) < new Date()) return toast.error("This coupon has expired");
       if (subtotal < Number(data.min_order_amount)) return toast.error(`Minimum order ${formatINR(Number(data.min_order_amount))} required`);

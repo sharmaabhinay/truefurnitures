@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { COL, fsAdd, fsFindOne, where } from "@/lib/db/firestore";
+import { COL, fsAdd } from "@/lib/db/firestore";
 import { detectCity, geolocationPermission, rememberCity } from "@/lib/geo";
 
 const KEY = "tf_welcome_v1";
@@ -58,15 +58,13 @@ export function WelcomeModal() {
     const code = "TF5-WELCOME";
     const normalizedEmail = email.trim().toLowerCase();
     try {
-      const existing = await fsFindOne(COL.newsletterSubscribers, where("email", "==", normalizedEmail));
-      if (!existing) {
-        await fsAdd(COL.newsletterSubscribers, {
-          email: normalizedEmail,
-          city,
-          source: "welcome_popup",
-          discount_code: code,
-        });
-      }
+      // Subscribers are write-only for the public, so we never read before writing.
+      await fsAdd(COL.newsletterSubscribers, {
+        email: normalizedEmail,
+        city,
+        source: "welcome_popup",
+        discount_code: code,
+      });
     } catch (e) {
       setStatus("error");
       setMessage(e instanceof Error ? e.message : "Something went wrong");

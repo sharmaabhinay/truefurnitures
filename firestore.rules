@@ -89,7 +89,8 @@ service cloud.firestore {
     match /customer_messages/{id} {
       allow read: if isStaff() || isSelf(resource.data.customer_id);
       allow create: if isStaff() || isSelf(request.resource.data.customer_id);
-      allow update: if isStaff();
+      // Customers may only flip their own thread's read receipt.
+      allow update: if isStaff() || isSelf(resource.data.customer_id);
       allow delete: if false;
     }
 
@@ -131,6 +132,26 @@ service cloud.firestore {
       allow read: if isStaff();
       allow create: if true;
       allow update, delete: if false;
+    }
+
+    // ---- Career applications (public apply form, staff-managed) ----
+    match /career_applications/{id} {
+      allow read: if isStaff();
+      allow create: if request.resource.data.full_name is string
+                    && request.resource.data.full_name.size() <= 120
+                    && request.resource.data.role is string
+                    && request.resource.data.status == 'new';
+      allow update, delete: if isStaff();
+    }
+
+    // ---- Marketing campaigns (staff only) ----
+    match /campaigns/{id} {
+      allow read, write: if isStaff();
+    }
+
+    // ---- Cross-device cart (one doc per user) ----
+    match /carts/{uid} {
+      allow read, write: if isSelf(uid);
     }
 
     // Anything not listed above is closed.
