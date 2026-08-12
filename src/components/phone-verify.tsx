@@ -44,12 +44,17 @@ export function PhoneVerify({ phone, verified, onVerified }: Props) {
     setStage("sending");
     try {
       const { getFirebaseAuth } = await import("@/lib/firebase");
-      const { RecaptchaVerifier, signInWithPhoneNumber } = await import("firebase/auth");
+      const { RecaptchaVerifier, signInWithPhoneNumber, linkWithPhoneNumber } = await import("firebase/auth");
       const auth = getFirebaseAuth();
       verifierRef.current?.clear?.();
       const verifier = new RecaptchaVerifier(auth, "tf-recaptcha", { size: "invisible" });
       verifierRef.current = verifier as unknown as { clear: () => void };
-      const confirmation = await signInWithPhoneNumber(auth, e164, verifier);
+      // Link the number to the SIGNED-IN account. Using signInWithPhoneNumber here
+      // would swap the session for a brand-new phone-only user and duplicate the customer.
+      const current = auth.currentUser;
+      const confirmation = current
+        ? await linkWithPhoneNumber(current, e164, verifier)
+        : await signInWithPhoneNumber(auth, e164, verifier);
       confirmationRef.current = confirmation as unknown as { confirm: (c: string) => Promise<unknown> };
       setStage("code");
       setCode("");
@@ -58,8 +63,27 @@ export function PhoneVerify({ phone, verified, onVerified }: Props) {
     } catch (err) {
       console.error(err);
       setStage("idle");
+      const code = (err as { code?: string })?.code ?? "";
+      if (code === "auth/provider-already-linked") {
+        // Already verified on this account — nothing more to do.
+        await markVerified();
+        return;
+      }
       toast.error(err instanceof Error ? err.message : "Could not send OTP");
     }
+  };
+
+  const markVerified = async () => {
+    const e164 = normalise(phone);
+    if (user?.uid) {
+      await fsSet(COL.profiles, user.uid, {
+        phone: e164,
+        phone_verified: true,
+        phone_verified_at: new Date().toISOString(),
+      }).catch(() => {});
+    }
+    toast.success("Phone number verified");
+    onVerified(e164);
   };
 
   const verify = async (value: string) => {
@@ -68,18 +92,15 @@ export function PhoneVerify({ phone, verified, onVerified }: Props) {
     setError(false);
     try {
       await confirmationRef.current.confirm(value);
-      const e164 = normalise(phone);
-      if (user?.uid) {
-        await fsSet(COL.profiles, user.uid, {
-          phone: e164,
-          phone_verified: true,
-          phone_verified_at: new Date().toISOString(),
-        });
-      }
-      toast.success("Phone number verified");
-      onVerified(e164);
+      await markVerified();
     } catch (err) {
       console.error(err);
+      const code = (err as { code?: string })?.code ?? "";
+      if (code === "auth/credential-already-in-use" || code === "auth/provider-already-linked") {
+        // The number already belongs to this customer — treat as verified.
+        await markVerified();
+        return;
+      }
       setError(true);
       setStage("code");
       toast.error("Incorrect or expired OTP. Try again.");
