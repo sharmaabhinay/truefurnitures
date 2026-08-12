@@ -46,7 +46,8 @@ service cloud.firestore {
     match /blog_posts/{id}     { allow read: if resource.data.is_published == true || isStaff(); allow write: if isStaff(); }
     match /reviews/{id} {
       allow read: if resource.data.approved == true || isStaff() || isSelf(resource.data.user_id);
-      allow create: if isSelf(request.resource.data.user_id) && request.resource.data.approved == false;
+      allow create: if isStaff()
+                    || (isSelf(request.resource.data.user_id) && request.resource.data.approved == false);
       allow update, delete: if isStaff() || isSelf(resource.data.user_id);
     }
 
