@@ -1,17 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { FiArrowRight } from "react-icons/fi";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { CareersApplyModal } from "@/components/careers-apply-modal";
 import { logVisitor } from "@/lib/visitor-tracker";
-
-const roles = [
-  { title: "Master Upholsterer", city: "Indore", type: "Full-time", desc: "Hand-cut, hand-stitch and hand-finish premium fabrics for our signature collections. 5+ years experience on high-end upholstery." },
-  { title: "3D Design Consultant", city: "Indore & Ujjain", type: "Full-time", desc: "Walk clients through our 3D configurator in-showroom. Design background preferred; hospitality mindset essential." },
-  { title: "Delivery & Installation Lead", city: "Ujjain", type: "Full-time", desc: "Own the last-mile white-glove experience for every Ujjain delivery. Team of 2, growing to 4." },
-  { title: "Content & Community Lead", city: "Remote (India)", type: "Full-time", desc: "Own our journal, Instagram and email programme. Strong writer with a taste for interiors." },
-];
+import { fetchPublishedOpenings, FALLBACK_OPENINGS } from "@/lib/openings";
 
 export const Route = createFileRoute("/careers")({
   head: () => ({
@@ -29,6 +24,10 @@ export const Route = createFileRoute("/careers")({
 
 function Careers() {
   const [applying, setApplying] = useState<{ title: string; city: string } | null>(null);
+  const { data: roles = FALLBACK_OPENINGS } = useQuery({
+    queryKey: ["job-openings"],
+    queryFn: fetchPublishedOpenings,
+  });
   return (
     <div className="min-h-screen bg-[color:var(--brand-cream)] text-[color:var(--brand-dark)] flex flex-col">
       <SiteHeader />
@@ -41,11 +40,11 @@ function Careers() {
 
         <div className="grid gap-4">
           {roles.map((r) => (
-            <article key={r.title} className="border border-[color:var(--brand-dark)]/10 p-6 sm:p-8 grid sm:grid-cols-[1fr_auto] gap-6 items-center hover-lift bg-white">
+            <article key={r.id} className="border border-[color:var(--brand-dark)]/10 p-6 sm:p-8 grid sm:grid-cols-[1fr_auto] gap-6 items-center hover-lift bg-white">
               <div className="min-w-0">
                 <h2 className="font-display text-2xl mb-2">{r.title}</h2>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-accent)] mb-3">{r.city} · {r.type}</p>
-                <p className="text-sm text-[color:var(--brand-dark)]/70 leading-relaxed">{r.desc}</p>
+                <p className="text-sm text-[color:var(--brand-dark)]/70 leading-relaxed">{r.description}</p>
               </div>
               <button
                 onClick={() => {

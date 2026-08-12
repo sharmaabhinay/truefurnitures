@@ -19,10 +19,12 @@ import { CarpenterManager } from "@/components/admin/carpenter-manager";
 import { OrderCreateModal } from "@/components/admin/order-create-modal";
 import { CareersManager } from "@/components/admin/careers-manager";
 import { CampaignManager } from "@/components/admin/campaign-manager";
+import { InboxManager } from "@/components/admin/inbox-manager";
+import { TrashManager, DeleteReasonModal } from "@/components/admin/trash-manager";
 import {
   FiBarChart2, FiEye, FiPackage, FiUsers, FiTool, FiShoppingBag, FiMessageCircle,
   FiSettings, FiStar, FiTag, FiEdit3, FiMapPin, FiFeather, FiBriefcase, FiTrendingUp,
-  FiGlobe, FiMenu, FiRefreshCw, FiExternalLink,
+  FiGlobe, FiMenu, FiRefreshCw, FiExternalLink, FiInbox, FiTrash2, FiPlus,
 } from "react-icons/fi";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
@@ -44,6 +46,8 @@ type PanelKey =
   | "products"
   | "bookings"
   | "customers"
+  | "inbox"
+  | "trash"
   | "reviews"
   | "coupons"
   | "blog"
@@ -70,6 +74,7 @@ const NAV: NavGroup[] = [
       { key: "visitors", label: "Visitor Analytics", icon: <FiEye /> },
       { key: "orders", label: "Orders", icon: <FiPackage /> },
       { key: "customers", label: "Customers", icon: <FiUsers /> },
+      { key: "inbox", label: "Messages", icon: <FiInbox /> },
       { key: "carpenters", label: "Carpenters", icon: <FiTool /> },
     ],
   },
@@ -101,6 +106,7 @@ const NAV: NavGroup[] = [
       { key: "designs", label: "Saved Designs", icon: <FiFeather /> },
       { key: "blog", label: "Blog", icon: <FiEdit3 /> },
       { key: "showrooms", label: "Showrooms", icon: <FiMapPin /> },
+      { key: "trash", label: "Trash", icon: <FiTrash2 /> },
     ],
   },
 ];
@@ -110,6 +116,8 @@ const TITLES: Record<PanelKey, string> = {
   visitors: "Visitor Analytics",
   orders: "Orders",
   customers: "Customers",
+  inbox: "Messages",
+  trash: "Trash",
   products: "Product Manager",
   bookings: "Quote Requests",
   reviews: "Reviews",
@@ -288,6 +296,8 @@ function AdminHome() {
           {panel === "visitors" && <Visitors />}
           {panel === "orders" && <Orders />}
           {panel === "customers" && <Customers />}
+          {panel === "inbox" && <InboxManager />}
+          {panel === "trash" && <TrashManager />}
           {panel === "products" && <Products />}
           {panel === "bookings" && <Bookings />}
           {panel === "reviews" && <Reviews />}
@@ -709,6 +719,8 @@ function Orders() {
   const [createOpen, setCreateOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [q, setQ] = useState("");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [askDelete, setAskDelete] = useState(false);
   const { data: orders, isLoading } = useQuery({
     queryKey: ["admin-orders"],
     queryFn: async () => {
@@ -728,6 +740,7 @@ function Orders() {
   };
 
   const filtered = (orders ?? []).filter((o) => {
+    if (o.deleted_at) return false;
     if (statusFilter !== "all" && o.status !== statusFilter) return false;
     if (q) {
       const s = q.toLowerCase();
@@ -744,6 +757,23 @@ function Orders() {
 
   const statuses = ["all", ...ORDER_STATUS_STEPS.map((s) => s.key), "cancelled"];
 
+  const softDelete = async (reason: string) => {
+    const stamp = { deleted_at: new Date().toISOString(), deleted_reason: reason, deleted_by: user?.uid ?? null };
+    try {
+      await Promise.all(selected.map((id) => fsUpdate(COL.orders, id, stamp)));
+      toast.success(`Moved ${selected.length} order(s) to trash`);
+      setSelected([]);
+      setAskDelete(false);
+      qc.invalidateQueries({ queryKey: ["admin-orders"] });
+      qc.invalidateQueries({ queryKey: ["admin-overview"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Delete failed");
+    }
+  };
+
+  const toggle = (id: string) =>
+    setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2 items-center">
@@ -758,8 +788,17 @@ function Orders() {
           className="rounded-md px-4 py-2 text-[13px] font-semibold"
           style={{ background: "#C8A86B", color: "#1a1a1a" }}
         >
-          ＋ New Order
+          <span className="inline-flex items-center gap-1.5"><FiPlus /> New Order</span>
         </button>
+        {selected.length > 0 && (
+          <button
+            onClick={() => setAskDelete(true)}
+            className="rounded-md px-4 py-2 text-[13px] font-semibold"
+            style={{ background: "transparent", color: "#E05050", border: "1px solid rgba(224,80,80,0.4)" }}
+          >
+            <span className="inline-flex items-center gap-1.5"><FiTrash2 /> Delete {selected.length}</span>
+          </button>
+        )}
         <DarkSelect value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           {statuses.map((s) => (
             <option key={s} value={s}>
@@ -774,7 +813,7 @@ function Orders() {
           <div className="p-10 text-center text-[13px]" style={{ color: "#888899" }}>Loading…</div>
         ) : (
           <DataTable
-            head={["Order", "Product", "City / Phone", "Amount", "Status", "ETA", ""]}
+            head={["", "Order", "Product", "City / Phone", "Amount", "Status", "ETA", ""]}
             empty={filtered.length === 0}
           >
             {filtered.map((o) => {
@@ -786,6 +825,14 @@ function Orders() {
                   style={{ borderColor: "rgba(42,42,56,0.5)" }}
                   onClick={() => navigate({ to: "/admin/orders/$id", params: { id: o.id } })}
                 >
+                  <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      aria-label={`Select ${o.order_number}`}
+                      checked={selected.includes(o.id)}
+                      onChange={() => toggle(o.id)}
+                    />
+                  </td>
                   <td className="px-3 py-2.5">
                     <button
                       type="button"
@@ -869,6 +916,12 @@ function Orders() {
           qc.invalidateQueries({ queryKey: ["admin-customers"] });
         }}
       />
+      <DeleteReasonModal
+        open={askDelete}
+        count={selected.length}
+        onCancel={() => setAskDelete(false)}
+        onConfirm={softDelete}
+      />
     </div>
   );
 }
@@ -877,6 +930,10 @@ function Orders() {
 
 function Customers() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  const [selected, setSelected] = useState<string[]>([]);
+  const [askDelete, setAskDelete] = useState(false);
   const { data } = useQuery({
     queryKey: ["admin-customers"],
     queryFn: async () => {
@@ -891,13 +948,42 @@ function Customers() {
         cur.sum += Number(o.total);
         spent.set(o.user_id, cur);
       }
-      return (profiles ?? []).map((p) => ({ ...p, ...(spent.get(p.id) ?? { count: 0, sum: 0 }) }));
+      return (profiles ?? [])
+        .filter((p) => !p.deleted_at)
+        .map((p) => ({ ...p, ...(spent.get(p.id) ?? { count: 0, sum: 0 }) }));
     },
   });
+
+  const toggle = (id: string) =>
+    setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+
+  const softDelete = async (reason: string) => {
+    const stamp = { deleted_at: new Date().toISOString(), deleted_reason: reason, deleted_by: user?.uid ?? null };
+    try {
+      await Promise.all(selected.map((id) => fsUpdate(COL.profiles, id, stamp)));
+      toast.success(`Moved ${selected.length} customer(s) to trash`);
+      setSelected([]);
+      setAskDelete(false);
+      qc.invalidateQueries({ queryKey: ["admin-customers"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Delete failed");
+    }
+  };
+
   return (
+    <div className="space-y-3">
+      {selected.length > 0 && (
+        <button
+          onClick={() => setAskDelete(true)}
+          className="rounded-md px-4 py-2 text-[13px] font-semibold"
+          style={{ background: "transparent", color: "#E05050", border: "1px solid rgba(224,80,80,0.4)" }}
+        >
+          <span className="inline-flex items-center gap-1.5"><FiTrash2 /> Delete {selected.length}</span>
+        </button>
+      )}
     <Card className="!p-0">
       <DataTable
-        head={["Name", "Phone", "City", "Orders", "Lifetime", "Joined", ""]}
+        head={["", "Name", "Phone", "City", "Orders", "Lifetime", "Joined", ""]}
         empty={(data ?? []).length === 0}
       >
         {(data ?? []).map((c) => (
@@ -907,6 +993,14 @@ function Customers() {
             style={{ borderColor: "rgba(42,42,56,0.5)" }}
             onClick={() => navigate({ to: "/admin/customers/$id", params: { id: c.id } })}
           >
+            <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
+              <input
+                type="checkbox"
+                aria-label={`Select ${c.full_name ?? c.id}`}
+                checked={selected.includes(c.id)}
+                onChange={() => toggle(c.id)}
+              />
+            </td>
             <td className="px-3 py-2.5">
               <span className="hover:underline font-medium" style={{ color: "#C8A86B" }}>
                 {c.full_name ?? "Unnamed"}
@@ -930,6 +1024,13 @@ function Customers() {
         ))}
       </DataTable>
     </Card>
+      <DeleteReasonModal
+        open={askDelete}
+        count={selected.length}
+        onCancel={() => setAskDelete(false)}
+        onConfirm={softDelete}
+      />
+    </div>
   );
 }
 
@@ -1738,6 +1839,7 @@ function Bookings() {
 
 function Reviews() {
   const qc = useQueryClient();
+  const [draft, setDraft] = useState<{ sofa_id: string; author: string; city: string; rating: number; title: string; body: string } | null>(null);
   const { data } = useQuery({
     queryKey: ["admin-reviews"],
     queryFn: async () => {
@@ -1746,9 +1848,32 @@ function Reviews() {
         fsList<any>(COL.sofas),
       ]);
       const byId = new Map(sofas.map((s) => [s.id, s]));
-      return reviews.map((r) => ({ ...r, sofa: byId.get(r.sofa_id) }));
+      return { rows: reviews.map((r) => ({ ...r, sofa: byId.get(r.sofa_id) })), sofas };
     },
   });
+  const rows = data?.rows ?? [];
+  const sofas = data?.sofas ?? [];
+
+  const addReview = async () => {
+    if (!draft?.body.trim() || !draft.sofa_id) return toast.error("Pick a product and write the review");
+    try {
+      await fsAdd(COL.reviews, {
+        sofa_id: draft.sofa_id,
+        user_id: null,
+        author_name: draft.author || "Verified buyer",
+        city: draft.city || null,
+        rating: draft.rating,
+        title: draft.title || null,
+        body: draft.body,
+        approved: true,
+      });
+      setDraft(null);
+      qc.invalidateQueries({ queryKey: ["admin-reviews"] });
+      toast.success("Review published");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not add review");
+    }
+  };
   const setApproved = async (id: string, approved: boolean) => {
     try {
       await fsUpdate(COL.reviews, id, { approved });
@@ -1764,7 +1889,42 @@ function Reviews() {
   };
   return (
     <div className="space-y-3">
-      {(data ?? []).map((r) => (
+      <Card>
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-[13px] font-semibold">Product reviews</div>
+          <button
+            onClick={() =>
+              setDraft(draft ? null : { sofa_id: sofas[0]?.id ?? "", author: "", city: "", rating: 5, title: "", body: "" })
+            }
+            className="rounded-md px-4 py-2 text-[12px] font-semibold"
+            style={{ background: "#C8A86B", color: "#1a1a1a" }}
+          >
+            <span className="inline-flex items-center gap-1.5"><FiPlus /> {draft ? "Close" : "Add review"}</span>
+          </button>
+        </div>
+        {draft && (
+          <div className="mt-4 grid gap-3">
+            <div className="grid gap-3 sm:grid-cols-4">
+              <DarkSelect value={draft.sofa_id} onChange={(e) => setDraft({ ...draft, sofa_id: e.target.value })}>
+                {sofas.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </DarkSelect>
+              <DarkInput placeholder="Customer name" value={draft.author} onChange={(e) => setDraft({ ...draft, author: e.target.value })} />
+              <DarkInput placeholder="City" value={draft.city} onChange={(e) => setDraft({ ...draft, city: e.target.value })} />
+              <DarkSelect value={String(draft.rating)} onChange={(e) => setDraft({ ...draft, rating: Number(e.target.value) })}>
+                {[5, 4, 3, 2, 1].map((n) => <option key={n} value={n}>{n} star{n > 1 ? "s" : ""}</option>)}
+              </DarkSelect>
+            </div>
+            <DarkInput placeholder="Headline (optional)" value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} />
+            <DarkTextarea rows={3} placeholder="Review…" value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })} />
+            <div>
+              <button onClick={addReview} className="rounded-md px-4 py-2 text-[12px] font-semibold" style={{ background: "#C8A86B", color: "#1a1a1a" }}>
+                Publish review
+              </button>
+            </div>
+          </div>
+        )}
+      </Card>
+      {rows.map((r) => (
         <Card key={r.id}>
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
@@ -1790,7 +1950,7 @@ function Reviews() {
           </div>
         </Card>
       ))}
-      {(data ?? []).length === 0 && (
+      {rows.length === 0 && (
         <Card>
           <div className="text-center py-8 text-[13px]" style={{ color: "#888899" }}>
             No reviews yet.

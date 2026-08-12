@@ -108,6 +108,7 @@ function HireCarpenter() {
     try {
       await fsAdd(COL.carpenterRequests, {
         user_id: user?.uid ?? null,
+        status: "new",
         full_name: d.full_name,
         phone: d.phone,
         email: d.email || null,

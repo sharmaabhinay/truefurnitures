@@ -55,6 +55,7 @@ export const COL = {
   carpenters: "carpenters",
   careerApplications: "career_applications",
   campaigns: "campaigns",
+  jobOpenings: "job_openings",
   carts: "carts",
 } as const;
 
