@@ -162,10 +162,10 @@ export function AModal({
   );
 }
 
-export function AEmpty({ icon = "📭", text }: { icon?: string; text: string }) {
+export function AEmpty({ icon, text }: { icon?: React.ReactNode; text: string }) {
   return (
     <div className="py-12 text-center" style={{ color: dark.mute }}>
-      <div className="text-3xl mb-2">{icon}</div>
+      {icon ? <div className="text-3xl mb-2 flex justify-center">{icon}</div> : null}
       <div className="text-[13px]">{text}</div>
     </div>
   );

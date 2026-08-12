@@ -19,10 +19,12 @@ import { CarpenterManager } from "@/components/admin/carpenter-manager";
 import { OrderCreateModal } from "@/components/admin/order-create-modal";
 import { CareersManager } from "@/components/admin/careers-manager";
 import { CampaignManager } from "@/components/admin/campaign-manager";
+import { InboxManager } from "@/components/admin/inbox-manager";
+import { TrashManager, DeleteReasonModal } from "@/components/admin/trash-manager";
 import {
   FiBarChart2, FiEye, FiPackage, FiUsers, FiTool, FiShoppingBag, FiMessageCircle,
   FiSettings, FiStar, FiTag, FiEdit3, FiMapPin, FiFeather, FiBriefcase, FiTrendingUp,
-  FiGlobe, FiMenu, FiRefreshCw, FiExternalLink,
+  FiGlobe, FiMenu, FiRefreshCw, FiExternalLink, FiInbox, FiTrash2, FiPlus,
 } from "react-icons/fi";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
@@ -44,6 +46,8 @@ type PanelKey =
   | "products"
   | "bookings"
   | "customers"
+  | "inbox"
+  | "trash"
   | "reviews"
   | "coupons"
   | "blog"
@@ -70,6 +74,7 @@ const NAV: NavGroup[] = [
       { key: "visitors", label: "Visitor Analytics", icon: <FiEye /> },
       { key: "orders", label: "Orders", icon: <FiPackage /> },
       { key: "customers", label: "Customers", icon: <FiUsers /> },
+      { key: "inbox", label: "Messages", icon: <FiInbox /> },
       { key: "carpenters", label: "Carpenters", icon: <FiTool /> },
     ],
   },
@@ -101,6 +106,7 @@ const NAV: NavGroup[] = [
       { key: "designs", label: "Saved Designs", icon: <FiFeather /> },
       { key: "blog", label: "Blog", icon: <FiEdit3 /> },
       { key: "showrooms", label: "Showrooms", icon: <FiMapPin /> },
+      { key: "trash", label: "Trash", icon: <FiTrash2 /> },
     ],
   },
 ];
@@ -110,6 +116,8 @@ const TITLES: Record<PanelKey, string> = {
   visitors: "Visitor Analytics",
   orders: "Orders",
   customers: "Customers",
+  inbox: "Messages",
+  trash: "Trash",
   products: "Product Manager",
   bookings: "Quote Requests",
   reviews: "Reviews",
@@ -288,6 +296,8 @@ function AdminHome() {
           {panel === "visitors" && <Visitors />}
           {panel === "orders" && <Orders />}
           {panel === "customers" && <Customers />}
+          {panel === "inbox" && <InboxManager />}
+          {panel === "trash" && <TrashManager />}
           {panel === "products" && <Products />}
           {panel === "bookings" && <Bookings />}
           {panel === "reviews" && <Reviews />}

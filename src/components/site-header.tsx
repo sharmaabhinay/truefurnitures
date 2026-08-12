@@ -136,6 +136,11 @@ export function SiteHeader() {
 
   return (
     <>
+      {brand.announcement_on && brand.announcement && (
+        <div className="w-full bg-[color:var(--brand-dark)] text-white text-center text-[11px] sm:text-xs tracking-wide px-4 py-2">
+          {brand.announcement}
+        </div>
+      )}
       <nav className="sticky top-0 z-50 flex items-center justify-between gap-3 px-4 sm:px-6 md:px-10 py-4 md:py-5 bg-[color:var(--brand-cream)]/85 backdrop-blur-md border-b border-[color:var(--brand-dark)]/5">
         <Link to="/" className="font-display text-xl sm:text-2xl font-bold tracking-tight text-[color:var(--brand-dark)] hover:text-[color:var(--brand-accent)] transition-colors shrink-0">
           {brand.brand_name}
