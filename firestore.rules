@@ -15,12 +15,23 @@ service cloud.firestore {
 
     // Roles are stored in a separate collection and mirrored into custom
     // claims by the server, so a client can never escalate its own role.
+    // The user_roles document is the fallback for accounts whose custom claim
+    // has not been refreshed yet; only the server can write that collection.
+    function roleFromDoc() {
+      return exists(/databases/$(database)/documents/user_roles/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/user_roles/$(request.auth.uid)).data.role
+        : 'user';
+    }
+
     function isStaff() {
-      return signedIn() && (request.auth.token.role == 'admin' || request.auth.token.role == 'staff');
+      return signedIn() && (
+        request.auth.token.role == 'admin' || request.auth.token.role == 'staff'
+        || roleFromDoc() == 'admin' || roleFromDoc() == 'staff'
+      );
     }
 
     function isAdmin() {
-      return signedIn() && request.auth.token.role == 'admin';
+      return signedIn() && (request.auth.token.role == 'admin' || roleFromDoc() == 'admin');
     }
 
     // ---- Public catalogue (read-only for everyone, staff-managed) ----
@@ -147,6 +158,12 @@ service cloud.firestore {
     // ---- Marketing campaigns (staff only) ----
     match /campaigns/{id} {
       allow read, write: if isStaff();
+    }
+
+    // ---- Job openings shown on /careers (public read, staff-managed) ----
+    match /job_openings/{id} {
+      allow read: if resource.data.is_published == true || isStaff();
+      allow write: if isStaff();
     }
 
     // ---- Cross-device cart (one doc per user) ----
