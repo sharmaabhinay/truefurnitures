@@ -95,11 +95,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/7d119877-9591-40df-ad3e-2a1e79310fe5" },
       { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/7d119877-9591-40df-ad3e-2a1e79310fe5" },
     ],
-    links: [
+      links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
+      // Prefer a modern PNG favicon if present (place your image at public/media/favicon.png)
+      { rel: "icon", href: "/media/favicon.png", type: "image/png" },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
