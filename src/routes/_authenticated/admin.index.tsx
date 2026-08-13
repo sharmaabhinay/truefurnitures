@@ -134,7 +134,11 @@ const TITLES: Record<PanelKey, string> = {
 };
 
 function AdminHome() {
-  const [panel, setPanel] = useState<PanelKey>("dashboard");
+  const search = Route.useSearch();
+  const navigate = useNavigate();
+  const panel = ((search.p ?? "dashboard") as PanelKey) in TITLES ? ((search.p ?? "dashboard") as PanelKey) : "dashboard";
+  const setPanel = (key: PanelKey) =>
+    navigate({ to: "/admin", search: key === "dashboard" ? {} : { p: key } });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [now, setNow] = useState<string>("");
 
