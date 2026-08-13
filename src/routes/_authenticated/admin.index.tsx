@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { COL, fsList, fsGet, fsAdd, fsSet, fsUpdate, fsDelete, where, orderBy } from "@/lib/db/firestore";
+import { COL, fsList, fsListSorted, fsGet, fsAdd, fsSet, fsUpdate, fsDelete, where, orderBy } from "@/lib/db/firestore";
 import { getFirebaseAuth } from "@/lib/firebase";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { getFirebaseApp } from "@/lib/firebase";
@@ -724,7 +724,7 @@ function Orders() {
   const { data: orders, isLoading } = useQuery({
     queryKey: ["admin-orders"],
     queryFn: async () => {
-      const rows = await fsList<any>(COL.orders, orderBy("created_at", "desc"));
+      const rows = await fsListSorted<any>(COL.orders, "created_at", "desc");
       return rows;
     },
   });
@@ -938,7 +938,7 @@ function Customers() {
     queryKey: ["admin-customers"],
     queryFn: async () => {
       const [profiles, orders] = await Promise.all([
-        fsList<any>(COL.profiles, orderBy("created_at", "desc")),
+        fsListSorted<any>(COL.profiles, "created_at", "desc"),
         fsList<any>(COL.orders),
       ]);
       const spent = new Map<string, { count: number; sum: number }>();
@@ -1112,7 +1112,7 @@ function Products() {
   const { data } = useQuery({
     queryKey: ["admin-products"],
     queryFn: async () => {
-      const rows = await fsList<SofaRow>(COL.sofas, orderBy("sort_order"));
+      const rows = await fsListSorted<SofaRow>(COL.sofas, "sort_order", "asc");
       return rows;
     },
   });
@@ -1766,7 +1766,7 @@ function Bookings() {
     queryKey: ["admin-bookings"],
     queryFn: async () => {
       const [bookings, showrooms] = await Promise.all([
-        fsList<any>(COL.showroomBookings, orderBy("preferred_date", "asc")),
+        fsListSorted<any>(COL.showroomBookings, "preferred_date", "asc"),
         fsList<any>(COL.showrooms),
       ]);
       const byId = new Map(showrooms.map((s) => [s.id, s]));
@@ -1844,7 +1844,7 @@ function Reviews() {
     queryKey: ["admin-reviews"],
     queryFn: async () => {
       const [reviews, sofas] = await Promise.all([
-        fsList<any>(COL.reviews, orderBy("created_at", "desc")),
+        fsListSorted<any>(COL.reviews, "created_at", "desc"),
         fsList<any>(COL.sofas),
       ]);
       const byId = new Map(sofas.map((s) => [s.id, s]));
@@ -1968,7 +1968,7 @@ function Designs() {
     queryKey: ["admin-designs"],
     queryFn: async () => {
       const [designs, sofas] = await Promise.all([
-        fsList<any>(COL.savedDesigns, orderBy("created_at", "desc")),
+        fsListSorted<any>(COL.savedDesigns, "created_at", "desc"),
         fsList<any>(COL.sofas),
       ]);
       const byId = new Map(sofas.map((s) => [s.id, s]));
@@ -2015,7 +2015,7 @@ function Showrooms() {
   const qc = useQueryClient();
   const { data } = useQuery({
     queryKey: ["admin-showrooms"],
-    queryFn: async () => fsList<any>(COL.showrooms, orderBy("sort_order")),
+    queryFn: async () => fsListSorted<any>(COL.showrooms, "sort_order", "asc"),
   });
   const update = async (id: string, patch: any) => {
     try {

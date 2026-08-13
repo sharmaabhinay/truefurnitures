@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { COL, fsList, fsAdd, fsUpdate, fsDelete, orderBy } from "@/lib/db/firestore";
+import { COL, fsList, fsListSorted, fsAdd, fsUpdate, fsDelete, orderBy } from "@/lib/db/firestore";
 import { formatINR, formatDate } from "@/lib/format";
 import { ACard, AButton, AEmpty, AField, AInput, AModal, ASelect, ATextarea, AToggle, dark } from "./ui";
 
@@ -57,7 +57,7 @@ const AVAIL: Record<string, { label: string; color: string }> = {
 export function useCarpenters() {
   return useQuery({
     queryKey: ["admin-carpenters"],
-    queryFn: async () => fsList<Carpenter>(COL.carpenters, orderBy("created_at", "desc")),
+    queryFn: async () => fsListSorted<Carpenter>(COL.carpenters, "created_at", "desc"),
   });
 }
 

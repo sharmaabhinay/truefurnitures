@@ -4,7 +4,7 @@ import { useState } from "react";
 import { z } from "zod";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { COL, fsList, fsAdd, orderBy } from "@/lib/db/firestore";
+import { COL, fsList, fsListSorted, fsAdd, orderBy } from "@/lib/db/firestore";
 import { useAuth } from "@/lib/auth/auth-context";
 import { toast } from "sonner";
 
@@ -40,7 +40,7 @@ function BookVisit() {
   const { data: showrooms } = useQuery({
     queryKey: ["showrooms-list"],
     queryFn: async () => {
-      return fsList<{ id: string; name: string; city: string }>(COL.showrooms, orderBy("sort_order"));
+      return fsListSorted<{ id: string; name: string; city: string }>(COL.showrooms, "sort_order", "asc");
     },
   });
 
