@@ -29,9 +29,8 @@ import {
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   ssr: false,
-  validateSearch: (search: Record<string, unknown>) => ({
-    p: typeof search['p'] === "string" ? (search['p'] as string) : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { p?: string } =>
+    typeof search['p'] === "string" ? { p: search['p'] as string } : {},
   head: () => ({
     meta: [
       { title: "Admin Panel — True Furniture's" },
