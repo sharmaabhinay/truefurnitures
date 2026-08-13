@@ -35,6 +35,9 @@ type SharedDesign = {
 };
 
 export const Route = createFileRoute("/shared-design/$token")({
+  // Firestore rules are evaluated with the visitor's (often anonymous) identity,
+  // so the lookup must run in the browser rather than during SSR.
+  ssr: false,
   loader: async ({ params }) => {
     const design = await fsFindOne<SavedDesignDoc>(COL.savedDesigns, where("share_token", "==", params.token));
     if (!design) throw notFound();

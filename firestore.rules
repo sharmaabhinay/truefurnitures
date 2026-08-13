@@ -93,7 +93,9 @@ service cloud.firestore {
     }
 
     match /saved_designs/{id} {
-      allow read: if isStaff() || isSelf(resource.data.user_id);
+      // Anyone holding the share link may view that single design.
+      allow read: if isStaff() || isSelf(resource.data.user_id)
+                  || resource.data.share_token is string;
       allow create: if isSelf(request.resource.data.user_id);
       allow update, delete: if isSelf(resource.data.user_id) || isStaff();
     }
