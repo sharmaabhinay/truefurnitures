@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { COL, fsList, fsAdd, fsUpdate, fsDelete, orderBy } from "@/lib/db/firestore";
+import { COL, fsList, fsListSorted, fsAdd, fsUpdate, fsDelete, orderBy } from "@/lib/db/firestore";
 import { formatINR, formatDate } from "@/lib/format";
 import { ACard, AButton, AEmpty, AField, AInput, AModal, ASelect, ATextarea, AToggle, dark } from "./ui";
 
@@ -64,7 +64,7 @@ export function CouponManager() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-coupons"],
-    queryFn: async () => fsList<Coupon>(COL.coupons, orderBy("created_at", "desc")),
+    queryFn: async () => fsListSorted<Coupon>(COL.coupons, "created_at", "desc"),
   });
   const { data: sofas } = useQuery({
     queryKey: ["admin-coupon-sofas"],

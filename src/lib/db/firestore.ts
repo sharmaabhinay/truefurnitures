@@ -75,6 +75,21 @@ export async function fsList<T = DocumentData>(
 }
 
 /** Read one document by id. */
+/**
+ * Read a collection and sort client-side.
+ * Firestore's `orderBy` silently drops documents that are missing the field,
+ * which hid newly created records (products without sort_order, quote requests
+ * without a preferred date…). Sorting here always returns every document.
+ */
+export async function fsListSorted<T = DocumentData>(
+  col: string,
+  field: string,
+  dir: "asc" | "desc" = "asc",
+  ...constraints: QueryConstraint[]
+): Promise<T[]> {
+  return sortRows(await fsList<T>(col, ...constraints), field, dir);
+}
+
 export async function fsGet<T = DocumentData>(col: string, id: string): Promise<T | null> {
   if (!id) return null;
   const snap = await getDoc(doc(getDb(), col, id));

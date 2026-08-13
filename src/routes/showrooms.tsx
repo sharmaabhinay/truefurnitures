@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { COL, fsList, orderBy } from "@/lib/db/firestore";
+import { COL, fsList, fsListSorted, orderBy } from "@/lib/db/firestore";
 import showroomIndore from "@/assets/showroom-indore.jpg";
 import showroomUjjain from "@/assets/showroom-ujjain.jpg";
 
@@ -20,7 +20,7 @@ type Showroom = {
 const showroomsQuery = queryOptions({
   queryKey: ["showrooms"],
   queryFn: async (): Promise<Showroom[]> => {
-    return fsList<Showroom>(COL.showrooms, orderBy("sort_order"));
+    return fsListSorted<Showroom>(COL.showrooms, "sort_order", "asc");
   },
 });
 

@@ -148,7 +148,7 @@ function OrderDetail() {
   }
 
   if (isLoading) return <div style={{ background: dark.bg, color: dark.mute, minHeight: "100vh" }} className="p-10 text-center">Loading…</div>;
-  if (!order) return <div style={{ background: dark.bg, color: dark.text, minHeight: "100vh" }} className="p-10 text-center">Order not found. <Link to="/admin" style={{ color: dark.accent }}>Back</Link></div>;
+  if (!order) return <div style={{ background: dark.bg, color: dark.text, minHeight: "100vh" }} className="p-10 text-center">Order not found. <Link to="/admin" search={{ p: "orders" }} style={{ color: dark.accent }}>Back</Link></div>;
 
   const snap = (order.sofa_snapshot ?? {}) as { name?: string; slug?: string; hero_image?: string };
   const fabric = (order.fabric_snapshot ?? {}) as { name?: string };
@@ -159,7 +159,7 @@ function OrderDetail() {
   return (
     <div style={{ background: dark.bg, color: dark.text, minHeight: "100vh" }} className="pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <Link to="/admin" className="text-xs uppercase tracking-widest" style={{ color: dark.mute }}>← Back to Admin</Link>
+        <Link to="/admin" search={{ p: "orders" }} className="text-xs uppercase tracking-widest" style={{ color: dark.mute }}>← Back to Admin</Link>
 
         <header className="mt-4 flex flex-wrap gap-4 items-start justify-between pb-6 border-b" style={{ borderColor: dark.border }}>
           <div>

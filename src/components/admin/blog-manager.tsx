@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { getFirebaseApp } from "@/lib/firebase";
-import { COL, fsList, fsAdd, fsUpdate, fsDelete, orderBy } from "@/lib/db/firestore";
+import { COL, fsList, fsListSorted, fsAdd, fsUpdate, fsDelete, orderBy } from "@/lib/db/firestore";
 import { formatDate } from "@/lib/format";
 import { ACard, AButton, AEmpty, AField, AInput, AModal, ASelect, ATextarea, AToggle, dark, slugify } from "./ui";
 
@@ -73,7 +73,7 @@ export function BlogManager() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-blog"],
-    queryFn: async () => fsList<Post>(COL.blogPosts, orderBy("created_at", "desc")),
+    queryFn: async () => fsListSorted<Post>(COL.blogPosts, "created_at", "desc"),
   });
 
   const posts = useMemo(() => {

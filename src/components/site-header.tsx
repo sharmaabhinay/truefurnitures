@@ -230,7 +230,7 @@ export function SiteHeader() {
           {signedIn ? (
             <>
               {isAdmin && (
-                <Link to="/admin" className="relative hidden sm:inline-block px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-accent)] hover:text-[color:var(--brand-dark)] transition-colors">
+                <Link to="/admin" search={{}} className="relative hidden sm:inline-block px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-accent)] hover:text-[color:var(--brand-dark)] transition-colors">
                   Admin
                   {(adminUnread?.count ?? 0) > 0 && (
                     <span className="absolute top-0 right-0 min-w-[16px] h-[16px] px-1 rounded-full bg-[color:var(--brand-accent)] text-white text-[9px] font-bold flex items-center justify-center animate-scale-in">
@@ -353,7 +353,7 @@ export function SiteHeader() {
               })}
               {signedIn ? (
                 <>
-                  {isAdmin && <Link to="/admin" onClick={() => setOpen(false)} className="py-3 border-b border-[color:var(--brand-dark)]/10 text-sm font-semibold uppercase tracking-widest text-[color:var(--brand-accent)]">Admin</Link>}
+                  {isAdmin && <Link to="/admin" search={{}} onClick={() => setOpen(false)} className="py-3 border-b border-[color:var(--brand-dark)]/10 text-sm font-semibold uppercase tracking-widest text-[color:var(--brand-accent)]">Admin</Link>}
                   {!isAdmin && <Link to="/dashboard" onClick={() => setOpen(false)} className="py-3 border-b border-[color:var(--brand-dark)]/10 text-sm font-semibold uppercase tracking-widest">My Orders</Link>}
                   {!isAdmin && (
                     <Link to="/messages" onClick={() => setOpen(false)} className="py-3 border-b border-[color:var(--brand-dark)]/10 text-sm font-semibold uppercase tracking-widest flex items-center gap-2">

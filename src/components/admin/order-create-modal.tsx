@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { COL, fsList, fsAdd, fsUpdate, orderBy } from "@/lib/db/firestore";
+import { COL, fsList, fsListSorted, fsAdd, fsUpdate, orderBy } from "@/lib/db/firestore";
 import { formatINR, ORDER_STATUS_STEPS } from "@/lib/format";
 import { useCarpenters } from "./carpenter-manager";
 import { AButton, AField, AInput, AModal, ASelect, ATextarea, dark } from "./ui";
@@ -13,7 +13,7 @@ type Sofa = { id: string; name: string; slug: string; base_price: number; hero_i
 export function OrderCreateModal({ open, onClose, onCreated, adminId }: { open: boolean; onClose: () => void; onCreated: () => void; adminId: string }) {
   const { data: customers } = useQuery({
     queryKey: ["admin-customers-lite"],
-    queryFn: async () => fsList<Profile>(COL.profiles, orderBy("created_at", "desc")),
+    queryFn: async () => fsListSorted<Profile>(COL.profiles, "created_at", "desc"),
     enabled: open,
   });
   const { data: sofas } = useQuery({
