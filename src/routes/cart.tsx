@@ -30,6 +30,7 @@ function CartPage() {
   const deposit = Math.round(total * 0.2);
   const [code, setCode] = useState("");
   const [checking, setChecking] = useState(false);
+  const [celebrate, setCelebrate] = useState(false);
 
   const applyCode = async () => {
     const c = code.trim().toUpperCase();
@@ -45,6 +46,8 @@ function CartPage() {
       applyCoupon({ code: data.code, discount_type: data.discount_type, discount_value: Number(data.discount_value), min_order_amount: Number(data.min_order_amount) });
       toast.success(`Coupon ${data.code} applied!`);
       setCode("");
+      setCelebrate(true);
+      setTimeout(() => setCelebrate(false), 1400);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not apply");
     } finally { setChecking(false); }
@@ -124,7 +127,22 @@ function CartPage() {
                 <div className="flex justify-between"><span className="text-[color:var(--brand-dark)]/60">Items ({count})</span><span>{formatINR(subtotal)}</span></div>
                 <div className="flex justify-between"><span className="text-[color:var(--brand-dark)]/60">Delivery (Indore / Ujjain)</span><span>Free</span></div>
                 {coupon && (
-                  <div className="flex justify-between items-center text-[color:var(--brand-accent)]">
+                  <div className="relative flex justify-between items-center text-[color:var(--brand-accent)] animate-pop">
+                    {celebrate && (
+                      <span className="pointer-events-none absolute inset-0 overflow-visible" aria-hidden>
+                        {Array.from({ length: 14 }).map((_, i) => (
+                          <span
+                            key={i}
+                            className="tf-confetti"
+                            style={{
+                              left: `${(i * 7) % 100}%`,
+                              background: ["var(--brand-accent)", "var(--brand-dark)", "#4CAF82", "#E0A050"][i % 4],
+                              animationDelay: `${i * 45}ms`,
+                            }}
+                          />
+                        ))}
+                      </span>
+                    )}
                     <span className="flex items-center gap-2 text-xs"><span className="font-mono font-bold">{coupon.code}</span><button onClick={removeCoupon} className="text-[10px] text-[color:var(--brand-dark)]/50 hover:text-red-600">Remove</button></span>
                     <span>− {formatINR(discount)}</span>
                   </div>

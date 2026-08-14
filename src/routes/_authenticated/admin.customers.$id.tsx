@@ -111,6 +111,11 @@ function CustomerDetail() {
     },
   });
 
+  const { data: addresses } = useQuery({
+    queryKey: ["cust-addresses", id],
+    queryFn: () => fsList<any>(COL.userAddresses, where("user_id", "==", id)),
+  });
+
   const [noteBody, setNoteBody] = useState("");
   const addNote = useMutation({
     mutationFn: async () => {
@@ -213,6 +218,7 @@ function CustomerDetail() {
 
             <Panel title="Activity">
               <Field label="Saved designs" value={(designs ?? []).length} />
+              <Field label="Saved addresses" value={(addresses ?? []).length} />
               <Field label="Bookings" value={(bookings ?? []).length} />
               <Field label="Reviews written" value={(reviews ?? []).length} />
               <Field label="Profile updated" value={profile?.updated_at ? formatDate(profile.updated_at) : "—"} />
@@ -221,6 +227,32 @@ function CustomerDetail() {
 
           {/* RIGHT: main content */}
           <div className="space-y-6 min-w-0">
+            {/* Addresses */}
+            <Panel title={`Saved addresses (${(addresses ?? []).length})`}>
+              {(addresses ?? []).length === 0 ? (
+                <Empty text="No addresses saved." />
+              ) : (
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {(addresses ?? []).map((a: any) => (
+                    <div key={a.id} className="p-3 rounded-md text-sm" style={{ background: dark.bg, border: `1px solid ${dark.border}` }}>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">{a.label ?? a.full_name ?? "Address"}</span>
+                        {a.is_default && (
+                          <span className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded" style={{ background: dark.accent, color: dark.bg }}>Default</span>
+                        )}
+                      </div>
+                      <div className="text-[12px] mt-1" style={{ color: dark.mute }}>
+                        {[a.full_name, a.phone].filter(Boolean).join(" · ")}
+                      </div>
+                      <div className="text-[12px] mt-1 whitespace-pre-wrap">
+                        {[a.line1 ?? a.address_line1, a.line2 ?? a.address_line2, a.city, a.state, a.pincode ?? a.postal_code].filter(Boolean).join(", ")}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Panel>
+
             {/* Orders */}
             <Panel title={`Order history (${(orders ?? []).length})`}>
               {(orders ?? []).length === 0 ? (
