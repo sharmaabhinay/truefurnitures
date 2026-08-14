@@ -764,6 +764,27 @@ function Orders() {
   });
 
   const statuses = ["all", ...ORDER_STATUS_STEPS.map((s) => s.key), "cancelled"];
+  const paged = usePaged(filtered, 20);
+
+  const exportOrders = () =>
+    downloadCsv(`orders-${new Date().toISOString().slice(0, 10)}`, filtered.map((o) => ({
+      order_number: o.order_number,
+      created_at: o.created_at,
+      status: o.status,
+      product: (o.sofa_snapshot ?? {}).name ?? "Custom",
+      customer: o.customer_name ?? "",
+      phone: o.phone ?? "",
+      email: o.email ?? "",
+      city: o.delivery_city ?? "",
+      address: o.delivery_address ?? "",
+      subtotal: o.subtotal ?? "",
+      discount_code: o.discount_code ?? "",
+      total: o.total,
+      deposit_paid: o.deposit_paid ?? 0,
+      balance_due: o.balance_due ?? 0,
+      expected_delivery_date: o.expected_delivery_date ?? "",
+      assigned_craftsman: o.assigned_craftsman ?? "",
+    })));
 
   const softDelete = async (reason: string) => {
     const stamp = { deleted_at: new Date().toISOString(), deleted_reason: reason, deleted_by: user?.uid ?? null };
@@ -814,6 +835,17 @@ function Orders() {
             </option>
           ))}
         </DarkSelect>
+        <button
+          onClick={exportOrders}
+          disabled={filtered.length === 0}
+          className="rounded-md px-4 py-2 text-[13px] font-semibold disabled:opacity-50"
+          style={{ background: "rgba(255,255,255,0.04)", color: "#E8E8F0", border: "1px solid #2A2A38" }}
+        >
+          <span className="inline-flex items-center gap-1.5"><FiDownload /> Export</span>
+        </button>
+        <span className="text-[12px]" style={{ color: "#888899" }}>
+          {filtered.length} order{filtered.length === 1 ? "" : "s"}
+        </span>
       </div>
 
       <Card className="!p-0">
@@ -824,7 +856,7 @@ function Orders() {
             head={["", "Order", "Product", "City / Phone", "Amount", "Status", "ETA", ""]}
             empty={filtered.length === 0}
           >
-            {filtered.map((o) => {
+            {paged.slice.map((o) => {
               const snap = (o.sofa_snapshot ?? {}) as { name?: string };
               return (
                 <tr
@@ -834,12 +866,7 @@ function Orders() {
                   onClick={() => navigate({ to: "/admin/orders/$id", params: { id: o.id } })}
                 >
                   <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
-                    <input
-                      type="checkbox"
-                      aria-label={`Select ${o.order_number}`}
-                      checked={selected.includes(o.id)}
-                      onChange={() => toggle(o.id)}
-                    />
+                    <ACheck label={`Select ${o.order_number}`} checked={selected.includes(o.id)} onChange={() => toggle(o.id)} />
                   </td>
                   <td className="px-3 py-2.5">
                     <button
@@ -912,6 +939,7 @@ function Orders() {
             })}
           </DataTable>
         )}
+        <Pager page={paged.page} pages={paged.pages} total={paged.total} onPage={paged.setPage} label="orders" />
       </Card>
 
       <OrderCreateModal
