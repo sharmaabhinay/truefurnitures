@@ -213,3 +213,13 @@
   font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
   border: 1px solid color-mix(in oklab, var(--brand-accent) 30%, transparent);
 }
+
+/* Every interactive control shows a pointer cursor */
+button:not(:disabled), [role="button"]:not([aria-disabled="true"]), summary, label:has(input[type="checkbox"]), label:has(input[type="radio"]), select { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+
+/* Coupon victory burst */
+@keyframes tf-pop { 0% { transform: scale(0.4); opacity: 0; } 55% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+.animate-pop { animation: tf-pop 0.5s cubic-bezier(.2,.9,.3,1.4) both; }
+@keyframes tf-confetti-fall { 0% { transform: translateY(-10px) rotate(0deg); opacity: 1; } 100% { transform: translateY(120px) rotate(540deg); opacity: 0; } }
+.tf-confetti { position: absolute; width: 7px; height: 12px; animation: tf-confetti-fall 1.1s ease-in forwards; }
