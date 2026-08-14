@@ -180,6 +180,10 @@ function ConfigurePage() {
     storage: false,
   });
 
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [designName, setDesignName] = useState("");
+  const [saving, setSaving] = useState(false);
+
   const productOptions = useMemo(() => parseProductOptions(sofa?.product_options), [sofa?.product_options]);
   const baseForOptions = Number(sofa?.sale_price ?? sofa?.base_price ?? 0);
   const colorOptions = useMemo(() => getColorOptions(productOptions), [productOptions]);
