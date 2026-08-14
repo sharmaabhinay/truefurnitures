@@ -233,6 +233,7 @@ function ConfigurePage() {
   };
 
   const saveDesign = async () => {
+    if (!user) return;
     const name = designName.trim() || sofa.name;
     const shareToken = crypto.randomUUID();
     setSaving(true);
@@ -438,13 +439,53 @@ function ConfigurePage() {
             Add Configuration to Cart · Deposit {formatINR(deposit)}
           </button>
           <button
-            onClick={saveDesign}
+            onClick={openSaveModal}
             className="mt-3 w-full px-6 py-3 border border-[color:var(--brand-dark)] text-[color:var(--brand-dark)] text-[10px] font-bold uppercase tracking-widest hover:bg-[color:var(--brand-dark)] hover:text-white transition-colors"
           >
             Save &amp; Share Design
           </button>
         </div>
       </section>
+
+      {saveOpen && (
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setSaveOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md bg-white border border-[color:var(--brand-dark)]/10 p-6 animate-scale-in"
+          >
+            <h3 className="font-display text-2xl mb-1">Save your design</h3>
+            <p className="text-xs text-[color:var(--brand-dark)]/60 mb-5">
+              We'll create a shareable link and copy it to your clipboard.
+            </p>
+            <label className="text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-dark)]/50">Design name</label>
+            <input
+              autoFocus
+              value={designName}
+              onChange={(e) => setDesignName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") void saveDesign(); }}
+              className="mt-2 w-full px-3 py-3 text-sm border border-[color:var(--brand-dark)]/15 focus:outline-none focus:border-[color:var(--brand-dark)]"
+              placeholder="Name this design"
+            />
+            <div className="mt-3 text-xs text-[color:var(--brand-dark)]/60">
+              {sizeDef.label} · {fabricDef.label} · {colorDef.label} · {formatINR(price)}
+            </div>
+            <div className="mt-6 flex gap-3 justify-end">
+              <button
+                onClick={() => setSaveOpen(false)}
+                className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest border border-[color:var(--brand-dark)]/20 hover:bg-[color:var(--brand-muted)] cursor-pointer"
+              >Cancel</button>
+              <button
+                onClick={() => void saveDesign()}
+                disabled={saving}
+                className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest bg-[color:var(--brand-dark)] text-white hover:bg-[color:var(--brand-accent)] disabled:opacity-50 cursor-pointer"
+              >{saving ? "Saving…" : "Save & copy link"}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <SiteFooter />
     </div>
