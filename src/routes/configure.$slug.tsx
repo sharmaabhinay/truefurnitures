@@ -218,14 +218,20 @@ function ConfigurePage() {
 
   const addonList = ADDONS.filter((a) => addons[a.key]).map((a) => a.label);
 
-  const saveDesign = async () => {
+  const openSaveModal = () => {
     if (!user) {
       toast.error("Sign in to save designs");
       navigate({ to: "/auth", search: {} as never });
       return;
     }
-    const name = prompt("Name this design", `${sofa.name} — ${sizeDef.label}`) ?? `${sofa.name}`;
+    setDesignName(`${sofa.name} — ${sizeDef.label}`);
+    setSaveOpen(true);
+  };
+
+  const saveDesign = async () => {
+    const name = designName.trim() || sofa.name;
     const shareToken = crypto.randomUUID();
+    setSaving(true);
     try {
       await fsAdd(COL.savedDesigns, {
         user_id: user.uid,
@@ -247,9 +253,12 @@ function ConfigurePage() {
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not save design");
       return;
+    } finally {
+      setSaving(false);
     }
     const link = `${window.location.origin}/shared-design/${shareToken}`;
     await navigator.clipboard.writeText(link).catch(() => {});
+    setSaveOpen(false);
     toast.success("Design saved! Share link copied to clipboard.");
   };
 
