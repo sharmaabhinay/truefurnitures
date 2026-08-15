@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { FiSend, FiSearch, FiUser } from "react-icons/fi";
+import { FiSend, FiSearch, FiUser, FiPhone, FiMail, FiExternalLink, FiZap } from "react-icons/fi";
+import { FaWhatsapp } from "react-icons/fa";
 import { ACard, AInput, ATextarea, AButton, AEmpty, dark } from "@/components/admin/ui";
 import { COL, fsAdd, fsList, fsUpdate, where } from "@/lib/db/firestore";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -14,8 +16,23 @@ type Msg = {
   sender_role: string;
   read_at?: string | null;
   created_at: string;
+  product_slug?: string | null;
+  product_name?: string | null;
+  product_image?: string | null;
+  product_price?: number | null;
 };
 type Profile = { id: string; full_name?: string | null; email?: string | null; phone?: string | null };
+type Sofa = { id: string; slug: string; name: string; base_price?: number; images?: string[]; image_url?: string | null };
+
+/** Canned replies surfaced by typing "/" in the reply box. */
+const QUICK_REPLIES = [
+  { key: "order", label: "Order status", text: "Hi! Your order is currently in production. We'll share tracking as soon as it ships." },
+  { key: "delivery", label: "Delivery timeline", text: "Custom sofas are hand-tailored in 18–21 working days, plus 2–3 days for delivery in Indore & Ujjain." },
+  { key: "fabric", label: "Fabric help", text: "Happy to help with fabric! Tell us your room's light and usage, and we'll suggest 2–3 options with swatches." },
+  { key: "visit", label: "Invite to showroom", text: "You're welcome to visit our Indore studio to feel the fabrics in person. Which day suits you?" },
+  { key: "payment", label: "Payment / deposit", text: "We reserve your build with a 20% deposit; the balance is due before dispatch." },
+  { key: "thanks", label: "Thank you", text: "Thank you for choosing True Furniture's — we truly appreciate it!" },
+];
 
 /** WhatsApp-style inbox: every customer thread in one place. */
 export function InboxManager() {
