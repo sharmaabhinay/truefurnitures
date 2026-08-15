@@ -9,6 +9,10 @@ export type ChatMessage = {
   sender_id?: string | null;
   read_at?: string | null;
   created_at: string;
+  product_slug?: string | null;
+  product_name?: string | null;
+  product_image?: string | null;
+  product_price?: number | null;
 };
 
 export const byOldest = (rows: ChatMessage[]) =>

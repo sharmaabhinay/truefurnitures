@@ -1,6 +1,6 @@
 import { Component, Suspense, useMemo, useRef, type ReactNode } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, ContactShadows, Environment, useGLTF } from "@react-three/drei";
+import { OrbitControls, ContactShadows, Environment, useGLTF, Html, useProgress } from "@react-three/drei";
 import type { Group } from "three";
 
 export type Sofa3DProps = {
@@ -177,6 +177,21 @@ class ModelErrorBoundary extends Component<
   }
 }
 
+/** In-canvas loading indicator with real GLTF/texture progress. */
+function ModelLoader() {
+  const { progress } = useProgress();
+  return (
+    <Html center>
+      <div className="flex flex-col items-center gap-2 select-none">
+        <span className="h-8 w-8 rounded-full border-2 border-[#d9cdb6] border-t-[#8a6f43] animate-spin" />
+        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8a6f43]">
+          Loading 3D · {Math.round(progress)}%
+        </span>
+      </div>
+    </Html>
+  );
+}
+
 export default function Sofa3D(props: Sofa3DProps) {
   return (
     <Canvas
@@ -188,7 +203,7 @@ export default function Sofa3D(props: Sofa3DProps) {
       <color attach="background" args={["#f4efe6"]} />
       <ambientLight intensity={0.6} />
       <directionalLight position={[5, 6, 4]} intensity={1.1} castShadow shadow-mapSize={[1024, 1024]} />
-      <Suspense fallback={null}>
+      <Suspense fallback={<ModelLoader />}>
         {props.modelUrl ? (
           <ModelErrorBoundary key={props.modelUrl} fallback={<SofaModel {...props} />}>
             <UploadedSofaModel modelUrl={props.modelUrl} />
