@@ -188,7 +188,7 @@ export default function Sofa3D(props: Sofa3DProps) {
       <color attach="background" args={["#f4efe6"]} />
       <ambientLight intensity={0.6} />
       <directionalLight position={[5, 6, 4]} intensity={1.1} castShadow shadow-mapSize={[1024, 1024]} />
-      <Suspense fallback={null}>
+      <Suspense fallback={<ModelLoader />}>
         {props.modelUrl ? (
           <ModelErrorBoundary key={props.modelUrl} fallback={<SofaModel {...props} />}>
             <UploadedSofaModel modelUrl={props.modelUrl} />
