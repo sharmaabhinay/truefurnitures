@@ -196,9 +196,54 @@ export function InboxManager() {
         ) : (
           <>
             <div className="px-4 py-3 border-b" style={{ borderColor: dark.border }}>
-              <div className="text-[14px] font-semibold">{thread.profile?.full_name || "Customer"}</div>
-              <div className="text-[11px]" style={{ color: dark.mute }}>
-                {[thread.profile?.email, thread.profile?.phone].filter(Boolean).join(" · ") || thread.id}
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                  <Link
+                    to="/admin/customers/$id"
+                    params={{ id: thread.id }}
+                    className="text-[14px] font-semibold hover:underline"
+                    style={{ color: dark.accent }}
+                  >
+                    {thread.profile?.full_name || "Customer"} <FiExternalLink className="inline -mt-0.5" />
+                  </Link>
+                  <div className="text-[11px]" style={{ color: dark.mute }}>
+                    {[thread.profile?.email, thread.profile?.phone].filter(Boolean).join(" · ") || thread.id}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {thread.profile?.phone && (
+                    <>
+                      <a
+                        href={`tel:${thread.profile.phone}`}
+                        aria-label="Call customer"
+                        className="rounded-md p-2 text-[14px]"
+                        style={{ background: dark.field, border: `1px solid ${dark.border}`, color: dark.text }}
+                      >
+                        <FiPhone />
+                      </a>
+                      <a
+                        href={`https://wa.me/${String(thread.profile.phone).replace(/\D/g, "").replace(/^0+/, "").replace(/^(?!91)/, "91")}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label="WhatsApp customer"
+                        className="rounded-md p-2 text-[14px]"
+                        style={{ background: dark.field, border: `1px solid ${dark.border}`, color: "#25D366" }}
+                      >
+                        <FaWhatsapp />
+                      </a>
+                    </>
+                  )}
+                  {thread.profile?.email && (
+                    <a
+                      href={`mailto:${thread.profile.email}`}
+                      aria-label="Email customer"
+                      className="rounded-md p-2 text-[14px]"
+                      style={{ background: dark.field, border: `1px solid ${dark.border}`, color: dark.text }}
+                    >
+                      <FiMail />
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex-1 max-h-[52vh] overflow-y-auto admin-scroll p-4 space-y-2">
@@ -214,6 +259,26 @@ export function InboxManager() {
                       }}
                     >
                       {m.body}
+                      {m.product_slug && (
+                        <Link
+                          to="/products/$slug"
+                          params={{ slug: m.product_slug }}
+                          className="mt-2 flex items-center gap-2 rounded-lg p-2"
+                          style={{ background: dark.card, border: `1px solid ${dark.border}` }}
+                        >
+                          {m.product_image && (
+                            <img src={m.product_image} alt={m.product_name ?? "Product"} className="h-11 w-14 rounded object-cover" />
+                          )}
+                          <span className="min-w-0">
+                            <span className="block truncate text-[12px] font-semibold">{m.product_name}</span>
+                            {m.product_price != null && (
+                              <span className="block text-[11px]" style={{ color: dark.accent }}>
+                                ₹{Number(m.product_price).toLocaleString("en-IN")}
+                              </span>
+                            )}
+                          </span>
+                        </Link>
+                      )}
                       <div className="text-[10px] mt-1" style={{ color: dark.mute }}>
                         {new Date(m.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
                       </div>
@@ -222,23 +287,84 @@ export function InboxManager() {
                 );
               })}
             </div>
-            <div className="p-3 border-t flex gap-2 items-end" style={{ borderColor: dark.border }}>
+            <div className="p-3 border-t relative" style={{ borderColor: dark.border }}>
+              {slash && (
+                <div
+                  className="absolute bottom-full left-3 right-3 mb-2 rounded-xl overflow-hidden z-10"
+                  style={{ background: dark.card, border: `1px solid ${dark.border}` }}
+                >
+                  <div className="px-3 py-2 text-[10px] uppercase tracking-[0.12em]" style={{ color: dark.mute }}>
+                    Quick replies
+                  </div>
+                  {QUICK_REPLIES.map((r) => (
+                    <button
+                      key={r.key}
+                      onClick={() => { setBody(r.text); setSlash(false); boxRef.current?.focus(); }}
+                      className="w-full text-left px-3 py-2 text-[12px] hover:bg-white/[0.04]"
+                      style={{ color: dark.text }}
+                    >
+                      <FiZap className="inline mr-2" style={{ color: dark.accent }} />{r.label}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => { setSlash(false); setBody(""); setPicker(true); }}
+                    className="w-full text-left px-3 py-2 text-[12px] border-t hover:bg-white/[0.04]"
+                    style={{ color: dark.accent, borderColor: dark.border }}
+                  >
+                    Share a product…
+                  </button>
+                </div>
+              )}
+              <div className="flex gap-2 items-end">
               <ATextarea
+                ref={boxRef}
                 rows={2}
                 value={body}
-                onChange={(e) => setBody(e.target.value)}
+                onChange={(e) => { setBody(e.target.value); setSlash(e.target.value.trim() === "/"); }}
                 onKeyDown={(e) => {
+                  if (e.key === "Escape") { setSlash(false); return; }
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
+                    if (slash) return;
                     void send();
                   }
                 }}
-                placeholder="Write a reply…"
+                placeholder="Write a reply… (type / for quick replies)"
               />
-              <AButton onClick={send} disabled={sending || !body.trim()} className="!px-3 !py-2.5">
+              <AButton onClick={() => void send()} disabled={sending || !body.trim()} className="!px-3 !py-2.5">
                 <FiSend />
               </AButton>
+              </div>
             </div>
+            {picker && (
+              <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4" onClick={() => setPicker(false)}>
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-full max-w-lg rounded-2xl overflow-hidden"
+                  style={{ background: dark.card, border: `1px solid ${dark.border}`, color: dark.text }}
+                >
+                  <div className="px-4 py-3 border-b text-[14px] font-semibold" style={{ borderColor: dark.border }}>
+                    Share a product
+                  </div>
+                  <div className="max-h-[60vh] overflow-y-auto admin-scroll">
+                    {(sofas ?? []).map((s) => (
+                      <button
+                        key={s.id}
+                        onClick={() => shareProduct(s)}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-left border-b hover:bg-white/[0.04]"
+                        style={{ borderColor: "rgba(42,42,56,0.6)" }}
+                      >
+                        {(s.images?.[0] ?? s.image_url) && (
+                          <img src={(s.images?.[0] ?? s.image_url) as string} alt={s.name} className="h-10 w-14 rounded object-cover" />
+                        )}
+                        <span className="text-[13px]">{s.name}</span>
+                      </button>
+                    ))}
+                    {(sofas ?? []).length === 0 && <AEmpty text="No products found." />}
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
       </ACard>
