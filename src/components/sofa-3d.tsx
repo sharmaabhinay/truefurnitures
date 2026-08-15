@@ -177,14 +177,22 @@ class ModelErrorBoundary extends Component<
   }
 }
 
-export default function Sofa3D(props: Sofa3DProps) {
+/** In-canvas loading indicator with real GLTF/texture progress. */
+function ModelLoader() {
+  const { progress } = useProgress();
   return (
-    <Canvas
-      shadows
-      dpr={[1, 2]}
-      camera={{ position: [3.2, 2.2, 4.2], fov: 40 }}
-      gl={{ antialias: true }}
-    >
+    <Html center>
+      <div className="flex flex-col items-center gap-2 select-none">
+        <span className="h-8 w-8 rounded-full border-2 border-[#d9cdb6] border-t-[#8a6f43] animate-spin" />
+        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8a6f43]">
+          Loading 3D · {Math.round(progress)}%
+        </span>
+      </div>
+    </Html>
+  );
+}
+
+export default function Sofa3D(props: Sofa3DProps) {
   return (
     <Canvas
       shadows
