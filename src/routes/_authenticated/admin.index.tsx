@@ -970,6 +970,9 @@ function Customers() {
   const { user } = useAuth();
   const [selected, setSelected] = useState<string[]>([]);
   const [askDelete, setAskDelete] = useState(false);
+  const [q, setQ] = useState("");
+  const [cityFilter, setCityFilter] = useState("all");
+  const [segment, setSegment] = useState("all");
   const { data } = useQuery({
     queryKey: ["admin-customers"],
     queryFn: async () => {
@@ -993,6 +996,40 @@ function Customers() {
   const toggle = (id: string) =>
     setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
 
+  const rows = data ?? [];
+  const cities = useMemo(
+    () => Array.from(new Set(rows.map((c: any) => c.city).filter(Boolean))).sort(),
+    [rows],
+  );
+  const filtered = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    return rows.filter((c: any) => {
+      if (cityFilter !== "all" && (c.city ?? "") !== cityFilter) return false;
+      if (segment === "new" && c.count > 0) return false;
+      if (segment === "repeat" && c.count < 2) return false;
+      if (segment === "buyers" && c.count < 1) return false;
+      if (!s) return true;
+      return [c.full_name, c.email, c.phone, c.city, c.id]
+        .filter(Boolean)
+        .some((v: string) => String(v).toLowerCase().includes(s));
+    });
+  }, [rows, q, cityFilter, segment]);
+  const paged = usePaged(filtered, 20);
+
+  const exportCustomers = () =>
+    downloadCsv(`customers-${new Date().toISOString().slice(0, 10)}`, filtered.map((c: any) => ({
+      name: c.full_name ?? "",
+      email: c.email ?? "",
+      phone: c.phone ?? "",
+      city: c.city ?? "",
+      orders: c.count,
+      lifetime_value: c.sum,
+      joined: c.created_at ?? "",
+      last_login: c.last_login_at ?? "",
+      phone_verified: c.phone_verified ? "yes" : "no",
+      email_verified: c.email_verified ? "yes" : "no",
+    })));
+
   const softDelete = async (reason: string) => {
     const stamp = { deleted_at: new Date().toISOString(), deleted_reason: reason, deleted_by: user?.uid ?? null };
     try {
@@ -1008,6 +1045,35 @@ function Customers() {
 
   return (
     <div className="space-y-3">
+      <div className="flex flex-wrap gap-2 items-center">
+        <DarkInput
+          placeholder="Search name, email, phone, city…"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          style={{ flex: "1 1 220px", minWidth: 200, background: "#16161D", border: "1px solid #2A2A38", color: "#E8E8F0" }}
+        />
+        <DarkSelect value={cityFilter} onChange={(e) => setCityFilter(e.target.value)}>
+          <option value="all">All cities</option>
+          {cities.map((c) => <option key={String(c)} value={String(c)}>{String(c)}</option>)}
+        </DarkSelect>
+        <DarkSelect value={segment} onChange={(e) => setSegment(e.target.value)}>
+          <option value="all">All customers</option>
+          <option value="new">No orders yet</option>
+          <option value="buyers">Has ordered</option>
+          <option value="repeat">Repeat (2+)</option>
+        </DarkSelect>
+        <button
+          onClick={exportCustomers}
+          disabled={filtered.length === 0}
+          className="rounded-md px-4 py-2 text-[13px] font-semibold disabled:opacity-50"
+          style={{ background: "rgba(255,255,255,0.04)", color: "#E8E8F0", border: "1px solid #2A2A38" }}
+        >
+          <span className="inline-flex items-center gap-1.5"><FiDownload /> Export</span>
+        </button>
+        <span className="text-[12px]" style={{ color: "#888899" }}>
+          {filtered.length} customer{filtered.length === 1 ? "" : "s"}
+        </span>
+      </div>
       {selected.length > 0 && (
         <button
           onClick={() => setAskDelete(true)}
@@ -1020,9 +1086,9 @@ function Customers() {
     <Card className="!p-0">
       <DataTable
         head={["", "Name", "Phone", "City", "Orders", "Lifetime", "Joined", ""]}
-        empty={(data ?? []).length === 0}
+        empty={filtered.length === 0}
       >
-        {(data ?? []).map((c) => (
+        {paged.slice.map((c: any) => (
           <tr
             key={c.id}
             className="border-b last:border-b-0 cursor-pointer hover:bg-white/[0.02]"
@@ -1030,9 +1096,8 @@ function Customers() {
             onClick={() => navigate({ to: "/admin/customers/$id", params: { id: c.id } })}
           >
             <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
-              <input
-                type="checkbox"
-                aria-label={`Select ${c.full_name ?? c.id}`}
+              <ACheck
+                label={`Select ${c.full_name ?? c.id}`}
                 checked={selected.includes(c.id)}
                 onChange={() => toggle(c.id)}
               />
@@ -1059,6 +1124,7 @@ function Customers() {
           </tr>
         ))}
       </DataTable>
+      <Pager page={paged.page} pages={paged.pages} total={paged.total} onPage={paged.setPage} label="customers" />
     </Card>
       <DeleteReasonModal
         open={askDelete}
