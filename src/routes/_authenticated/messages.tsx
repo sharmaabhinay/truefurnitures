@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -93,6 +93,25 @@ function Messages() {
                   <div key={m.id} className={`flex animate-fade-up ${mine ? "justify-end" : "justify-start"}`}>
                     <div className={`max-w-[78%] px-4 py-2.5 text-sm ${mine ? "bg-[color:var(--brand-dark)] text-white" : "bg-[color:var(--brand-muted)]"}`}>
                       <p className="whitespace-pre-wrap">{m.body}</p>
+                      {m.product_slug && (
+                        <Link
+                          to="/products/$slug"
+                          params={{ slug: m.product_slug }}
+                          className={`mt-2 flex items-center gap-2 p-2 ${mine ? "bg-white/10" : "bg-white"}`}
+                        >
+                          {m.product_image && (
+                            <img src={m.product_image} alt={m.product_name ?? "Product"} className="h-12 w-16 object-cover" />
+                          )}
+                          <span className="min-w-0">
+                            <span className="block truncate text-xs font-semibold">{m.product_name}</span>
+                            {m.product_price != null && (
+                              <span className="block text-[11px] opacity-70">
+                                ₹{Number(m.product_price).toLocaleString("en-IN")}
+                              </span>
+                            )}
+                          </span>
+                        </Link>
+                      )}
                       <p className="text-[10px] opacity-60 mt-1 text-right flex items-center justify-end gap-1">
                         {mine ? "You" : "True Furniture's"} · {new Date(m.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
                         {mine && m.read_at && <FiCheck aria-label="Read" />}
