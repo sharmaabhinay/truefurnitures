@@ -42,6 +42,15 @@ export function InboxManager() {
   const [q, setQ] = useState("");
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
+  const [slash, setSlash] = useState(false);
+  const [picker, setPicker] = useState(false);
+  const boxRef = useRef<HTMLTextAreaElement>(null);
+
+  const { data: sofas } = useQuery({
+    queryKey: ["inbox-sofas"],
+    enabled: picker,
+    queryFn: () => fsList<Sofa>(COL.sofas),
+  });
 
   const { data } = useQuery({
     queryKey: ["admin-inbox"],
@@ -100,10 +109,11 @@ export function InboxManager() {
     );
   }, [thread?.id, thread?.all.length]);
 
-  const send = async () => {
-    const text = body.trim();
-    if (!text || !thread) return;
+  const send = async (extra?: Partial<Msg>, override?: string) => {
+    const text = (override ?? body).trim();
+    if ((!text && !extra?.product_slug) || !thread) return;
     setBody("");
+    setSlash(false);
     setSending(true);
     try {
       await fsAdd(COL.customerMessages, {
@@ -112,6 +122,7 @@ export function InboxManager() {
         sender_role: role === "admin" ? "admin" : "staff",
         body: text,
         read_at: null,
+        ...(extra ?? {}),
       });
       void sendMessageReplyEmail({ data: { customerId: thread.id, body: text } }).catch(() => {});
       qc.invalidateQueries({ queryKey: ["admin-inbox"] });
@@ -121,6 +132,19 @@ export function InboxManager() {
     } finally {
       setSending(false);
     }
+  };
+
+  const shareProduct = (s: Sofa) => {
+    setPicker(false);
+    void send(
+      {
+        product_slug: s.slug,
+        product_name: s.name,
+        product_image: s.images?.[0] ?? s.image_url ?? null,
+        product_price: s.base_price ?? null,
+      },
+      `Take a look at the ${s.name} →`,
+    );
   };
 
   return (
