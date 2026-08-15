@@ -1,6 +1,6 @@
 import { Component, Suspense, useMemo, useRef, type ReactNode } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, ContactShadows, Environment, useGLTF } from "@react-three/drei";
+import { OrbitControls, ContactShadows, Environment, useGLTF, Html, useProgress } from "@react-three/drei";
 import type { Group } from "three";
 
 export type Sofa3DProps = {
@@ -178,6 +178,13 @@ class ModelErrorBoundary extends Component<
 }
 
 export default function Sofa3D(props: Sofa3DProps) {
+  return (
+    <Canvas
+      shadows
+      dpr={[1, 2]}
+      camera={{ position: [3.2, 2.2, 4.2], fov: 40 }}
+      gl={{ antialias: true }}
+    >
   return (
     <Canvas
       shadows
