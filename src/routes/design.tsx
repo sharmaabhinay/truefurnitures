@@ -11,6 +11,7 @@ import sofaIndore from "@/assets/sofa-indore.jpg";
 import sofaEmerald from "@/assets/sofa-emerald.jpg";
 import sofaIvory from "@/assets/sofa-ivory.jpg";
 import sofaTerracotta from "@/assets/sofa-terracotta.jpg";
+import { isProductLive } from "@/lib/availability";
 
 const images: Record<string, string> = {
   "malwa-modular": sofaMalwa,
@@ -33,7 +34,8 @@ type Sofa = {
 const sofasQuery = queryOptions({
   queryKey: ["design-sofas"],
   queryFn: async (): Promise<Sofa[]> => {
-    return sortRows(await fsList<Sofa>(COL.sofas, where("is_published", "==", true)), "sort_order");
+    const rows = await fsList<Sofa>(COL.sofas, where("is_published", "==", true));
+    return sortRows(rows.filter((r) => isProductLive(r)), "sort_order");
   },
 });
 

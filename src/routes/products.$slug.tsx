@@ -18,6 +18,7 @@ import fabricVelvet from "@/assets/fabric-velvet.jpg";
 import fabricLinen from "@/assets/fabric-linen.jpg";
 import fabricLeather from "@/assets/fabric-leather.jpg";
 import showroomIndore from "@/assets/showroom-indore.jpg";
+import { isProductLive } from "@/lib/availability";
 
 type GalleryImage = { src: string; label: string };
 
@@ -197,7 +198,7 @@ const sofaQuery = (slug: string) =>
         where("slug", "==", slug),
         where("is_published", "==", true),
       );
-      return data ?? null;
+      return data && isProductLive(data) ? data : null;
     },
   });
 
@@ -213,7 +214,7 @@ const relatedQuery = (slug: string) =>
           await fsList<RelatedSofa & { slug: string }>(COL.sofas, where("is_published", "==", true)),
           "sort_order",
         );
-        return rows.filter((r) => r.slug !== slug).slice(0, 3);
+        return rows.filter((r) => r.slug !== slug && isProductLive(r)).slice(0, 3);
       } catch {
         return [];
       }

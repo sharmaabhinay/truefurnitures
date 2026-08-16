@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { formatINR, estimatedDelivery } from "@/lib/format";
 import { useCart } from "@/lib/cart";
 import { toast } from "sonner";
+import { isProductLive } from "@/lib/availability";
 
 const Sofa3D = lazy(() => import("@/components/sofa-3d"));
 
@@ -57,7 +58,7 @@ const sofaQuery = (slug: string) =>
         where("slug", "==", slug),
         where("is_published", "==", true),
       );
-      return data ?? null;
+      return data && isProductLive(data) ? data : null;
     },
   });
 
