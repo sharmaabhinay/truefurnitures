@@ -2274,19 +2274,19 @@ function Settings() {
                 Hero Section
               </div>
               <Field label="Hero Headline">
-                <DarkInput value={cms.hero_headline} onChange={(e) => cmsPatch("hero_headline", e.target.value)} />
+                <DarkInput value={brand.hero_headline} onChange={(e) => brandPatch("hero_headline", e.target.value)} />
+              </Field>
+              <Field label="Hero Headline (italic line)">
+                <DarkInput value={brand.hero_italic} onChange={(e) => brandPatch("hero_italic", e.target.value)} />
               </Field>
               <Field label="Hero Sub-text">
-                <DarkTextarea rows={3} value={cms.hero_subtext} onChange={(e) => cmsPatch("hero_subtext", e.target.value)} />
+                <DarkTextarea rows={3} value={brand.hero_subtext} onChange={(e) => brandPatch("hero_subtext", e.target.value)} />
               </Field>
               <Field label="Hero Badge">
-                <DarkInput value={cms.hero_badge} onChange={(e) => cmsPatch("hero_badge", e.target.value)} />
+                <DarkInput value={brand.hero_badge} onChange={(e) => brandPatch("hero_badge", e.target.value)} />
               </Field>
-              <Field label="CTA Button 1">
-                <DarkInput value={cms.hero_cta1} onChange={(e) => cmsPatch("hero_cta1", e.target.value)} />
-              </Field>
-              <Field label="CTA Button 2">
-                <DarkInput value={cms.hero_cta2} onChange={(e) => cmsPatch("hero_cta2", e.target.value)} />
+              <Field label="Primary CTA Label">
+                <DarkInput value={brand.hero_cta} onChange={(e) => brandPatch("hero_cta", e.target.value)} />
               </Field>
             </div>
             <div className="space-y-4">
@@ -2294,9 +2294,9 @@ function Settings() {
                 Media & SEO
               </div>
               <Field label="Hero Image URL">
-                <DarkInput value={cms.hero_image} onChange={(e) => cmsPatch("hero_image", e.target.value)} placeholder="https://…" />
-                {cms.hero_image && (
-                  <img src={cms.hero_image} alt="" className="mt-3 w-full h-32 object-cover rounded-md opacity-70" />
+                <DarkInput value={brand.hero_image} onChange={(e) => brandPatch("hero_image", e.target.value)} placeholder="https://…" />
+                {brand.hero_image && (
+                  <img src={brand.hero_image} alt="" className="mt-3 w-full h-32 object-cover rounded-md opacity-70" />
                 )}
               </Field>
               <div className="rounded-md p-3 text-[12px]" style={{ background: "rgba(200,168,107,0.08)", border: "1px solid #2A2A38", color: "#888899" }}>
@@ -2307,11 +2307,12 @@ function Settings() {
             </div>
           </div>
           <button
-            onClick={saveCms}
-            className="mt-6 rounded-md px-6 py-2.5 text-[13px] font-semibold"
+            onClick={saveBrand}
+            disabled={savingBrand}
+            className="mt-6 rounded-md px-6 py-2.5 text-[13px] font-semibold disabled:opacity-60"
             style={{ background: "#C8A86B", color: "#1a1a1a" }}
           >
-            💾 Save Site Config
+            {savingBrand ? "Saving…" : "Save & publish to live site"}
           </button>
         </Card>
       )}
