@@ -17,6 +17,14 @@ export type BrandSettings = {
   delivery_note: string;
   announcement: string | null;
   announcement_on: boolean;
+  require_phone_verification: boolean;
+  require_email_verification: boolean;
+  hero_badge: string;
+  hero_headline: string;
+  hero_italic: string;
+  hero_subtext: string;
+  hero_cta: string;
+  hero_image: string;
 };
 
 /** Fallbacks used before the CMS row loads (and during SSR). */
@@ -37,6 +45,15 @@ export const DEFAULT_BRAND: BrandSettings = {
   delivery_note: "Free delivery in Indore & MP above ₹15,000",
   announcement: null,
   announcement_on: false,
+  require_phone_verification: true,
+  require_email_verification: false,
+  hero_badge: "Fully Customizable Furniture · Indore & Ujjain",
+  hero_headline: "Every Inch,",
+  hero_italic: "Yours to Design.",
+  hero_subtext:
+    "Bespoke sofas — fabric, colour, size, legs, add-ons. Every stitch, every curve, strictly by your rules.",
+  hero_cta: "Start 3D Design",
+  hero_image: "",
 };
 
 export const brandQueryKey = ["site-settings"] as const;
