@@ -2160,7 +2160,6 @@ function Showrooms() {
 /* ================= SETTINGS ================= */
 
 function Settings() {
-  const CMS_KEY = "tf_site_cms";
   const TABS = ["Brand & Store", "Site CMS", "API Config", "Danger Zone"] as const;
   const [tab, setTab] = useState<(typeof TABS)[number]>("Brand & Store");
   const qc = useQueryClient();
@@ -2193,6 +2192,14 @@ function Settings() {
         delivery_note: brand.delivery_note,
         announcement: brand.announcement,
         announcement_on: brand.announcement_on,
+        require_phone_verification: brand.require_phone_verification,
+        require_email_verification: brand.require_email_verification,
+        hero_badge: brand.hero_badge,
+        hero_headline: brand.hero_headline,
+        hero_italic: brand.hero_italic,
+        hero_subtext: brand.hero_subtext,
+        hero_cta: brand.hero_cta,
+        hero_image: brand.hero_image,
       });
     } catch (e) {
       setSavingBrand(false);
@@ -2204,36 +2211,16 @@ function Settings() {
     toast.success("Brand details saved — applied across the site, emails and receipts.");
   };
 
-  const [cms, setCms] = useState({
-    hero_headline: "Your perfect sofa, crafted for you",
-    hero_subtext:
-      "Every sofa is custom-built to your exact fabric, colour, size, and leg choice by master craftsmen at our Indore workshop.",
-    hero_image: "",
-    hero_badge: "True Furniture's · Indore & Ujjain · Est. 2007",
-    hero_cta1: "Browse All Sofas",
-    hero_cta2: "Get Free Quote",
-  });
-
   const [apiUrl, setApiUrl] = useState("");
 
   useEffect(() => {
     try {
-      const c = window.localStorage.getItem(CMS_KEY);
-      if (c) setCms((p) => ({ ...p, ...JSON.parse(c) }));
       setApiUrl(window.location.origin);
     } catch {
       /* ignore */
     }
   }, []);
 
-  const saveCms = () => {
-    try {
-      window.localStorage.setItem(CMS_KEY, JSON.stringify(cms));
-      toast.success("Site CMS saved locally.");
-    } catch {
-      toast.error("Could not save.");
-    }
-  };
   const pingApi = async () => {
     try {
       const r = await fetch("/api/public/health");
@@ -2255,8 +2242,6 @@ function Settings() {
     );
     toast.success("Local cache cleared. Reload to refresh.");
   };
-
-  const cmsPatch = <K extends keyof typeof cms>(k: K, v: (typeof cms)[K]) => setCms((p) => ({ ...p, [k]: v }));
 
   return (
     <div className="space-y-5 max-w-4xl">
