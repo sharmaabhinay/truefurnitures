@@ -2385,6 +2385,39 @@ function Settings() {
                 />
               </button>
             </div>
+            <div className="sm:col-span-2 grid gap-2 rounded-lg p-3" style={{ background: "#16161D", border: "1px solid #2A2A38" }}>
+              <div className="text-[11px] uppercase tracking-[0.14em] mb-1" style={{ color: "#C8A86B" }}>Customer verification</div>
+              <div className="flex items-center justify-between py-1">
+                <div className="text-[13px]">
+                  Require phone OTP verification
+                  <div className="text-[11px]" style={{ color: "#888899" }}>Customers must verify their mobile before an order is placed.</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => brandPatch("require_phone_verification", !brand.require_phone_verification)}
+                  className="relative w-9 h-5 rounded-full shrink-0 transition-colors"
+                  style={{ background: brand.require_phone_verification ? "#4CAF82" : "#2A2A38" }}
+                  aria-label="Toggle phone verification"
+                >
+                  <span className="absolute top-0.5 size-4 rounded-full bg-white transition-all" style={{ left: brand.require_phone_verification ? "18px" : "2px" }} />
+                </button>
+              </div>
+              <div className="flex items-center justify-between py-1">
+                <div className="text-[13px]">
+                  Require email verification
+                  <div className="text-[11px]" style={{ color: "#888899" }}>Blocks checkout until the customer's email is confirmed.</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => brandPatch("require_email_verification", !brand.require_email_verification)}
+                  className="relative w-9 h-5 rounded-full shrink-0 transition-colors"
+                  style={{ background: brand.require_email_verification ? "#4CAF82" : "#2A2A38" }}
+                  aria-label="Toggle email verification"
+                >
+                  <span className="absolute top-0.5 size-4 rounded-full bg-white transition-all" style={{ left: brand.require_email_verification ? "18px" : "2px" }} />
+                </button>
+              </div>
+            </div>
             <div className="sm:col-span-2">
               <Field label="Announcement Text">
                 <DarkInput value={brand.announcement ?? ""} onChange={(e) => brandPatch("announcement", e.target.value)} placeholder='e.g. "🎉 Sale — 20% off recliners"' />
