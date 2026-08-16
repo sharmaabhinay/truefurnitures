@@ -7,6 +7,7 @@ import { COL, fsList, sortRows, where } from "@/lib/db/firestore";
 import { useCart } from "@/lib/cart";
 import { useCustomerUnread, useAdminUnread } from "@/lib/messages";
 import { FiSearch, FiShoppingBag, FiMenu, FiX, FiChevronDown, FiMessageSquare } from "react-icons/fi";
+import { isProductLive } from "@/lib/availability";
 
 type SearchItem = {
   slug: string;
@@ -21,7 +22,7 @@ const searchQuery = queryOptions({
     const data = await fsList<{ slug: string; name: string; tagline: string | null }>(
       COL.sofas,
       where("is_published", "==", true),
-    ).then((r) => sortRows(r, "sort_order")).catch(() => []);
+    ).then((r) => sortRows(r.filter((x) => isProductLive(x)), "sort_order")).catch(() => []);
     return (data ?? []).map((s) => ({
       slug: s.slug,
       name: s.name,

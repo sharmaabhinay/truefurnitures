@@ -10,6 +10,7 @@ import { formatINR, estimatedDelivery } from "@/lib/format";
 import { toast } from "sonner";
 import { PaymentMethods } from "@/components/payment-methods";
 import { PhoneVerify, UnverifiedBadge, VerifiedBadge } from "@/components/phone-verify";
+import { useBrand } from "@/lib/brand";
 
 export const Route = createFileRoute("/_authenticated/checkout")({
   ssr: false,
@@ -58,6 +59,7 @@ function Checkout() {
   const { items, subtotal, discount, total, coupon, clear } = useCart();
   const navigate = useNavigate();
   const { user, profile, loading: authLoading, refreshProfile } = useAuth();
+  const brand = useBrand();
   const [form, setForm] = useState<FormState>({
     full_name: "",
     phone: "",
@@ -175,9 +177,13 @@ function Checkout() {
       toast.error("Please fix the highlighted fields");
       return;
     }
-    if (!phoneVerified) {
+    if (brand.require_phone_verification && !phoneVerified) {
       toast.error("Please verify your mobile number with the OTP before placing the order");
       document.getElementById("tf-phone-verify")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    if (brand.require_email_verification && !emailVerified) {
+      toast.error("Please verify your email address before placing the order");
       return;
     }
     setSubmitting(true);
@@ -336,13 +342,15 @@ function Checkout() {
                   </div>
                   <input id="phone" inputMode="numeric" maxLength={10} className={inputCls} value={form.phone} onChange={(e) => set("phone", e.target.value.replace(/\D/g, ""))} placeholder="10-digit" />
                   {errors.phone && <p className="text-xs text-red-600 mt-1">{errors.phone}</p>}
-                  <div id="tf-phone-verify">
-                    <PhoneVerify
-                      phone={form.phone}
-                      verified={phoneVerified}
-                      onVerified={(e164) => setVerifiedPhone(e164.replace(/\D/g, "").slice(-10))}
-                    />
-                  </div>
+                  {brand.require_phone_verification && (
+                    <div id="tf-phone-verify">
+                      <PhoneVerify
+                        phone={form.phone}
+                        verified={phoneVerified}
+                        onVerified={(e164) => setVerifiedPhone(e164.replace(/\D/g, "").slice(-10))}
+                      />
+                    </div>
+                  )}
                 </div>
                 <div>
                   <div className="flex items-center justify-between gap-2 flex-wrap">

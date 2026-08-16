@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
+import { useBrand } from "@/lib/brand";
 import heroSofa from "@/assets/hero-sofa.jpg";
 import sofaEmerald from "@/assets/sofa-emerald.jpg";
 import sofaIvory from "@/assets/sofa-ivory.jpg";
@@ -38,11 +39,25 @@ const slides = [
 
 export function HeroCarousel() {
   const [i, setI] = useState(0);
+  const brand = useBrand();
   useEffect(() => {
     const t = setInterval(() => setI((v) => (v + 1) % slides.length), 6500);
     return () => clearInterval(t);
   }, []);
-  const s = slides[i];
+  const base = slides[i];
+  // The first slide is CMS-driven so admin edits show up on the live site.
+  const s =
+    i === 0
+      ? {
+          ...base,
+          image: brand.hero_image || base.image,
+          eyebrow: brand.hero_badge || base.eyebrow,
+          title: brand.hero_headline || base.title,
+          italic: brand.hero_italic || base.italic,
+          body: brand.hero_subtext || base.body,
+          cta: brand.hero_cta || base.cta,
+        }
+      : base;
 
   return (
     <section className="relative min-h-[92vh] flex items-center overflow-hidden bg-[color:var(--brand-cream)]">

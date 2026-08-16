@@ -2160,7 +2160,6 @@ function Showrooms() {
 /* ================= SETTINGS ================= */
 
 function Settings() {
-  const CMS_KEY = "tf_site_cms";
   const TABS = ["Brand & Store", "Site CMS", "API Config", "Danger Zone"] as const;
   const [tab, setTab] = useState<(typeof TABS)[number]>("Brand & Store");
   const qc = useQueryClient();
@@ -2193,6 +2192,14 @@ function Settings() {
         delivery_note: brand.delivery_note,
         announcement: brand.announcement,
         announcement_on: brand.announcement_on,
+        require_phone_verification: brand.require_phone_verification,
+        require_email_verification: brand.require_email_verification,
+        hero_badge: brand.hero_badge,
+        hero_headline: brand.hero_headline,
+        hero_italic: brand.hero_italic,
+        hero_subtext: brand.hero_subtext,
+        hero_cta: brand.hero_cta,
+        hero_image: brand.hero_image,
       });
     } catch (e) {
       setSavingBrand(false);
@@ -2204,36 +2211,16 @@ function Settings() {
     toast.success("Brand details saved — applied across the site, emails and receipts.");
   };
 
-  const [cms, setCms] = useState({
-    hero_headline: "Your perfect sofa, crafted for you",
-    hero_subtext:
-      "Every sofa is custom-built to your exact fabric, colour, size, and leg choice by master craftsmen at our Indore workshop.",
-    hero_image: "",
-    hero_badge: "True Furniture's · Indore & Ujjain · Est. 2007",
-    hero_cta1: "Browse All Sofas",
-    hero_cta2: "Get Free Quote",
-  });
-
   const [apiUrl, setApiUrl] = useState("");
 
   useEffect(() => {
     try {
-      const c = window.localStorage.getItem(CMS_KEY);
-      if (c) setCms((p) => ({ ...p, ...JSON.parse(c) }));
       setApiUrl(window.location.origin);
     } catch {
       /* ignore */
     }
   }, []);
 
-  const saveCms = () => {
-    try {
-      window.localStorage.setItem(CMS_KEY, JSON.stringify(cms));
-      toast.success("Site CMS saved locally.");
-    } catch {
-      toast.error("Could not save.");
-    }
-  };
   const pingApi = async () => {
     try {
       const r = await fetch("/api/public/health");
@@ -2255,8 +2242,6 @@ function Settings() {
     );
     toast.success("Local cache cleared. Reload to refresh.");
   };
-
-  const cmsPatch = <K extends keyof typeof cms>(k: K, v: (typeof cms)[K]) => setCms((p) => ({ ...p, [k]: v }));
 
   return (
     <div className="space-y-5 max-w-4xl">
@@ -2289,19 +2274,19 @@ function Settings() {
                 Hero Section
               </div>
               <Field label="Hero Headline">
-                <DarkInput value={cms.hero_headline} onChange={(e) => cmsPatch("hero_headline", e.target.value)} />
+                <DarkInput value={brand.hero_headline} onChange={(e) => brandPatch("hero_headline", e.target.value)} />
+              </Field>
+              <Field label="Hero Headline (italic line)">
+                <DarkInput value={brand.hero_italic} onChange={(e) => brandPatch("hero_italic", e.target.value)} />
               </Field>
               <Field label="Hero Sub-text">
-                <DarkTextarea rows={3} value={cms.hero_subtext} onChange={(e) => cmsPatch("hero_subtext", e.target.value)} />
+                <DarkTextarea rows={3} value={brand.hero_subtext} onChange={(e) => brandPatch("hero_subtext", e.target.value)} />
               </Field>
               <Field label="Hero Badge">
-                <DarkInput value={cms.hero_badge} onChange={(e) => cmsPatch("hero_badge", e.target.value)} />
+                <DarkInput value={brand.hero_badge} onChange={(e) => brandPatch("hero_badge", e.target.value)} />
               </Field>
-              <Field label="CTA Button 1">
-                <DarkInput value={cms.hero_cta1} onChange={(e) => cmsPatch("hero_cta1", e.target.value)} />
-              </Field>
-              <Field label="CTA Button 2">
-                <DarkInput value={cms.hero_cta2} onChange={(e) => cmsPatch("hero_cta2", e.target.value)} />
+              <Field label="Primary CTA Label">
+                <DarkInput value={brand.hero_cta} onChange={(e) => brandPatch("hero_cta", e.target.value)} />
               </Field>
             </div>
             <div className="space-y-4">
@@ -2309,9 +2294,9 @@ function Settings() {
                 Media & SEO
               </div>
               <Field label="Hero Image URL">
-                <DarkInput value={cms.hero_image} onChange={(e) => cmsPatch("hero_image", e.target.value)} placeholder="https://…" />
-                {cms.hero_image && (
-                  <img src={cms.hero_image} alt="" className="mt-3 w-full h-32 object-cover rounded-md opacity-70" />
+                <DarkInput value={brand.hero_image} onChange={(e) => brandPatch("hero_image", e.target.value)} placeholder="https://…" />
+                {brand.hero_image && (
+                  <img src={brand.hero_image} alt="" className="mt-3 w-full h-32 object-cover rounded-md opacity-70" />
                 )}
               </Field>
               <div className="rounded-md p-3 text-[12px]" style={{ background: "rgba(200,168,107,0.08)", border: "1px solid #2A2A38", color: "#888899" }}>
@@ -2322,11 +2307,12 @@ function Settings() {
             </div>
           </div>
           <button
-            onClick={saveCms}
-            className="mt-6 rounded-md px-6 py-2.5 text-[13px] font-semibold"
+            onClick={saveBrand}
+            disabled={savingBrand}
+            className="mt-6 rounded-md px-6 py-2.5 text-[13px] font-semibold disabled:opacity-60"
             style={{ background: "#C8A86B", color: "#1a1a1a" }}
           >
-            💾 Save Site Config
+            {savingBrand ? "Saving…" : "Save & publish to live site"}
           </button>
         </Card>
       )}
@@ -2398,6 +2384,39 @@ function Settings() {
                   style={{ left: brand.announcement_on ? "18px" : "2px" }}
                 />
               </button>
+            </div>
+            <div className="sm:col-span-2 grid gap-2 rounded-lg p-3" style={{ background: "#16161D", border: "1px solid #2A2A38" }}>
+              <div className="text-[11px] uppercase tracking-[0.14em] mb-1" style={{ color: "#C8A86B" }}>Customer verification</div>
+              <div className="flex items-center justify-between py-1">
+                <div className="text-[13px]">
+                  Require phone OTP verification
+                  <div className="text-[11px]" style={{ color: "#888899" }}>Customers must verify their mobile before an order is placed.</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => brandPatch("require_phone_verification", !brand.require_phone_verification)}
+                  className="relative w-9 h-5 rounded-full shrink-0 transition-colors"
+                  style={{ background: brand.require_phone_verification ? "#4CAF82" : "#2A2A38" }}
+                  aria-label="Toggle phone verification"
+                >
+                  <span className="absolute top-0.5 size-4 rounded-full bg-white transition-all" style={{ left: brand.require_phone_verification ? "18px" : "2px" }} />
+                </button>
+              </div>
+              <div className="flex items-center justify-between py-1">
+                <div className="text-[13px]">
+                  Require email verification
+                  <div className="text-[11px]" style={{ color: "#888899" }}>Blocks checkout until the customer's email is confirmed.</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => brandPatch("require_email_verification", !brand.require_email_verification)}
+                  className="relative w-9 h-5 rounded-full shrink-0 transition-colors"
+                  style={{ background: brand.require_email_verification ? "#4CAF82" : "#2A2A38" }}
+                  aria-label="Toggle email verification"
+                >
+                  <span className="absolute top-0.5 size-4 rounded-full bg-white transition-all" style={{ left: brand.require_email_verification ? "18px" : "2px" }} />
+                </button>
+              </div>
             </div>
             <div className="sm:col-span-2">
               <Field label="Announcement Text">
