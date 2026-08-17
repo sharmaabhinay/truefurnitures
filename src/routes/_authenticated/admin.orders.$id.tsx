@@ -378,6 +378,10 @@ function OrderDetail() {
                 style={{ background: dark.bg, border: `1px solid ${dark.border}`, color: dark.text }}
               >
                 <option value="">— Unassigned —</option>
+                {order.assigned_craftsman &&
+                  !(carpenters ?? []).some((c) => `${c.full_name}${c.city ? ` · ${c.city}` : ""}` === order.assigned_craftsman) && (
+                    <option value={order.assigned_craftsman as string}>{order.assigned_craftsman as string}</option>
+                  )}
                 {(carpenters ?? [])
                   .filter((c) => c.active)
                   .map((c) => {
