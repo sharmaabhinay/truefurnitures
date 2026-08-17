@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { COL, fsList, fsListSorted, fsAdd, fsUpdate, fsDelete, orderBy } from "@/lib/db/firestore";
 import { formatINR, formatDate } from "@/lib/format";
@@ -65,14 +66,24 @@ export function CarpenterManager() {
   const qc = useQueryClient();
   const [editing, setEditing] = useState<Carpenter | null>(null);
   const [q, setQ] = useState("");
+  const [city, setCity] = useState("all");
+  const [avail, setAvail] = useState("all");
+  const [spec, setSpec] = useState("all");
+  const [status, setStatus] = useState("all");
   const { data, isLoading } = useCarpenters();
 
   const rows = useMemo(() => {
-    const list = data ?? [];
-    if (!q.trim()) return list;
-    const s = q.toLowerCase();
-    return list.filter((c) => c.full_name?.toLowerCase().includes(s) || c.phone?.includes(s) || c.city?.toLowerCase().includes(s));
-  }, [data, q]);
+    let list = data ?? [];
+    const s = q.trim().toLowerCase();
+    if (s) list = list.filter((c) => c.full_name?.toLowerCase().includes(s) || c.phone?.includes(s) || c.city?.toLowerCase().includes(s));
+    if (city !== "all") list = list.filter((c) => c.city === city);
+    if (avail !== "all") list = list.filter((c) => (c.availability ?? "available") === avail);
+    if (spec !== "all") list = list.filter((c) => (c.specialities ?? []).includes(spec));
+    if (status !== "all") list = list.filter((c) => (status === "active" ? c.active : !c.active));
+    return list;
+  }, [data, q, city, avail, spec, status]);
+
+  const cities = useMemo(() => Array.from(new Set((data ?? []).map((c) => c.city).filter(Boolean))), [data]);
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["admin-carpenters"] });
 
@@ -89,6 +100,29 @@ export function CarpenterManager() {
         <AButton onClick={() => setEditing({ id: "", ...BLANK } as Carpenter)}>🪚 Add carpenter</AButton>
         <div className="flex-1" />
         <AInput placeholder="Search name, phone, city…" value={q} onChange={(e) => setQ(e.target.value)} style={{ maxWidth: 240 }} />
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <ASelect value={city} onChange={(e) => setCity(e.target.value)} style={{ maxWidth: 170 }}>
+          <option value="all">All cities</option>
+          {cities.map((c) => <option key={c} value={c}>{c}</option>)}
+        </ASelect>
+        <ASelect value={avail} onChange={(e) => setAvail(e.target.value)} style={{ maxWidth: 170 }}>
+          <option value="all">Any availability</option>
+          <option value="available">Available</option>
+          <option value="on_job">On a job</option>
+          <option value="leave">On leave</option>
+        </ASelect>
+        <ASelect value={spec} onChange={(e) => setSpec(e.target.value)} style={{ maxWidth: 200 }}>
+          <option value="all">All specialities</option>
+          {SPECIALITIES.map((s) => <option key={s} value={s}>{s}</option>)}
+        </ASelect>
+        <ASelect value={status} onChange={(e) => setStatus(e.target.value)} style={{ maxWidth: 170 }}>
+          <option value="all">Active + inactive</option>
+          <option value="active">Assignable only</option>
+          <option value="inactive">Inactive only</option>
+        </ASelect>
+        <span className="text-[11px]" style={{ color: dark.mute }}>{rows.length} carpenter{rows.length === 1 ? "" : "s"}</span>
       </div>
 
       {isLoading ? (
@@ -136,6 +170,9 @@ export function CarpenterManager() {
                 <div className="flex items-center gap-2 mt-4">
                   <span className="text-[11px]" style={{ color: c.active ? dark.good : dark.mute }}>{c.active ? "Assignable" : "Inactive"}</span>
                   <div className="flex-1" />
+                  <Link to="/admin/carpenters/$id" params={{ id: c.id }} className="text-[12px] px-2 py-1 rounded-md" style={{ border: `1px solid ${dark.border}`, color: dark.accent }}>
+                    Profile
+                  </Link>
                   <AButton variant="ghost" onClick={() => setEditing(c)}>Edit</AButton>
                   <AButton variant="danger" onClick={() => remove(c)}>Remove</AButton>
                 </div>
