@@ -1646,6 +1646,24 @@ function ProductModal({
                   Featured on homepage
                 </label>
               </div>
+              <div className="grid sm:grid-cols-3 gap-4">
+                <Field label="Publish status">
+                  <DarkSelect value={status} onChange={(e) => setStatus(e.target.value)} className="w-full py-2">
+                    <option value="published">Published</option>
+                    <option value="draft">Draft (hidden)</option>
+                    <option value="scheduled">Scheduled</option>
+                  </DarkSelect>
+                </Field>
+                <Field label="Available from">
+                  <DarkInput type="date" value={availableFrom} onChange={(e) => setAvailableFrom(e.target.value)} />
+                </Field>
+                <Field label="Available to">
+                  <DarkInput type="date" value={availableTo} onChange={(e) => setAvailableTo(e.target.value)} />
+                </Field>
+              </div>
+              <p className="text-[11px]" style={{ color: "#888899" }}>
+                Drafts never show on the store. Scheduled products go live automatically inside the availability window.
+              </p>
             </>
           )}
 
