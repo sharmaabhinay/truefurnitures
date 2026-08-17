@@ -1159,6 +1159,9 @@ type SofaRow = {
   seo_description: string | null;
   is_published: boolean;
   is_featured: boolean;
+  status?: string | null;
+  available_from?: string | null;
+  available_to?: string | null;
   lead_time_days: number;
   delivery_days: number | null;
   product_options: Json | null;
