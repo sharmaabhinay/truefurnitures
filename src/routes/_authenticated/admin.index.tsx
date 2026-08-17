@@ -1405,6 +1405,9 @@ function ProductModal({
   const [seoDescription, setSeoDescription] = useState(product.seo_description ?? "");
   const [isPublished, setIsPublished] = useState(product.is_published ?? true);
   const [isFeatured, setIsFeatured] = useState(product.is_featured ?? false);
+  const [status, setStatus] = useState<string>(product.status ?? (product.is_published === false ? "draft" : "published"));
+  const [availableFrom, setAvailableFrom] = useState<string>((product.available_from ?? "").slice(0, 10));
+  const [availableTo, setAvailableTo] = useState<string>((product.available_to ?? "").slice(0, 10));
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<"images" | "model" | null>(null);
 
@@ -1512,7 +1515,10 @@ function ProductModal({
       seo_description: seoDescription || null,
       lead_time_days: Number(leadTime) || 30,
       delivery_days: Number(leadTime) || 30,
-      is_published: isPublished,
+      is_published: status === "draft" ? false : isPublished,
+      status,
+      available_from: availableFrom || null,
+      available_to: availableTo || null,
       is_featured: isFeatured,
       product_options: {
         sku: sku || null,
