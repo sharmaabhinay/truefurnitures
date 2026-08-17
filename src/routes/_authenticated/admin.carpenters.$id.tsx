@@ -145,12 +145,3 @@ function Stat({ label, value }: { label: string; value: string }) {
     </ACard>
   );
 }
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/_authenticated/admin/carpenters/$id')({
-  component: RouteComponent,
-})
-
-function RouteComponent() {
-  return <div>Hello "/_authenticated/admin/carpenters/$id"!</div>
-}
