@@ -39,6 +39,7 @@ function OrderDetail() {
   const qc = useQueryClient();
   const getAuth = useServerFn(getAuthUserDetails);
   const notifyCustomer = useServerFn(sendOrderStatusEmail);
+  const { data: carpenters } = useCarpenters();
 
   const { data: order, isLoading } = useQuery({
     queryKey: ["admin-order", id],
@@ -377,7 +378,12 @@ function OrderDetail() {
                 style={{ background: dark.bg, border: `1px solid ${dark.border}`, color: dark.text }}
               >
                 <option value="">— Unassigned —</option>
-                {CRAFTSMEN.map((c) => <option key={c} value={c}>{c}</option>)}
+                {(carpenters ?? [])
+                  .filter((c) => c.active)
+                  .map((c) => {
+                    const label = `${c.full_name}${c.city ? ` · ${c.city}` : ""}`;
+                    return <option key={c.id} value={label}>{label}</option>;
+                  })}
               </select>
               <input
                 defaultValue={order.assigned_craftsman ?? ""}
