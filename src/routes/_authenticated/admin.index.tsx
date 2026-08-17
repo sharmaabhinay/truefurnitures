@@ -1274,6 +1274,17 @@ function Products() {
             style={{ background: "#1E1E28", border: "1px solid #2A2A38" }}
           >
             <div className="h-36 overflow-hidden" style={{ background: "#1a1a22" }}>
+              {(() => {
+                const st = productStatusLabel(p);
+                return (
+                  <span
+                    className="absolute m-2 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                    style={{ background: `${st.color}22`, color: st.color, position: "absolute" }}
+                  >
+                    {st.label}
+                  </span>
+                );
+              })()}
               {p.hero_image ? (
                 <img src={p.hero_image} alt={p.name} className="w-full h-full object-cover" />
               ) : (
