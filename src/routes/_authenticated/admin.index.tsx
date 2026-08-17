@@ -23,6 +23,7 @@ import { CareersManager } from "@/components/admin/careers-manager";
 import { CampaignManager } from "@/components/admin/campaign-manager";
 import { InboxManager } from "@/components/admin/inbox-manager";
 import { TrashManager, DeleteReasonModal } from "@/components/admin/trash-manager";
+import { productStatusLabel } from "@/lib/availability";
 import {
   FiBarChart2, FiEye, FiPackage, FiUsers, FiTool, FiShoppingBag, FiMessageCircle,
   FiSettings, FiStar, FiTag, FiEdit3, FiMapPin, FiFeather, FiBriefcase, FiTrendingUp,
