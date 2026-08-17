@@ -23,6 +23,7 @@ import { CareersManager } from "@/components/admin/careers-manager";
 import { CampaignManager } from "@/components/admin/campaign-manager";
 import { InboxManager } from "@/components/admin/inbox-manager";
 import { TrashManager, DeleteReasonModal } from "@/components/admin/trash-manager";
+import { productStatusLabel } from "@/lib/availability";
 import {
   FiBarChart2, FiEye, FiPackage, FiUsers, FiTool, FiShoppingBag, FiMessageCircle,
   FiSettings, FiStar, FiTag, FiEdit3, FiMapPin, FiFeather, FiBriefcase, FiTrendingUp,
@@ -1158,6 +1159,9 @@ type SofaRow = {
   seo_description: string | null;
   is_published: boolean;
   is_featured: boolean;
+  status?: string | null;
+  available_from?: string | null;
+  available_to?: string | null;
   lead_time_days: number;
   delivery_days: number | null;
   product_options: Json | null;
@@ -1266,10 +1270,21 @@ function Products() {
         {filtered.map((p) => (
           <div
             key={p.id}
-            className="rounded-xl overflow-hidden transition-colors"
+            className="relative rounded-xl overflow-hidden transition-colors"
             style={{ background: "#1E1E28", border: "1px solid #2A2A38" }}
           >
             <div className="h-36 overflow-hidden" style={{ background: "#1a1a22" }}>
+              {(() => {
+                const st = productStatusLabel(p);
+                return (
+                  <span
+                    className="absolute m-2 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                    style={{ background: `${st.color}22`, color: st.color, position: "absolute" }}
+                  >
+                    {st.label}
+                  </span>
+                );
+              })()}
               {p.hero_image ? (
                 <img src={p.hero_image} alt={p.name} className="w-full h-full object-cover" />
               ) : (
@@ -1401,6 +1416,9 @@ function ProductModal({
   const [seoDescription, setSeoDescription] = useState(product.seo_description ?? "");
   const [isPublished, setIsPublished] = useState(product.is_published ?? true);
   const [isFeatured, setIsFeatured] = useState(product.is_featured ?? false);
+  const [status, setStatus] = useState<string>(product.status ?? (product.is_published === false ? "draft" : "published"));
+  const [availableFrom, setAvailableFrom] = useState<string>((product.available_from ?? "").slice(0, 10));
+  const [availableTo, setAvailableTo] = useState<string>((product.available_to ?? "").slice(0, 10));
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<"images" | "model" | null>(null);
 
@@ -1508,7 +1526,10 @@ function ProductModal({
       seo_description: seoDescription || null,
       lead_time_days: Number(leadTime) || 30,
       delivery_days: Number(leadTime) || 30,
-      is_published: isPublished,
+      is_published: status === "draft" ? false : isPublished,
+      status,
+      available_from: availableFrom || null,
+      available_to: availableTo || null,
       is_featured: isFeatured,
       product_options: {
         sku: sku || null,
@@ -1636,6 +1657,24 @@ function ProductModal({
                   Featured on homepage
                 </label>
               </div>
+              <div className="grid sm:grid-cols-3 gap-4">
+                <Field label="Publish status">
+                  <DarkSelect value={status} onChange={(e) => setStatus(e.target.value)} className="w-full py-2">
+                    <option value="published">Published</option>
+                    <option value="draft">Draft (hidden)</option>
+                    <option value="scheduled">Scheduled</option>
+                  </DarkSelect>
+                </Field>
+                <Field label="Available from">
+                  <DarkInput type="date" value={availableFrom} onChange={(e) => setAvailableFrom(e.target.value)} />
+                </Field>
+                <Field label="Available to">
+                  <DarkInput type="date" value={availableTo} onChange={(e) => setAvailableTo(e.target.value)} />
+                </Field>
+              </div>
+              <p className="text-[11px]" style={{ color: "#888899" }}>
+                Drafts never show on the store. Scheduled products go live automatically inside the availability window.
+              </p>
             </>
           )}
 
@@ -1941,7 +1980,31 @@ function Bookings() {
 
 function Reviews() {
   const qc = useQueryClient();
-  const [draft, setDraft] = useState<{ sofa_id: string; author: string; city: string; rating: number; title: string; body: string } | null>(null);
+  const [draft, setDraft] = useState<{ sofa_id: string; author: string; city: string; rating: number; title: string; body: string; images: string[] } | null>(null);
+  const [imgUrl, setImgUrl] = useState("");
+  const [uploadingReview, setUploadingReview] = useState(false);
+
+  const uploadReviewImages = async (files: FileList | null) => {
+    const selected = files ? Array.from(files) : [];
+    if (selected.length === 0 || !draft) return;
+    setUploadingReview(true);
+    try {
+      const storage = getStorage(getFirebaseApp());
+      const urls: string[] = [];
+      for (const file of selected) {
+        const clean = file.name.toLowerCase().replace(/[^a-z0-9._-]+/g, "-");
+        const fileRef = storageRef(storage, `review-media/${Date.now()}-${clean}`);
+        await uploadBytes(fileRef, file, { contentType: file.type || "image/jpeg" });
+        urls.push(await getDownloadURL(fileRef));
+      }
+      setDraft((d) => (d ? { ...d, images: [...d.images, ...urls] } : d));
+      toast.success("Review photos uploaded");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setUploadingReview(false);
+    }
+  };
   const { data } = useQuery({
     queryKey: ["admin-reviews"],
     queryFn: async () => {
@@ -1967,6 +2030,7 @@ function Reviews() {
         rating: draft.rating,
         title: draft.title || null,
         body: draft.body,
+        images: draft.images,
         approved: true,
       });
       setDraft(null);
@@ -1996,7 +2060,7 @@ function Reviews() {
           <div className="text-[13px] font-semibold">Product reviews</div>
           <button
             onClick={() =>
-              setDraft(draft ? null : { sofa_id: sofas[0]?.id ?? "", author: "", city: "", rating: 5, title: "", body: "" })
+              setDraft(draft ? null : { sofa_id: sofas[0]?.id ?? "", author: "", city: "", rating: 5, title: "", body: "", images: [] })
             }
             className="rounded-md px-4 py-2 text-[12px] font-semibold"
             style={{ background: "#C8A86B", color: "#1a1a1a" }}
@@ -2018,6 +2082,47 @@ function Reviews() {
             </div>
             <DarkInput placeholder="Headline (optional)" value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} />
             <DarkTextarea rows={3} placeholder="Review…" value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })} />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="flex gap-2">
+                <DarkInput placeholder="Photo URL" value={imgUrl} onChange={(e) => setImgUrl(e.target.value)} />
+                <button
+                  onClick={() => {
+                    if (!imgUrl.trim()) return;
+                    setDraft({ ...draft, images: [...draft.images, imgUrl.trim()] });
+                    setImgUrl("");
+                  }}
+                  className="rounded-md px-4 text-[12px] font-semibold"
+                  style={{ background: "#C8A86B", color: "#1a1a1a" }}
+                >
+                  Add
+                </button>
+              </div>
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={(e) => uploadReviewImages(e.currentTarget.files)}
+                className="block w-full text-[12px] file:mr-4 file:rounded-md file:border-0 file:px-4 file:py-2 file:text-[12px] file:font-semibold"
+                style={{ color: "#888899" }}
+              />
+            </div>
+            {uploadingReview && <p className="text-[11px]" style={{ color: "#C8A86B" }}>Uploading photos…</p>}
+            {draft.images.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {draft.images.map((src, i) => (
+                  <div key={`${src}-${i}`} className="relative">
+                    <img src={src} alt={`Review ${i + 1}`} className="h-16 w-16 rounded-md object-cover" />
+                    <button
+                      onClick={() => setDraft({ ...draft, images: draft.images.filter((_, j) => j !== i) })}
+                      className="absolute -top-1 -right-1 h-5 w-5 rounded-full text-[11px]"
+                      style={{ background: "#E05050", color: "#fff" }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
             <div>
               <button onClick={addReview} className="rounded-md px-4 py-2 text-[12px] font-semibold" style={{ background: "#C8A86B", color: "#1a1a1a" }}>
                 Publish review
@@ -2036,6 +2141,13 @@ function Reviews() {
               </div>
               {r.title && <div className="admin-serif text-lg mt-1">{r.title}</div>}
               <p className="text-[13px] mt-1" style={{ color: "#E8E8F0", opacity: 0.85 }}>{r.body}</p>
+              {Array.isArray(r.images) && r.images.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {r.images.map((src: string, i: number) => (
+                    <img key={`${src}-${i}`} src={src} alt={`Review photo ${i + 1}`} className="h-16 w-16 rounded-md object-cover" />
+                  ))}
+                </div>
+              )}
               <div className="text-[11px] mt-2" style={{ color: "#888899" }}>
                 {(r as { sofa?: { name?: string } }).sofa?.name ?? "—"} · {r.city ?? "—"} · {formatDate(r.created_at)}
               </div>

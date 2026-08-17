@@ -4,6 +4,7 @@ export type ProductSchedule = {
   status?: string | null;
   available_from?: string | null;
   available_to?: string | null;
+  [key: string]: unknown;
 };
 
 /** True when the product should be visible on the storefront right now. */

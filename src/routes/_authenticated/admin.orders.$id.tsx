@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { formatINR, formatDate, ORDER_STATUS_STEPS, statusIndex } from "@/lib/format";
 import { getAuthUserDetails } from "@/lib/admin-users.functions";
 import { sendOrderStatusEmail } from "@/lib/email.functions";
+import { useCarpenters } from "@/components/admin/carpenter-manager";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin/orders/$id")({
@@ -19,14 +20,6 @@ const dark = {
   bg: "#0F0F13", card: "#16161D", border: "#2A2A38",
   text: "#E8E8F0", mute: "#888899", accent: "#C8A86B",
 };
-
-const CRAFTSMEN = [
-  "Ramesh Verma (Master · Indore)",
-  "Suresh Yadav (Senior · Indore)",
-  "Kailash Patidar (Senior · Ujjain)",
-  "Deepak Sharma (Ujjain)",
-  "Ajay Chouhan (Apprentice · Indore)",
-];
 
 /** Statuses that have a customer-facing email template. */
 const NOTIFIABLE = new Set([
@@ -46,6 +39,7 @@ function OrderDetail() {
   const qc = useQueryClient();
   const getAuth = useServerFn(getAuthUserDetails);
   const notifyCustomer = useServerFn(sendOrderStatusEmail);
+  const { data: carpenters } = useCarpenters();
 
   const { data: order, isLoading } = useQuery({
     queryKey: ["admin-order", id],
@@ -384,7 +378,16 @@ function OrderDetail() {
                 style={{ background: dark.bg, border: `1px solid ${dark.border}`, color: dark.text }}
               >
                 <option value="">— Unassigned —</option>
-                {CRAFTSMEN.map((c) => <option key={c} value={c}>{c}</option>)}
+                {order.assigned_craftsman &&
+                  !(carpenters ?? []).some((c) => `${c.full_name}${c.city ? ` · ${c.city}` : ""}` === order.assigned_craftsman) && (
+                    <option value={order.assigned_craftsman as string}>{order.assigned_craftsman as string}</option>
+                  )}
+                {(carpenters ?? [])
+                  .filter((c) => c.active)
+                  .map((c) => {
+                    const label = `${c.full_name}${c.city ? ` · ${c.city}` : ""}`;
+                    return <option key={c.id} value={label}>{label}</option>;
+                  })}
               </select>
               <input
                 defaultValue={order.assigned_craftsman ?? ""}

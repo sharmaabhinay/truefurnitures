@@ -49,6 +49,7 @@ import { Route as ApiPublicWebhooksRazorpayRouteImport } from './routes/api/publ
 import { Route as AuthenticatedOrdersIdReceiptRouteImport } from './routes/_authenticated/orders.$id.receipt'
 import { Route as AuthenticatedAdminOrdersIdRouteImport } from './routes/_authenticated/admin.orders.$id'
 import { Route as AuthenticatedAdminCustomersIdRouteImport } from './routes/_authenticated/admin.customers.$id'
+import { Route as AuthenticatedAdminCarpentersIdRouteImport } from './routes/_authenticated/admin.carpenters.$id'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -256,6 +257,12 @@ const AuthenticatedAdminCustomersIdRoute =
     path: '/customers/$id',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminCarpentersIdRoute =
+  AuthenticatedAdminCarpentersIdRouteImport.update({
+    id: '/carpenters/$id',
+    path: '/carpenters/$id',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -293,6 +300,7 @@ export interface FileRoutesByFullPath {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/admin/carpenters/$id': typeof AuthenticatedAdminCarpentersIdRoute
   '/admin/customers/$id': typeof AuthenticatedAdminCustomersIdRoute
   '/admin/orders/$id': typeof AuthenticatedAdminOrdersIdRoute
   '/orders/$id/receipt': typeof AuthenticatedOrdersIdReceiptRoute
@@ -333,6 +341,7 @@ export interface FileRoutesByTo {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
+  '/admin/carpenters/$id': typeof AuthenticatedAdminCarpentersIdRoute
   '/admin/customers/$id': typeof AuthenticatedAdminCustomersIdRoute
   '/admin/orders/$id': typeof AuthenticatedAdminOrdersIdRoute
   '/orders/$id/receipt': typeof AuthenticatedOrdersIdReceiptRoute
@@ -376,6 +385,7 @@ export interface FileRoutesById {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/_authenticated/admin/carpenters/$id': typeof AuthenticatedAdminCarpentersIdRoute
   '/_authenticated/admin/customers/$id': typeof AuthenticatedAdminCustomersIdRoute
   '/_authenticated/admin/orders/$id': typeof AuthenticatedAdminOrdersIdRoute
   '/_authenticated/orders/$id/receipt': typeof AuthenticatedOrdersIdReceiptRoute
@@ -419,6 +429,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/api/public/health'
     | '/admin/'
+    | '/admin/carpenters/$id'
     | '/admin/customers/$id'
     | '/admin/orders/$id'
     | '/orders/$id/receipt'
@@ -459,6 +470,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/api/public/health'
     | '/admin'
+    | '/admin/carpenters/$id'
     | '/admin/customers/$id'
     | '/admin/orders/$id'
     | '/orders/$id/receipt'
@@ -501,6 +513,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/api/public/health'
     | '/_authenticated/admin/'
+    | '/_authenticated/admin/carpenters/$id'
     | '/_authenticated/admin/customers/$id'
     | '/_authenticated/admin/orders/$id'
     | '/_authenticated/orders/$id/receipt'
@@ -820,17 +833,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminCustomersIdRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/carpenters/$id': {
+      id: '/_authenticated/admin/carpenters/$id'
+      path: '/carpenters/$id'
+      fullPath: '/admin/carpenters/$id'
+      preLoaderRoute: typeof AuthenticatedAdminCarpentersIdRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
   }
 }
 
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+  AuthenticatedAdminCarpentersIdRoute: typeof AuthenticatedAdminCarpentersIdRoute
   AuthenticatedAdminCustomersIdRoute: typeof AuthenticatedAdminCustomersIdRoute
   AuthenticatedAdminOrdersIdRoute: typeof AuthenticatedAdminOrdersIdRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+  AuthenticatedAdminCarpentersIdRoute: AuthenticatedAdminCarpentersIdRoute,
   AuthenticatedAdminCustomersIdRoute: AuthenticatedAdminCustomersIdRoute,
   AuthenticatedAdminOrdersIdRoute: AuthenticatedAdminOrdersIdRoute,
 }
