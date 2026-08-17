@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { formatINR, formatDate, ORDER_STATUS_STEPS, statusIndex } from "@/lib/format";
 import { getAuthUserDetails } from "@/lib/admin-users.functions";
 import { sendOrderStatusEmail } from "@/lib/email.functions";
+import { useCarpenters } from "@/components/admin/carpenter-manager";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin/orders/$id")({
@@ -19,14 +20,6 @@ const dark = {
   bg: "#0F0F13", card: "#16161D", border: "#2A2A38",
   text: "#E8E8F0", mute: "#888899", accent: "#C8A86B",
 };
-
-const CRAFTSMEN = [
-  "Ramesh Verma (Master · Indore)",
-  "Suresh Yadav (Senior · Indore)",
-  "Kailash Patidar (Senior · Ujjain)",
-  "Deepak Sharma (Ujjain)",
-  "Ajay Chouhan (Apprentice · Indore)",
-];
 
 /** Statuses that have a customer-facing email template. */
 const NOTIFIABLE = new Set([
