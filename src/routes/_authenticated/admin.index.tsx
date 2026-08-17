@@ -1270,7 +1270,7 @@ function Products() {
         {filtered.map((p) => (
           <div
             key={p.id}
-            className="rounded-xl overflow-hidden transition-colors"
+            className="relative rounded-xl overflow-hidden transition-colors"
             style={{ background: "#1E1E28", border: "1px solid #2A2A38" }}
           >
             <div className="h-36 overflow-hidden" style={{ background: "#1a1a22" }}>
