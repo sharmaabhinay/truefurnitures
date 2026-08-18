@@ -64,6 +64,9 @@ function CartPage() {
   return (
     <div className="min-h-screen bg-[color:var(--brand-cream)] text-[color:var(--brand-dark)]">
       <SiteHeader />
+      {celebrate && coupon && (
+        <CouponCelebration code={coupon.code} amount={formatINR(discount)} onDone={() => setCelebrate(false)} />
+      )}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10 py-10 md:py-16">
         <span className="tf-chip mb-4">Your Selection</span>
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-display mb-8 text-balance">Your Cart</h1>
