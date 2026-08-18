@@ -7,6 +7,7 @@ import { formatINR } from "@/lib/format";
 import { COL, fsFindOne, where } from "@/lib/db/firestore";
 import { useAuth } from "@/lib/auth/auth-context";
 import { toast } from "sonner";
+import { CouponCelebration } from "@/components/coupon-celebration";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
@@ -47,7 +48,6 @@ function CartPage() {
       toast.success(`Coupon ${data.code} applied!`);
       setCode("");
       setCelebrate(true);
-      setTimeout(() => setCelebrate(false), 1400);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not apply");
     } finally { setChecking(false); }
