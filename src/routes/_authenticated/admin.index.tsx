@@ -5,7 +5,7 @@ import { COL, fsList, fsListSorted, fsGet, fsAdd, fsSet, fsUpdate, fsDelete, whe
 import { downloadCsv } from "@/lib/export";
 import { Pager, usePaged, ACheck } from "@/components/admin/pager";
 import { getFirebaseAuth } from "@/lib/firebase";
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
+import { uploadToCloudinary } from "@/lib/upload";
 import { getFirebaseApp } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth/auth-context";
 import { signOut as fbSignOut } from "firebase/auth";
