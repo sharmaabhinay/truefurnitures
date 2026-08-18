@@ -1428,13 +1428,12 @@ function ProductModal({
   const productFolder = autoSlug(slug || name) || "new-product";
 
   const uploadProductFile = async (file: File, folder: "images" | "models") => {
-    const cleanName = file.name.toLowerCase().replace(/[^a-z0-9._-]+/g, "-");
-    const path = `product-media/${productFolder}/${folder}/${Date.now()}-${cleanName}`;
-    const storage = getStorage(getFirebaseApp());
-    const fileRef = storageRef(storage, path);
-    await uploadBytes(fileRef, file, { contentType: file.type || "application/octet-stream" });
-    const url = await getDownloadURL(fileRef);
-    return { path, url };
+    const { url, publicId } = await uploadToCloudinary(
+      file,
+      `product-media/${productFolder}/${folder}`,
+      folder === "images" ? "image" : "raw",
+    );
+    return { path: publicId, url };
   };
 
   const uploadImages = async (files: FileList | null) => {
@@ -1989,13 +1988,10 @@ function Reviews() {
     if (selected.length === 0 || !draft) return;
     setUploadingReview(true);
     try {
-      const storage = getStorage(getFirebaseApp());
       const urls: string[] = [];
       for (const file of selected) {
-        const clean = file.name.toLowerCase().replace(/[^a-z0-9._-]+/g, "-");
-        const fileRef = storageRef(storage, `review-media/${Date.now()}-${clean}`);
-        await uploadBytes(fileRef, file, { contentType: file.type || "image/jpeg" });
-        urls.push(await getDownloadURL(fileRef));
+        const { url } = await uploadToCloudinary(file, "review-media", "image");
+        urls.push(url);
       }
       setDraft((d) => (d ? { ...d, images: [...d.images, ...urls] } : d));
       toast.success("Review photos uploaded");
