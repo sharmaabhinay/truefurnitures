@@ -338,7 +338,11 @@ function Checkout() {
                 <div>
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <label className={labelCls} htmlFor="phone">Mobile</label>
-                    {phoneVerified ? <VerifiedBadge label="Verified" /> : <UnverifiedBadge label="Unverified" />}
+                    {phoneVerified ? (
+                      <VerifiedBadge label="Verified" />
+                    ) : brand.require_phone_verification ? (
+                      <UnverifiedBadge label="Unverified" />
+                    ) : null}
                   </div>
                   <input id="phone" inputMode="numeric" maxLength={10} className={inputCls} value={form.phone} onChange={(e) => set("phone", e.target.value.replace(/\D/g, ""))} placeholder="10-digit" />
                   {errors.phone && <p className="text-xs text-red-600 mt-1">{errors.phone}</p>}
@@ -355,7 +359,11 @@ function Checkout() {
                 <div>
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <label className={labelCls} htmlFor="email">Email</label>
-                    {emailVerified ? <VerifiedBadge label="Verified" /> : <UnverifiedBadge label="Unverified" />}
+                    {emailVerified ? (
+                      <VerifiedBadge label="Verified" />
+                    ) : brand.require_email_verification ? (
+                      <UnverifiedBadge label="Unverified" />
+                    ) : null}
                   </div>
                   <input id="email" type="email" className={inputCls} value={form.email} onChange={(e) => set("email", e.target.value)} />
                   {errors.email && <p className="text-xs text-red-600 mt-1">{errors.email}</p>}
@@ -446,9 +454,13 @@ function Checkout() {
             <p className="mt-4 text-[10px] text-[color:var(--brand-dark)]/60 leading-relaxed">
               Crafting begins once your order is placed and the 20% deposit is paid.
             </p>
-            <button type="submit" disabled={submitting || !phoneVerified} className="mt-3 w-full px-6 py-4 bg-[color:var(--brand-dark)] text-white text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2">
+            <button type="submit" disabled={submitting || (brand.require_phone_verification && !phoneVerified)} className="mt-3 w-full px-6 py-4 bg-[color:var(--brand-dark)] text-white text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2">
               <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 10V7a6 6 0 1112 0v3"/><rect x="4" y="10" width="16" height="11" rx="2"/></svg>
-              {submitting ? "Processing…" : !phoneVerified ? "Verify Mobile to Continue" : `Continue to Payment · ${formatINR(deposit)}`}
+              {submitting
+                ? "Processing…"
+                : brand.require_phone_verification && !phoneVerified
+                  ? "Verify Mobile to Continue"
+                  : `Continue to Payment · ${formatINR(deposit)}`}
             </button>
             <Link to="/cart" className="mt-3 block text-center text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-dark)]/60 hover:text-[color:var(--brand-accent)]">
               ← Back to Cart

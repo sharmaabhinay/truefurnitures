@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
+import { uploadToCloudinary } from "@/lib/upload";
 import { getFirebaseApp } from "@/lib/firebase";
 import { COL, fsList, fsListSorted, fsAdd, fsUpdate, fsDelete, orderBy } from "@/lib/db/firestore";
 import { formatDate } from "@/lib/format";
@@ -232,10 +232,8 @@ function PostEditor({ post, onClose, onSaved }: { post: Post; onClose: () => voi
 
   const uploadCover = async (file: File) => {
     try {
-      const storage = getStorage(getFirebaseApp());
-      const r = storageRef(storage, `blog/${Date.now()}-${file.name.replace(/\s+/g, "-")}`);
-      await uploadBytes(r, file);
-      set("cover_image", await getDownloadURL(r));
+      const { url } = await uploadToCloudinary(file, "blog", "image");
+      set("cover_image", url);
       toast.success("Cover uploaded");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Upload failed");
