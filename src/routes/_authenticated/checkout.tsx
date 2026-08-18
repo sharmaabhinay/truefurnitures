@@ -338,7 +338,11 @@ function Checkout() {
                 <div>
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <label className={labelCls} htmlFor="phone">Mobile</label>
-                    {phoneVerified ? <VerifiedBadge label="Verified" /> : <UnverifiedBadge label="Unverified" />}
+                    {phoneVerified ? (
+                      <VerifiedBadge label="Verified" />
+                    ) : brand.require_phone_verification ? (
+                      <UnverifiedBadge label="Unverified" />
+                    ) : null}
                   </div>
                   <input id="phone" inputMode="numeric" maxLength={10} className={inputCls} value={form.phone} onChange={(e) => set("phone", e.target.value.replace(/\D/g, ""))} placeholder="10-digit" />
                   {errors.phone && <p className="text-xs text-red-600 mt-1">{errors.phone}</p>}
@@ -355,7 +359,11 @@ function Checkout() {
                 <div>
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <label className={labelCls} htmlFor="email">Email</label>
-                    {emailVerified ? <VerifiedBadge label="Verified" /> : <UnverifiedBadge label="Unverified" />}
+                    {emailVerified ? (
+                      <VerifiedBadge label="Verified" />
+                    ) : brand.require_email_verification ? (
+                      <UnverifiedBadge label="Unverified" />
+                    ) : null}
                   </div>
                   <input id="email" type="email" className={inputCls} value={form.email} onChange={(e) => set("email", e.target.value)} />
                   {errors.email && <p className="text-xs text-red-600 mt-1">{errors.email}</p>}
