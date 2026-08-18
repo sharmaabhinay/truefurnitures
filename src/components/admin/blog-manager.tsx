@@ -232,10 +232,8 @@ function PostEditor({ post, onClose, onSaved }: { post: Post; onClose: () => voi
 
   const uploadCover = async (file: File) => {
     try {
-      const storage = getStorage(getFirebaseApp());
-      const r = storageRef(storage, `blog/${Date.now()}-${file.name.replace(/\s+/g, "-")}`);
-      await uploadBytes(r, file);
-      set("cover_image", await getDownloadURL(r));
+      const { url } = await uploadToCloudinary(file, "blog", "image");
+      set("cover_image", url);
       toast.success("Cover uploaded");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Upload failed");
