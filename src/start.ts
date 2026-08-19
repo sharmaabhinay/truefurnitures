@@ -2,7 +2,6 @@ import { createStart, createCsrfMiddleware, createMiddleware } from "@tanstack/r
 
 import { renderErrorPage } from "./lib/error-page";
 import { getFirebaseAuth } from "@/lib/firebase";
-import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher";
 
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
   try {
@@ -37,6 +36,8 @@ const csrfMiddleware = createCsrfMiddleware({
 });
 
 export const startInstance = createStart(() => ({
-  functionMiddleware: [attachSupabaseAuth, attachFirebaseAuth],
+  // Firebase is this app's auth provider; the Supabase attacher would overwrite
+  // the Authorization header with a Supabase token and break serverFn auth.
+  functionMiddleware: [attachFirebaseAuth],
   requestMiddleware: [errorMiddleware, csrfMiddleware],
 }));

@@ -16,7 +16,10 @@ export const requireFirebaseAuth = createMiddleware({ type: "function" }).server
     if (!token) throw new Error("Unauthorized: missing bearer token");
 
     const { verifyIdToken } = await import("@/lib/firebase-admin.server");
-    const user = await verifyIdToken(token).catch(() => null);
+    const user = await verifyIdToken(token).catch((err) => {
+      console.error("[auth] verifyIdToken failed:", err);
+      return null;
+    });
     if (!user) throw new Error("Unauthorized: invalid session");
 
     return next({
