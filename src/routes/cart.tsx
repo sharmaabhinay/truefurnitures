@@ -158,7 +158,7 @@ function CartPage() {
                   <div className="pt-2">
                     <div className="flex gap-2">
                       <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="Coupon code" className="flex-1 px-3 py-2 text-xs border border-[color:var(--brand-dark)]/15 focus:border-[color:var(--brand-dark)] focus:outline-none" />
-                      <button onClick={applyCode} disabled={checking || !code} className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest border border-[color:var(--brand-dark)] hover:bg-[color:var(--brand-dark)] hover:text-white disabled:opacity-50">Apply</button>
+                      <button onClick={applyCode} disabled={checking || !code} className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest border border-[color:var(--brand-dark)] hover:bg-[color:var(--brand-dark)] hover:text-white disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed">{checking ? "Checking…" : "Apply"}</button>
                     </div>
                     <p className="text-[10px] text-[color:var(--brand-dark)]/50 mt-2">Try TF5-WELCOME for 5% off orders over ₹20,000.</p>
                   </div>
