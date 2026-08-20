@@ -33,6 +33,7 @@ import { Route as ProductsSlugRouteImport } from './routes/products.$slug'
 import { Route as ConfigureSlugRouteImport } from './routes/configure.$slug'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedPaymentStatusRouteImport } from './routes/_authenticated/payment-status'
 import { Route as AuthenticatedPaymentRouteImport } from './routes/_authenticated/payment'
 import { Route as AuthenticatedMyDesignsRouteImport } from './routes/_authenticated/my-designs'
 import { Route as AuthenticatedMessagesRouteImport } from './routes/_authenticated/messages'
@@ -170,6 +171,12 @@ const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPaymentStatusRoute =
+  AuthenticatedPaymentStatusRouteImport.update({
+    id: '/payment-status',
+    path: '/payment-status',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPaymentRoute = AuthenticatedPaymentRouteImport.update({
   id: '/payment',
   path: '/payment',
@@ -291,6 +298,7 @@ export interface FileRoutesByFullPath {
   '/messages': typeof AuthenticatedMessagesRoute
   '/my-designs': typeof AuthenticatedMyDesignsRoute
   '/payment': typeof AuthenticatedPaymentRoute
+  '/payment-status': typeof AuthenticatedPaymentStatusRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/configure/$slug': typeof ConfigureSlugRoute
@@ -332,6 +340,7 @@ export interface FileRoutesByTo {
   '/messages': typeof AuthenticatedMessagesRoute
   '/my-designs': typeof AuthenticatedMyDesignsRoute
   '/payment': typeof AuthenticatedPaymentRoute
+  '/payment-status': typeof AuthenticatedPaymentStatusRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/configure/$slug': typeof ConfigureSlugRoute
@@ -376,6 +385,7 @@ export interface FileRoutesById {
   '/_authenticated/messages': typeof AuthenticatedMessagesRoute
   '/_authenticated/my-designs': typeof AuthenticatedMyDesignsRoute
   '/_authenticated/payment': typeof AuthenticatedPaymentRoute
+  '/_authenticated/payment-status': typeof AuthenticatedPaymentStatusRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/configure/$slug': typeof ConfigureSlugRoute
@@ -420,6 +430,7 @@ export interface FileRouteTypes {
     | '/messages'
     | '/my-designs'
     | '/payment'
+    | '/payment-status'
     | '/profile'
     | '/blog/$slug'
     | '/configure/$slug'
@@ -461,6 +472,7 @@ export interface FileRouteTypes {
     | '/messages'
     | '/my-designs'
     | '/payment'
+    | '/payment-status'
     | '/profile'
     | '/blog/$slug'
     | '/configure/$slug'
@@ -504,6 +516,7 @@ export interface FileRouteTypes {
     | '/_authenticated/messages'
     | '/_authenticated/my-designs'
     | '/_authenticated/payment'
+    | '/_authenticated/payment-status'
     | '/_authenticated/profile'
     | '/blog/$slug'
     | '/configure/$slug'
@@ -721,6 +734,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/payment-status': {
+      id: '/_authenticated/payment-status'
+      path: '/payment-status'
+      fullPath: '/payment-status'
+      preLoaderRoute: typeof AuthenticatedPaymentStatusRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/payment': {
       id: '/_authenticated/payment'
       path: '/payment'
@@ -867,6 +887,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMessagesRoute: typeof AuthenticatedMessagesRoute
   AuthenticatedMyDesignsRoute: typeof AuthenticatedMyDesignsRoute
   AuthenticatedPaymentRoute: typeof AuthenticatedPaymentRoute
+  AuthenticatedPaymentStatusRoute: typeof AuthenticatedPaymentStatusRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedOrdersIdReceiptRoute: typeof AuthenticatedOrdersIdReceiptRoute
 }
@@ -878,6 +899,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMessagesRoute: AuthenticatedMessagesRoute,
   AuthenticatedMyDesignsRoute: AuthenticatedMyDesignsRoute,
   AuthenticatedPaymentRoute: AuthenticatedPaymentRoute,
+  AuthenticatedPaymentStatusRoute: AuthenticatedPaymentStatusRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedOrdersIdReceiptRoute: AuthenticatedOrdersIdReceiptRoute,
 }
