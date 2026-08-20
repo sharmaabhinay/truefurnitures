@@ -96,28 +96,28 @@ function PaymentPage() {
         prefill: { contact: first?.phone ?? undefined },
         onSuccess: () => {
           toast.success("Payment received! Your order is confirmed.");
-          const firstId = orderIds[0];
-          if (firstId) {
-            navigate({ to: "/orders/$id/receipt", params: { id: firstId } });
-          } else {
-            navigate({ to: "/dashboard" });
-          }
+          navigate({ to: "/payment-status", search: { orders: orderIds.join(","), status: "success" } });
         },
         onDismiss: () => {
           toast.info("Payment cancelled. You can complete it anytime from your dashboard.");
           setProcessing(false);
           refetch();
+          navigate({ to: "/payment-status", search: { orders: orderIds.join(","), status: "pending" } });
         },
         onError: (err) => {
           console.error(err);
-          toast.error(err instanceof Error ? err.message : "Payment failed");
+          const msg = err instanceof Error ? err.message : "Payment failed";
+          toast.error(msg);
           setProcessing(false);
+          navigate({ to: "/payment-status", search: { orders: orderIds.join(","), status: "failed", reason: msg } });
         },
       });
     } catch (err) {
       console.error(err);
-      toast.error(err instanceof Error ? err.message : "Could not start payment");
+      const msg = err instanceof Error ? err.message : "Could not start payment";
+      toast.error(msg);
       setProcessing(false);
+      navigate({ to: "/payment-status", search: { orders: orderIds.join(","), status: "failed", reason: msg } });
     }
   };
 
