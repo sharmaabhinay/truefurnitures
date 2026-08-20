@@ -17,7 +17,16 @@ function AuthenticatedLayout() {
     }
   }, [loading, user, navigate]);
 
-  if (loading || !user) return null;
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen bg-[color:var(--brand-cream)] flex flex-col items-center justify-center gap-4">
+        <div className="size-8 border-2 border-[color:var(--brand-dark)]/20 border-t-[color:var(--brand-dark)] rounded-full animate-spin" />
+        <p className="text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-dark)]/50">
+          {loading ? "Loading your account…" : "Redirecting to sign in…"}
+        </p>
+      </div>
+    );
+  }
 
   return <Outlet />;
 }
