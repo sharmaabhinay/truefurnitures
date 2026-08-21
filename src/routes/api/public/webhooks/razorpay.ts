@@ -140,6 +140,7 @@ export const Route = createFileRoute("/api/public/webhooks/razorpay")({
         for (const id of confirmedIds) {
           try {
             await sendOrderConfirmationEmail({ data: { orderId: id } });
+            await sendDepositStatusNotification({ data: { orderId: id, state: "paid" } });
           } catch (e) {
             console.error("[razorpay-webhook] email failed", id, e);
           }
