@@ -20,3 +20,26 @@ export function getFirebaseAuth(): Auth {
   auth.useDeviceLanguage();
   return auth;
 }
+let readyPromise: Promise<import("firebase/auth").User | null> | null = null;
+
+/**
+ * Resolves once Firebase has restored the persisted session (first
+ * onAuthStateChanged emission). Prevents "Unauthorized: invalid session"
+ * when a server function is called right after a page load/refresh.
+ */
+export function firebaseAuthReady(): Promise<import("firebase/auth").User | null> {
+  if (typeof window === "undefined") return Promise.resolve(null);
+  if (!readyPromise) {
+    const auth = getFirebaseAuth();
+    readyPromise = new Promise((resolve) => {
+      if (auth.currentUser) return resolve(auth.currentUser);
+      const unsub = auth.onAuthStateChanged((u) => {
+        unsub();
+        resolve(u);
+      });
+      // Safety net: never hang the request forever.
+      setTimeout(() => resolve(auth.currentUser), 8000);
+    });
+  }
+  return readyPromise;
+}
