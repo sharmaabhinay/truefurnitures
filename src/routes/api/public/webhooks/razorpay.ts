@@ -67,11 +67,34 @@ export const Route = createFileRoute("/api/public/webhooks/razorpay")({
           await adminSetDoc("payment_events", eventDocId, { status, ...patch });
         };
 
+        // Failed/pending payments: notify the customer with a retry link.
+        if ((event === "payment.failed" || event === "payment.authorized") && rzpOrderId) {
+          try {
+            const failedOrders = (await adminQuery("orders", [
+              { field: "razorpay_order_id", value: rzpOrderId },
+            ])) as Array<Record<string, unknown> & { id: string }>;
+            for (const row of failedOrders) {
+              await sendDepositStatusNotification({
+                data: {
+                  orderId: row.id,
+                  state: event === "payment.failed" ? "failed" : "pending",
+                  reason: (paymentEntity?.error_description as string | undefined) ?? null,
+                },
+              });
+            }
+          } catch (e) {
+            console.error("[razorpay-webhook] failure notification failed", e);
+          }
+          await markEvent("notified");
+          return new Response("ok", { status: 200 });
+        }
+
         // We only need to react to successful captures. Other events are logged only.
         if (event !== "payment.captured" || !rzpOrderId || !rzpPaymentId) {
           await markEvent("ignored");
           return new Response("ok", { status: 200 });
         }
+
 
         let orders: Array<Record<string, unknown> & { id: string }> = [];
         try {
