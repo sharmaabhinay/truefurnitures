@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createHmac, timingSafeEqual } from "crypto";
-import { sendOrderConfirmationEmail } from "@/lib/email.functions";
+import { sendOrderConfirmationEmail, sendDepositStatusNotification } from "@/lib/email.functions";
 
 // Razorpay webhook: https://razorpay.com/docs/webhooks/
 // Signature: HMAC-SHA256(raw_body, webhook_secret) sent in X-Razorpay-Signature.
