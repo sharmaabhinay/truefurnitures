@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createHmac, timingSafeEqual } from "crypto";
-import { sendOrderConfirmationEmail } from "@/lib/email.functions";
+import { sendOrderConfirmationEmail, sendDepositStatusNotification } from "@/lib/email.functions";
 
 // Razorpay webhook: https://razorpay.com/docs/webhooks/
 // Signature: HMAC-SHA256(raw_body, webhook_secret) sent in X-Razorpay-Signature.
@@ -67,11 +67,34 @@ export const Route = createFileRoute("/api/public/webhooks/razorpay")({
           await adminSetDoc("payment_events", eventDocId, { status, ...patch });
         };
 
+        // Failed/pending payments: notify the customer with a retry link.
+        if ((event === "payment.failed" || event === "payment.authorized") && rzpOrderId) {
+          try {
+            const failedOrders = (await adminQuery("orders", [
+              { field: "razorpay_order_id", value: rzpOrderId },
+            ])) as Array<Record<string, unknown> & { id: string }>;
+            for (const row of failedOrders) {
+              await sendDepositStatusNotification({
+                data: {
+                  orderId: row.id,
+                  state: event === "payment.failed" ? "failed" : "pending",
+                  reason: (paymentEntity?.error_description as string | undefined) ?? null,
+                },
+              });
+            }
+          } catch (e) {
+            console.error("[razorpay-webhook] failure notification failed", e);
+          }
+          await markEvent("notified");
+          return new Response("ok", { status: 200 });
+        }
+
         // We only need to react to successful captures. Other events are logged only.
         if (event !== "payment.captured" || !rzpOrderId || !rzpPaymentId) {
           await markEvent("ignored");
           return new Response("ok", { status: 200 });
         }
+
 
         let orders: Array<Record<string, unknown> & { id: string }> = [];
         try {
@@ -117,6 +140,7 @@ export const Route = createFileRoute("/api/public/webhooks/razorpay")({
         for (const id of confirmedIds) {
           try {
             await sendOrderConfirmationEmail({ data: { orderId: id } });
+            await sendDepositStatusNotification({ data: { orderId: id, state: "paid" } });
           } catch (e) {
             console.error("[razorpay-webhook] email failed", id, e);
           }

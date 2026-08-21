@@ -219,3 +219,86 @@ export function messageReplyHtml(brand: Brand, args: { name?: string | null; bod
      <p style="margin:0"><a href="https://truefurnitures.lovable.app/messages" style="color:#C8A86B">Open your messages</a></p>`,
   );
 }
+
+/** Deposit payment status update (paid / failed / pending) with receipt + next steps. */
+export function depositStatusHtml(
+  brand: Brand,
+  args: {
+    name?: string | null;
+    orderNumber: string;
+    orderId: string;
+    state: "paid" | "failed" | "pending";
+    amount: number;
+    balance?: number;
+    reason?: string | null;
+  },
+) {
+  const first = args.name ? args.name.split(" ")[0] : "there";
+  const heading =
+    args.state === "paid"
+      ? "Deposit received"
+      : args.state === "failed"
+        ? "Deposit payment failed"
+        : "Deposit payment pending";
+  const body =
+    args.state === "paid"
+      ? `We've received your ₹${args.amount.toLocaleString("en-IN")} deposit for order <strong>#${args.orderNumber}</strong>. Your build slot is locked and our craftsmen begin work now.`
+      : args.state === "failed"
+        ? `Your ₹${args.amount.toLocaleString("en-IN")} deposit for order <strong>#${args.orderNumber}</strong> could not be completed${args.reason ? ` (${args.reason})` : ""}. No amount has been charged — you can retry securely below.`
+        : `Your ₹${args.amount.toLocaleString("en-IN")} deposit for order <strong>#${args.orderNumber}</strong> is still being confirmed by the bank. We'll email you the moment it clears.`;
+  const cta =
+    args.state === "paid"
+      ? { label: "View Receipt", href: `${SITE_URL}/orders/${args.orderId}/receipt` }
+      : { label: "Retry Payment", href: `${SITE_URL}/payment-status?orderId=${args.orderId}` };
+  const next =
+    args.state === "paid"
+      ? `Next: we'll share production updates as your furniture moves through the workshop. Balance of ₹${(args.balance ?? 0).toLocaleString("en-IN")} is payable on delivery.`
+      : "Next: retry the deposit to confirm your order. Your configuration and price stay reserved for 48 hours.";
+  return shell(
+    brand,
+    "Payment Update",
+    `
+      <h1 style="font-size:26px;line-height:1.2;margin:0 0 16px;font-weight:400;">${heading}</h1>
+      <p style="font-size:16px;line-height:1.6;color:#333;">Hi ${first}, ${body}</p>
+      <p style="font-size:14px;color:#666;line-height:1.6;">${next}</p>
+      <p style="margin:28px 0 8px;">
+        <a href="${cta.href}" style="display:inline-block;background:#1a1a1a;color:#fff;text-decoration:none;padding:14px 28px;font-size:12px;letter-spacing:0.25em;text-transform:uppercase;">${cta.label}</a>
+      </p>`,
+  );
+}
+
+/**
+ * Sends an SMS through Twilio when credentials are configured.
+ * Silently no-ops (returns a reason) when no SMS provider is connected.
+ */
+export async function sendSms(to: string, body: string) {
+  const sid = process.env.TWILIO_ACCOUNT_SID;
+  const token = process.env.TWILIO_AUTH_TOKEN;
+  const from = process.env.TWILIO_FROM_NUMBER;
+  if (!sid || !token || !from) return { sent: false as const, error: "sms_not_configured" };
+  const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+    method: "POST",
+    headers: {
+      Authorization: "Basic " + btoa(`${sid}:${token}`),
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({ To: to, From: from, Body: body }),
+  });
+  if (!res.ok) {
+    console.error("[sms] twilio failed", res.status, await res.text());
+    return { sent: false as const, error: `twilio_${res.status}` };
+  }
+  return { sent: true as const };
+}
+
+export function depositStatusSms(
+  brand: Brand,
+  args: { orderNumber: string; orderId: string; state: "paid" | "failed" | "pending"; amount: number },
+) {
+  const amt = `₹${args.amount.toLocaleString("en-IN")}`;
+  if (args.state === "paid")
+    return `${brand.brand_name}: Deposit of ${amt} received for order #${args.orderNumber}. Receipt: ${SITE_URL}/orders/${args.orderId}/receipt`;
+  if (args.state === "failed")
+    return `${brand.brand_name}: Deposit of ${amt} for order #${args.orderNumber} failed. Retry: ${SITE_URL}/payment-status?orderId=${args.orderId}`;
+  return `${brand.brand_name}: Deposit of ${amt} for order #${args.orderNumber} is pending confirmation. Status: ${SITE_URL}/payment-status?orderId=${args.orderId}`;
+}

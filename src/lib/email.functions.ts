@@ -7,6 +7,9 @@ import {
   STATUS_EMAIL_COPY,
   welcomeHtml,
   messageReplyHtml,
+  depositStatusHtml,
+  depositStatusSms,
+  sendSms,
 } from "@/lib/email-templates";
 
 export const sendWelcomeEmail = createServerFn({ method: "POST" })
@@ -96,4 +99,57 @@ export const sendMessageReplyEmail = createServerFn({ method: "POST" })
       messageReplyHtml(brand, { name: (profile?.['full_name'] as string | null) ?? null, body: data.body }),
       brand,
     );
+  });
+
+/** Emails (and SMSes, when a provider is configured) the customer on deposit status changes. */
+export const sendDepositStatusNotification = createServerFn({ method: "POST" })
+  .inputValidator(
+    (d: { orderId: string; state: "paid" | "failed" | "pending"; reason?: string | null }) => d,
+  )
+  .handler(async ({ data }) => {
+    const { adminGetDoc } = await import("@/lib/firebase-admin.server");
+    const brand = await getBrand();
+    const order = await adminGetDoc("orders", data.orderId);
+    if (!order) return { sent: false as const, error: "order_not_found" };
+    const profile = order['user_id'] ? await adminGetDoc("profiles", String(order['user_id'])) : null;
+    const orderNumber =
+      (order['order_number'] as string | null) ?? order.id.slice(0, 8).toUpperCase();
+    const total = Number(order['total']) || 0;
+    const amount =
+      data.state === "paid"
+        ? Number(order['deposit_paid']) || Math.round(total * 0.2)
+        : Math.round(total * 0.2);
+    const balance = Number(order['balance_due']) || Math.max(0, total - amount);
+
+    const email = typeof profile?.['email'] === "string" ? (profile['email'] as string) : null;
+    let emailResult: { sent: boolean; error?: string } = { sent: false, error: "no_email" };
+    if (email) {
+      emailResult = await sendResend(
+        email,
+        `${data.state === "paid" ? "Deposit received" : data.state === "failed" ? "Deposit payment failed" : "Deposit payment pending"} — #${orderNumber} · ${brand.brand_name}`,
+        depositStatusHtml(brand, {
+          name: (profile?.['full_name'] as string | null) ?? null,
+          orderNumber,
+          orderId: order.id,
+          state: data.state,
+          amount,
+          balance,
+          reason: data.reason ?? null,
+        }),
+        brand,
+      );
+    }
+
+    const phoneRaw =
+      (profile?.['phone'] as string | null) ?? (order['delivery_phone'] as string | null) ?? null;
+    const phone = phoneRaw
+      ? phoneRaw.startsWith("+")
+        ? phoneRaw
+        : `+91${phoneRaw.replace(/\D/g, "").slice(-10)}`
+      : null;
+    const smsResult = phone
+      ? await sendSms(phone, depositStatusSms(brand, { orderNumber, orderId: order.id, state: data.state, amount }))
+      : { sent: false as const, error: "no_phone" };
+
+    return { sent: emailResult.sent || smsResult.sent, email: emailResult, sms: smsResult };
   });

@@ -127,9 +127,12 @@ export const verifyRazorpayPayment = createServerFn({ method: "POST" })
 
     // Send the Resend receipt email (non-fatal if it fails; webhook is a backstop).
     try {
-      const { sendOrderConfirmationEmail } = await import("@/lib/email.functions");
+      const { sendOrderConfirmationEmail, sendDepositStatusNotification } = await import(
+        "@/lib/email.functions"
+      );
       for (const r of rows) {
         await sendOrderConfirmationEmail({ data: { orderId: r.id } });
+        await sendDepositStatusNotification({ data: { orderId: r.id, state: "paid" } });
       }
     } catch (e) {
       console.error("[razorpay] confirmation email failed", e);
