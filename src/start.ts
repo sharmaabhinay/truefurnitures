@@ -21,12 +21,25 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
 // Attaches the current Firebase user's ID token to server function requests
 // so protected serverFns can verify the caller on the server side.
 const attachFirebaseAuth = createMiddleware({ type: "function" }).client(async ({ next }) => {
-  const currentUser = getFirebaseAuth().currentUser;
-  const token = currentUser ? await currentUser.getIdToken() : null;
+  if (typeof window === "undefined") return next();
+  // Wait for the persisted session to be restored before reading currentUser,
+  // otherwise a call made right after a reload ships no Authorization header.
+  const currentUser = (await firebaseAuthReady()) ?? getFirebaseAuth().currentUser;
+  let token: string | null = null;
+  try {
+    token = currentUser ? await currentUser.getIdToken() : null;
+  } catch {
+    try {
+      token = currentUser ? await currentUser.getIdToken(true) : null;
+    } catch {
+      token = null;
+    }
+  }
   return next({
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
 });
+
 
 // Start installs this automatically when src/start.ts is absent; defining the
 // file opts out, so re-add it explicitly to keep server functions protected
