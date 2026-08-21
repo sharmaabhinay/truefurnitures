@@ -1,7 +1,7 @@
 import { createStart, createCsrfMiddleware, createMiddleware } from "@tanstack/react-start";
 
 import { renderErrorPage } from "./lib/error-page";
-import { getFirebaseAuth } from "@/lib/firebase";
+import { getFirebaseAuth, firebaseAuthReady } from "@/lib/firebase";
 
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
   try {
