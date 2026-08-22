@@ -24,6 +24,7 @@ import { CampaignManager } from "@/components/admin/campaign-manager";
 import { InboxManager } from "@/components/admin/inbox-manager";
 import { TrashManager, DeleteReasonModal } from "@/components/admin/trash-manager";
 import { productStatusLabel } from "@/lib/availability";
+import { AModal } from "@/components/admin/ui";
 import {
   FiBarChart2, FiEye, FiPackage, FiUsers, FiTool, FiShoppingBag, FiMessageCircle,
   FiSettings, FiStar, FiTag, FiEdit3, FiMapPin, FiFeather, FiBriefcase, FiTrendingUp,
@@ -1210,10 +1211,47 @@ function parseProductOptions(value: Json | null | undefined): ProductOptions {
   return value as ProductOptions;
 }
 
+type CartWatcher = { uid: string; name: string; email: string; phone: string; quantity: number };
+
 function Products() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Partial<SofaRow> | null>(null);
+  const [cartFor, setCartFor] = useState<{ name: string; watchers: CartWatcher[] } | null>(null);
+
+  /** uid-level cart docs -> map of sofaId to the customers holding it in cart. */
+  const { data: cartMap } = useQuery({
+    queryKey: ["admin-cart-watchers"],
+    queryFn: async () => {
+      const [carts, profiles] = await Promise.all([
+        fsList<any>(COL.carts),
+        fsList<any>(COL.profiles),
+      ]);
+      const byUid = new Map<string, any>((profiles ?? []).map((p: any) => [p.id, p]));
+      const map = new Map<string, CartWatcher[]>();
+      for (const c of carts ?? []) {
+        const items: any[] = Array.isArray(c.items) ? c.items : [];
+        const seen = new Map<string, number>();
+        for (const it of items) {
+          if (!it?.sofaId) continue;
+          seen.set(it.sofaId, (seen.get(it.sofaId) ?? 0) + (Number(it.quantity) || 1));
+        }
+        for (const [sofaId, quantity] of seen) {
+          const prof = byUid.get(c.id) ?? {};
+          const list = map.get(sofaId) ?? [];
+          list.push({
+            uid: c.id,
+            name: prof.full_name || prof.name || "Guest customer",
+            email: prof.email || "—",
+            phone: prof.phone || "—",
+            quantity,
+          });
+          map.set(sofaId, list);
+        }
+      }
+      return map;
+    },
+  });
 
   const { data } = useQuery({
     queryKey: ["admin-products"],
@@ -1301,8 +1339,29 @@ function Products() {
                   </span>
                 )}
               </div>
-              <div className="text-[11px]" style={{ color: "#888899" }}>
-                {p.lead_time_days}d lead
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-[11px]" style={{ color: "#888899" }}>
+                  {p.lead_time_days}d lead
+                </div>
+                {(() => {
+                  const watchers = cartMap?.get(p.id) ?? [];
+                  return (
+                    <button
+                      type="button"
+                      disabled={watchers.length === 0}
+                      onClick={() => setCartFor({ name: p.name, watchers })}
+                      title={watchers.length ? "View customers with this in cart" : "No carts yet"}
+                      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold transition-opacity disabled:opacity-50"
+                      style={{
+                        background: watchers.length ? "#C8A86B22" : "#2A2A38",
+                        color: watchers.length ? "#C8A86B" : "#888899",
+                        cursor: watchers.length ? "pointer" : "default",
+                      }}
+                    >
+                      <FiShoppingCart /> {watchers.length} in cart
+                    </button>
+                  );
+                })()}
               </div>
               <div className="flex gap-2 pt-1">
                 <button
@@ -1337,6 +1396,41 @@ function Products() {
           </div>
         )}
       </div>
+
+      <AModal
+        open={!!cartFor}
+        onClose={() => setCartFor(null)}
+        title="In customers' carts"
+        subtitle={cartFor ? `${cartFor.watchers.length} customer(s) have "${cartFor.name}" in their cart` : ""}
+      >
+        <div className="space-y-2">
+          {(cartFor?.watchers ?? []).map((w) => (
+            <Link
+              key={w.uid}
+              to="/admin/customers/$id"
+              params={{ id: w.uid }}
+              onClick={() => setCartFor(null)}
+              className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 cursor-pointer"
+              style={{ background: "#16161D", border: "1px solid #2A2A38", color: "#E8E8F0" }}
+            >
+              <div className="min-w-0">
+                <div className="text-[13px] font-semibold truncate">{w.name}</div>
+                <div className="text-[11px] truncate" style={{ color: "#888899" }}>
+                  {w.email} · {w.phone}
+                </div>
+              </div>
+              <span className="text-[11px] shrink-0" style={{ color: "#C8A86B" }}>
+                Qty {w.quantity}
+              </span>
+            </Link>
+          ))}
+          {cartFor && cartFor.watchers.length === 0 && (
+            <div className="py-8 text-center text-[13px]" style={{ color: "#888899" }}>
+              Nobody has this product in their cart yet.
+            </div>
+          )}
+        </div>
+      </AModal>
 
       {editing && (
         <ProductModal

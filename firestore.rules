@@ -171,7 +171,8 @@ service cloud.firestore {
 
     // ---- Cross-device cart (one doc per user) ----
     match /carts/{uid} {
-      allow read, write: if isSelf(uid);
+      allow read: if isSelf(uid) || isStaff();
+      allow write: if isSelf(uid);
     }
 
     // Anything not listed above is closed.
