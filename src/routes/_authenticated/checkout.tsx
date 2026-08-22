@@ -230,6 +230,19 @@ function Checkout() {
         .filter(Boolean)
         .join(" · ");
 
+      // Optional reference image / PDF for the workshop
+      let attachmentUrl: string | null = null;
+      let attachmentName: string | null = null;
+      if (attachment) {
+        try {
+          const up = await uploadToCloudinary(attachment, "orders/references", "auto");
+          attachmentUrl = up.url;
+          attachmentName = attachment.name;
+        } catch {
+          toast.error("Could not upload your reference file — placing the order without it");
+        }
+      }
+
       const nowIso = new Date().toISOString();
       const orderIds: string[] = [];
       for (const i of items) {
