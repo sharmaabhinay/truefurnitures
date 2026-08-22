@@ -309,6 +309,20 @@ function OrderDetail() {
                 <div>
                   <p className="text-[11px] uppercase tracking-widest mb-2" style={{ color: dark.mute }}>Customer notes</p>
                   <p className="text-sm whitespace-pre-wrap">{order.customer_notes || <span style={{ color: dark.mute }}>None</span>}</p>
+                  <p className="text-[11px] uppercase tracking-widest mt-4 mb-2" style={{ color: dark.mute }}>Reference attachment</p>
+                  {order.attachment_url ? (
+                    <a
+                      href={order.attachment_url as string}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sm underline cursor-pointer"
+                      style={{ color: dark.accent }}
+                    >
+                      {(order.attachment_name as string) || "View attachment"}
+                    </a>
+                  ) : (
+                    <p className="text-sm" style={{ color: dark.mute }}>None</p>
+                  )}
                 </div>
                 <div>
                   <p className="text-[11px] uppercase tracking-widest mb-2" style={{ color: dark.mute }}>Internal (admin only)</p>
