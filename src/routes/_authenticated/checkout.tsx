@@ -409,8 +409,38 @@ function Checkout() {
                   <input id="landmark" className={inputCls} value={form.landmark} onChange={(e) => set("landmark", e.target.value)} />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className={labelCls} htmlFor="notes">Delivery Notes (optional)</label>
-                  <textarea id="notes" rows={3} className={inputCls} value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Access instructions, preferred delivery window…" />
+                  <label className={labelCls} htmlFor="notes">Note for our team (optional)</label>
+                  <textarea id="notes" rows={3} className={inputCls} value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Access instructions, preferred delivery window, custom requests…" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className={labelCls} htmlFor="reference">Reference image or PDF (optional)</label>
+                  <input
+                    id="reference"
+                    type="file"
+                    accept="image/*,application/pdf"
+                    className="w-full text-xs file:mr-3 file:px-4 file:py-2 file:border-0 file:bg-[color:var(--brand-dark)] file:text-white file:text-[11px] file:uppercase file:tracking-widest file:cursor-pointer cursor-pointer"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0] ?? null;
+                      setAttachmentError(null);
+                      if (!f) return setAttachment(null);
+                      const ok = f.type.startsWith("image/") || f.type === "application/pdf";
+                      if (!ok) {
+                        setAttachment(null);
+                        setAttachmentError("Only images or PDF files are allowed");
+                        return;
+                      }
+                      if (f.size > 5 * 1024 * 1024) {
+                        setAttachment(null);
+                        setAttachmentError("File must be under 5 MB");
+                        return;
+                      }
+                      setAttachment(f);
+                    }}
+                  />
+                  {attachment && (
+                    <p className="text-xs text-[color:var(--brand-dark)]/60 mt-1">Attached: {attachment.name}</p>
+                  )}
+                  {attachmentError && <p className="text-xs text-red-600 mt-1">{attachmentError}</p>}
                 </div>
                 {(addresses.length === 0 || selectedAddrId === "__new") && (
                   <label className="sm:col-span-2 flex items-center gap-2 text-xs text-[color:var(--brand-dark)]/70">
