@@ -272,6 +272,8 @@ function Checkout() {
           delivery_address: addressBlob,
           phone: data.phone,
           customer_notes: data.notes || null,
+          attachment_url: attachmentUrl,
+          attachment_name: attachmentName,
           expected_delivery_date: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString().slice(0, 10),
           created_at: nowIso,
         });
