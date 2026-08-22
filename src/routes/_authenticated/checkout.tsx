@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { PaymentMethods } from "@/components/payment-methods";
 import { PhoneVerify, UnverifiedBadge, VerifiedBadge } from "@/components/phone-verify";
 import { useBrand } from "@/lib/brand";
+import { uploadToCloudinary } from "@/lib/upload";
 
 export const Route = createFileRoute("/_authenticated/checkout")({
   ssr: false,
