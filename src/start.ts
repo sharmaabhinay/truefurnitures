@@ -27,10 +27,12 @@ const attachFirebaseAuth = createMiddleware({ type: "function" }).client(async (
   const currentUser = (await firebaseAuthReady()) ?? getFirebaseAuth().currentUser;
   let token: string | null = null;
   try {
-    token = currentUser ? await currentUser.getIdToken() : null;
+    // Force a refresh: long-running flows (e.g. the Razorpay modal) can otherwise
+    // ship a near-expired cached token, which the server rejects as invalid.
+    token = currentUser ? await currentUser.getIdToken(true) : null;
   } catch {
     try {
-      token = currentUser ? await currentUser.getIdToken(true) : null;
+      token = currentUser ? await currentUser.getIdToken() : null;
     } catch {
       token = null;
     }
