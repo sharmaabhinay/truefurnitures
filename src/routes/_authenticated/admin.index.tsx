@@ -1401,30 +1401,65 @@ function Products() {
                   </span>
                 )}
               </div>
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="text-[11px]" style={{ color: "#888899" }}>
                   {p.lead_time_days}d lead
                 </div>
-                {(() => {
-                  const watchers = cartMap?.get(p.id) ?? [];
-                  return (
-                    <button
-                      type="button"
-                      disabled={watchers.length === 0}
-                      onClick={() => setCartFor({ name: p.name, watchers })}
-                      title={watchers.length ? "View customers with this in cart" : "No carts yet"}
-                      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold transition-opacity disabled:opacity-50"
-                      style={{
-                        background: watchers.length ? "#C8A86B22" : "#2A2A38",
-                        color: watchers.length ? "#C8A86B" : "#888899",
-                        cursor: watchers.length ? "pointer" : "default",
-                      }}
-                    >
-                      <FiShoppingCart /> {watchers.length} in cart
-                    </button>
-                  );
-                })()}
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                    style={{ background: "#2A2A3866", color: "#9FB8A0" }}
+                    title="Orders placed for this product"
+                  >
+                    <FiShoppingBag /> {orderCounts.get(p.id) ?? 0} orders
+                  </span>
+                  {(() => {
+                    const watchers = cartMap.get(p.id) ?? [];
+                    const count = watchers.reduce((n, w) => n + w.quantity, 0);
+                    if (cartError) {
+                      return (
+                        <span
+                          className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                          style={{ background: "#E0505022", color: "#E05050" }}
+                          title={cartError}
+                        >
+                          <FiAlertCircle /> cart data
+                        </span>
+                      );
+                    }
+                    if (cartLoading) {
+                      return (
+                        <span
+                          className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                          style={{ background: "#2A2A38", color: "#888899" }}
+                        >
+                          <FiLoader className="animate-spin" /> cart…
+                        </span>
+                      );
+                    }
+                    return (
+                      <button
+                        type="button"
+                        disabled={watchers.length === 0}
+                        onClick={() => setCartFor({ id: p.id, name: p.name, watchers })}
+                        title={watchers.length ? "View customers with this in cart" : "No carts yet"}
+                        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold transition-opacity disabled:opacity-50"
+                        style={{
+                          background: watchers.length ? "#C8A86B22" : "#2A2A38",
+                          color: watchers.length ? "#C8A86B" : "#888899",
+                          cursor: watchers.length ? "pointer" : "default",
+                        }}
+                      >
+                        <FiShoppingCart /> {count} in cart
+                        {watchers.length > 0 && (
+                          <span style={{ color: "#888899" }}>· {watchers.length} cust.</span>
+                        )}
+                      </button>
+                    );
+                  })()}
+                </div>
               </div>
+
               <div className="flex gap-2 pt-1">
                 <button
                   onClick={() => setEditing(p)}
