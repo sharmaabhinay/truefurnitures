@@ -5,6 +5,7 @@ import {
   getDoc,
   getDocs,
   getFirestore,
+  onSnapshot,
   query,
   serverTimestamp,
   setDoc,
@@ -17,6 +18,7 @@ import { getFirebaseApp } from "@/lib/firebase";
 
 export { where, orderBy, limit, startAfter, serverTimestamp } from "firebase/firestore";
 export type { QueryConstraint } from "firebase/firestore";
+
 
 let cached: Firestore | null = null;
 
@@ -73,6 +75,25 @@ export async function fsList<T = DocumentData>(
   const snap = await getDocs(query(collection(getDb(), col), ...constraints));
   return snap.docs.map((d) => withId<T>(d.id, d.data()));
 }
+
+/**
+ * Live subscription to a collection. Returns the unsubscribe function.
+ * Used by admin views that must reflect customer activity (carts, orders)
+ * without a manual refresh.
+ */
+export function fsWatch<T = DocumentData>(
+  col: string,
+  onData: (rows: T[]) => void,
+  onError?: (err: Error) => void,
+  ...constraints: QueryConstraint[]
+): () => void {
+  return onSnapshot(
+    query(collection(getDb(), col), ...constraints),
+    (snap) => onData(snap.docs.map((d) => withId<T>(d.id, d.data()))),
+    (err) => onError?.(err as Error),
+  );
+}
+
 
 /** Read one document by id. */
 /**

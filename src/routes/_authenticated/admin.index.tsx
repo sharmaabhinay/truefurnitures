@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { COL, fsList, fsListSorted, fsGet, fsAdd, fsSet, fsUpdate, fsDelete, where, orderBy } from "@/lib/db/firestore";
+import { COL, fsList, fsListSorted, fsGet, fsAdd, fsSet, fsUpdate, fsDelete, fsWatch, where, orderBy } from "@/lib/db/firestore";
 import { downloadCsv } from "@/lib/export";
 import { Pager, usePaged, ACheck } from "@/components/admin/pager";
 import { getFirebaseAuth } from "@/lib/firebase";
@@ -29,6 +29,8 @@ import {
   FiBarChart2, FiEye, FiPackage, FiUsers, FiTool, FiShoppingBag, FiShoppingCart, FiMessageCircle,
   FiSettings, FiStar, FiTag, FiEdit3, FiMapPin, FiFeather, FiBriefcase, FiTrendingUp,
   FiGlobe, FiMenu, FiRefreshCw, FiExternalLink, FiInbox, FiTrash2, FiPlus, FiDownload,
+  FiAlertCircle, FiLoader, FiClock,
+
 } from "react-icons/fi";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
@@ -1211,47 +1213,107 @@ function parseProductOptions(value: Json | null | undefined): ProductOptions {
   return value as ProductOptions;
 }
 
-type CartWatcher = { uid: string; name: string; email: string; phone: string; quantity: number };
+type CartLine = {
+  quantity: number;
+  fabric?: string;
+  size?: string;
+  color?: string;
+  colorHex?: string;
+  addons?: string[];
+  addedAt?: string;
+};
+type CartWatcher = {
+  uid: string;
+  name: string;
+  email: string;
+  phone: string;
+  quantity: number;
+  lines: CartLine[];
+  lastAdded: string | null;
+};
+
+/** Live cart documents. Admins see counts update as customers shop. */
+function useLiveCollection<T = any>(col: string) {
+  const [rows, setRows] = useState<T[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    setRows(null);
+    setError(null);
+    const stop = fsWatch<T>(
+      col,
+      (next) => { setRows(next); setError(null); },
+      (e) => setError(e.message || "Live updates unavailable"),
+    );
+    return stop;
+  }, [col]);
+  return { rows, error, loading: rows === null && !error };
+}
 
 function Products() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Partial<SofaRow> | null>(null);
-  const [cartFor, setCartFor] = useState<{ name: string; watchers: CartWatcher[] } | null>(null);
+  const [cartFor, setCartFor] = useState<{ id: string; name: string; watchers: CartWatcher[] } | null>(null);
+
+  const { rows: carts, error: cartError, loading: cartLoading } = useLiveCollection<any>(COL.carts);
+  const { rows: liveOrders } = useLiveCollection<any>(COL.orders);
+
+  const { data: profiles } = useQuery({
+    queryKey: ["admin-cart-profiles"],
+    queryFn: () => fsList<any>(COL.profiles),
+  });
 
   /** uid-level cart docs -> map of sofaId to the customers holding it in cart. */
-  const { data: cartMap } = useQuery({
-    queryKey: ["admin-cart-watchers"],
-    queryFn: async () => {
-      const [carts, profiles] = await Promise.all([
-        fsList<any>(COL.carts),
-        fsList<any>(COL.profiles),
-      ]);
-      const byUid = new Map<string, any>((profiles ?? []).map((p: any) => [p.id, p]));
-      const map = new Map<string, CartWatcher[]>();
-      for (const c of carts ?? []) {
-        const items: any[] = Array.isArray(c.items) ? c.items : [];
-        const seen = new Map<string, number>();
-        for (const it of items) {
-          if (!it?.sofaId) continue;
-          seen.set(it.sofaId, (seen.get(it.sofaId) ?? 0) + (Number(it.quantity) || 1));
-        }
-        for (const [sofaId, quantity] of seen) {
-          const prof = byUid.get(c.id) ?? {};
-          const list = map.get(sofaId) ?? [];
-          list.push({
-            uid: c.id,
-            name: prof.full_name || prof.name || "Guest customer",
-            email: prof.email || "—",
-            phone: prof.phone || "—",
-            quantity,
-          });
-          map.set(sofaId, list);
-        }
+  const cartMap = useMemo(() => {
+    const byUid = new Map<string, any>((profiles ?? []).map((p: any) => [p.id, p]));
+    const map = new Map<string, CartWatcher[]>();
+    for (const c of carts ?? []) {
+      const items: any[] = Array.isArray(c.items) ? c.items : [];
+      const grouped = new Map<string, CartLine[]>();
+      for (const it of items) {
+        if (!it?.sofaId) continue;
+        const list = grouped.get(it.sofaId) ?? [];
+        list.push({
+          quantity: Number(it.quantity) || 1,
+          fabric: it.fabric,
+          size: it.size,
+          color: it.color,
+          colorHex: it.colorHex,
+          addons: Array.isArray(it.addons) ? it.addons : [],
+          addedAt: typeof it.addedAt === "string" ? it.addedAt : undefined,
+        });
+        grouped.set(it.sofaId, list);
       }
-      return map;
-    },
-  });
+      for (const [sofaId, lines] of grouped) {
+        const prof = byUid.get(c.id) ?? {};
+        const times = lines.map((l) => l.addedAt).filter(Boolean) as string[];
+        const list = map.get(sofaId) ?? [];
+        list.push({
+          uid: c.id,
+          name: prof.full_name || prof.name || "Guest customer",
+          email: prof.email || "—",
+          phone: prof.phone || "—",
+          quantity: lines.reduce((n, l) => n + l.quantity, 0),
+          lines,
+          lastAdded: times.length ? times.sort().at(-1)! : (c.updated_at ?? null),
+        });
+        map.set(sofaId, list);
+      }
+    }
+    return map;
+  }, [carts, profiles]);
+
+  /** Orders placed per product, for the second badge. */
+  const orderCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const o of liveOrders ?? []) {
+      const sid = o?.sofa_id;
+      if (!sid) continue;
+      map.set(sid, (map.get(sid) ?? 0) + 1);
+    }
+    return map;
+  }, [liveOrders]);
+
 
   const { data } = useQuery({
     queryKey: ["admin-products"],
@@ -1339,30 +1401,65 @@ function Products() {
                   </span>
                 )}
               </div>
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="text-[11px]" style={{ color: "#888899" }}>
                   {p.lead_time_days}d lead
                 </div>
-                {(() => {
-                  const watchers = cartMap?.get(p.id) ?? [];
-                  return (
-                    <button
-                      type="button"
-                      disabled={watchers.length === 0}
-                      onClick={() => setCartFor({ name: p.name, watchers })}
-                      title={watchers.length ? "View customers with this in cart" : "No carts yet"}
-                      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold transition-opacity disabled:opacity-50"
-                      style={{
-                        background: watchers.length ? "#C8A86B22" : "#2A2A38",
-                        color: watchers.length ? "#C8A86B" : "#888899",
-                        cursor: watchers.length ? "pointer" : "default",
-                      }}
-                    >
-                      <FiShoppingCart /> {watchers.length} in cart
-                    </button>
-                  );
-                })()}
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                    style={{ background: "#2A2A3866", color: "#9FB8A0" }}
+                    title="Orders placed for this product"
+                  >
+                    <FiShoppingBag /> {orderCounts.get(p.id) ?? 0} orders
+                  </span>
+                  {(() => {
+                    const watchers = cartMap.get(p.id) ?? [];
+                    const count = watchers.reduce((n, w) => n + w.quantity, 0);
+                    if (cartError) {
+                      return (
+                        <span
+                          className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                          style={{ background: "#E0505022", color: "#E05050" }}
+                          title={cartError}
+                        >
+                          <FiAlertCircle /> cart data
+                        </span>
+                      );
+                    }
+                    if (cartLoading) {
+                      return (
+                        <span
+                          className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                          style={{ background: "#2A2A38", color: "#888899" }}
+                        >
+                          <FiLoader className="animate-spin" /> cart…
+                        </span>
+                      );
+                    }
+                    return (
+                      <button
+                        type="button"
+                        disabled={watchers.length === 0}
+                        onClick={() => setCartFor({ id: p.id, name: p.name, watchers })}
+                        title={watchers.length ? "View customers with this in cart" : "No carts yet"}
+                        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold transition-opacity disabled:opacity-50"
+                        style={{
+                          background: watchers.length ? "#C8A86B22" : "#2A2A38",
+                          color: watchers.length ? "#C8A86B" : "#888899",
+                          cursor: watchers.length ? "pointer" : "default",
+                        }}
+                      >
+                        <FiShoppingCart /> {count} in cart
+                        {watchers.length > 0 && (
+                          <span style={{ color: "#888899" }}>· {watchers.length} cust.</span>
+                        )}
+                      </button>
+                    );
+                  })()}
+                </div>
               </div>
+
               <div className="flex gap-2 pt-1">
                 <button
                   onClick={() => setEditing(p)}
