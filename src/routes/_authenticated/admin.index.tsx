@@ -1213,47 +1213,107 @@ function parseProductOptions(value: Json | null | undefined): ProductOptions {
   return value as ProductOptions;
 }
 
-type CartWatcher = { uid: string; name: string; email: string; phone: string; quantity: number };
+type CartLine = {
+  quantity: number;
+  fabric?: string;
+  size?: string;
+  color?: string;
+  colorHex?: string;
+  addons?: string[];
+  addedAt?: string;
+};
+type CartWatcher = {
+  uid: string;
+  name: string;
+  email: string;
+  phone: string;
+  quantity: number;
+  lines: CartLine[];
+  lastAdded: string | null;
+};
+
+/** Live cart documents. Admins see counts update as customers shop. */
+function useLiveCollection<T = any>(col: string) {
+  const [rows, setRows] = useState<T[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    setRows(null);
+    setError(null);
+    const stop = fsWatch<T>(
+      col,
+      (next) => { setRows(next); setError(null); },
+      (e) => setError(e.message || "Live updates unavailable"),
+    );
+    return stop;
+  }, [col]);
+  return { rows, error, loading: rows === null && !error };
+}
 
 function Products() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Partial<SofaRow> | null>(null);
-  const [cartFor, setCartFor] = useState<{ name: string; watchers: CartWatcher[] } | null>(null);
+  const [cartFor, setCartFor] = useState<{ id: string; name: string; watchers: CartWatcher[] } | null>(null);
+
+  const { rows: carts, error: cartError, loading: cartLoading } = useLiveCollection<any>(COL.carts);
+  const { rows: liveOrders } = useLiveCollection<any>(COL.orders);
+
+  const { data: profiles } = useQuery({
+    queryKey: ["admin-cart-profiles"],
+    queryFn: () => fsList<any>(COL.profiles),
+  });
 
   /** uid-level cart docs -> map of sofaId to the customers holding it in cart. */
-  const { data: cartMap } = useQuery({
-    queryKey: ["admin-cart-watchers"],
-    queryFn: async () => {
-      const [carts, profiles] = await Promise.all([
-        fsList<any>(COL.carts),
-        fsList<any>(COL.profiles),
-      ]);
-      const byUid = new Map<string, any>((profiles ?? []).map((p: any) => [p.id, p]));
-      const map = new Map<string, CartWatcher[]>();
-      for (const c of carts ?? []) {
-        const items: any[] = Array.isArray(c.items) ? c.items : [];
-        const seen = new Map<string, number>();
-        for (const it of items) {
-          if (!it?.sofaId) continue;
-          seen.set(it.sofaId, (seen.get(it.sofaId) ?? 0) + (Number(it.quantity) || 1));
-        }
-        for (const [sofaId, quantity] of seen) {
-          const prof = byUid.get(c.id) ?? {};
-          const list = map.get(sofaId) ?? [];
-          list.push({
-            uid: c.id,
-            name: prof.full_name || prof.name || "Guest customer",
-            email: prof.email || "—",
-            phone: prof.phone || "—",
-            quantity,
-          });
-          map.set(sofaId, list);
-        }
+  const cartMap = useMemo(() => {
+    const byUid = new Map<string, any>((profiles ?? []).map((p: any) => [p.id, p]));
+    const map = new Map<string, CartWatcher[]>();
+    for (const c of carts ?? []) {
+      const items: any[] = Array.isArray(c.items) ? c.items : [];
+      const grouped = new Map<string, CartLine[]>();
+      for (const it of items) {
+        if (!it?.sofaId) continue;
+        const list = grouped.get(it.sofaId) ?? [];
+        list.push({
+          quantity: Number(it.quantity) || 1,
+          fabric: it.fabric,
+          size: it.size,
+          color: it.color,
+          colorHex: it.colorHex,
+          addons: Array.isArray(it.addons) ? it.addons : [],
+          addedAt: typeof it.addedAt === "string" ? it.addedAt : undefined,
+        });
+        grouped.set(it.sofaId, list);
       }
-      return map;
-    },
-  });
+      for (const [sofaId, lines] of grouped) {
+        const prof = byUid.get(c.id) ?? {};
+        const times = lines.map((l) => l.addedAt).filter(Boolean) as string[];
+        const list = map.get(sofaId) ?? [];
+        list.push({
+          uid: c.id,
+          name: prof.full_name || prof.name || "Guest customer",
+          email: prof.email || "—",
+          phone: prof.phone || "—",
+          quantity: lines.reduce((n, l) => n + l.quantity, 0),
+          lines,
+          lastAdded: times.length ? times.sort().at(-1)! : (c.updated_at ?? null),
+        });
+        map.set(sofaId, list);
+      }
+    }
+    return map;
+  }, [carts, profiles]);
+
+  /** Orders placed per product, for the second badge. */
+  const orderCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const o of liveOrders ?? []) {
+      const sid = o?.sofa_id;
+      if (!sid) continue;
+      map.set(sid, (map.get(sid) ?? 0) + 1);
+    }
+    return map;
+  }, [liveOrders]);
+
 
   const { data } = useQuery({
     queryKey: ["admin-products"],
