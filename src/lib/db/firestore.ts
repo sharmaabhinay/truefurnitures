@@ -76,6 +76,25 @@ export async function fsList<T = DocumentData>(
   return snap.docs.map((d) => withId<T>(d.id, d.data()));
 }
 
+/**
+ * Live subscription to a collection. Returns the unsubscribe function.
+ * Used by admin views that must reflect customer activity (carts, orders)
+ * without a manual refresh.
+ */
+export function fsWatch<T = DocumentData>(
+  col: string,
+  onData: (rows: T[]) => void,
+  onError?: (err: Error) => void,
+  ...constraints: QueryConstraint[]
+): () => void {
+  return onSnapshot(
+    query(collection(getDb(), col), ...constraints),
+    (snap) => onData(snap.docs.map((d) => withId<T>(d.id, d.data()))),
+    (err) => onError?.(err as Error),
+  );
+}
+
+
 /** Read one document by id. */
 /**
  * Read a collection and sort client-side.
