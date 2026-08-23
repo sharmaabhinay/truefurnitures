@@ -5,6 +5,7 @@ import {
   getDoc,
   getDocs,
   getFirestore,
+  onSnapshot,
   query,
   serverTimestamp,
   setDoc,
@@ -17,6 +18,7 @@ import { getFirebaseApp } from "@/lib/firebase";
 
 export { where, orderBy, limit, startAfter, serverTimestamp } from "firebase/firestore";
 export type { QueryConstraint } from "firebase/firestore";
+
 
 let cached: Firestore | null = null;
 
