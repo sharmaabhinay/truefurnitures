@@ -22,7 +22,10 @@ export type CartItem = {
   color?: string;
   colorHex?: string;
   addons?: string[];
+  /** ISO timestamp of when this line was first added. */
+  addedAt?: string;
 };
+
 
 type CartContextValue = {
   items: CartItem[];
