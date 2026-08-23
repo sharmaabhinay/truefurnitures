@@ -156,8 +156,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
               color: input.color,
               colorHex: input.colorHex,
               addons: input.addons,
+              addedAt: new Date().toISOString(),
             },
           ];
+
         });
       },
       remove: (id) => setItems((cur) => cur.filter((i) => i.id !== id)),
