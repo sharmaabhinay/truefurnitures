@@ -26,7 +26,7 @@ import { TrashManager, DeleteReasonModal } from "@/components/admin/trash-manage
 import { productStatusLabel } from "@/lib/availability";
 import { AModal } from "@/components/admin/ui";
 import {
-  FiBarChart2, FiEye, FiPackage, FiUsers, FiTool, FiShoppingBag, FiMessageCircle,
+  FiBarChart2, FiEye, FiPackage, FiUsers, FiTool, FiShoppingBag, FiShoppingCart, FiMessageCircle,
   FiSettings, FiStar, FiTag, FiEdit3, FiMapPin, FiFeather, FiBriefcase, FiTrendingUp,
   FiGlobe, FiMenu, FiRefreshCw, FiExternalLink, FiInbox, FiTrash2, FiPlus, FiDownload,
 } from "react-icons/fi";
