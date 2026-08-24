@@ -11,6 +11,9 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin/customers/$id")({
   ssr: false,
+  // `product` deep-links from the admin product cart badge so we can pre-filter.
+  validateSearch: (s: Record<string, unknown>): { product?: string } =>
+    typeof s['product'] === "string" ? { product: s['product'] as string } : {},
   head: () => ({ meta: [{ title: "Customer — Admin · True Furniture's" }, { name: "robots", content: "noindex" }] }),
   component: CustomerDetail,
 });
@@ -26,10 +29,17 @@ const dark = {
 
 function CustomerDetail() {
   const { id } = Route.useParams();
+  const { product: productFilter } = Route.useSearch();
   const { user, isStaff, loading: authLoading } = useAuth();
   const adminUserId = user?.uid ?? "";
   const qc = useQueryClient();
   const getAuth = useServerFn(getAuthUserDetails);
+
+  const { data: cartDoc } = useQuery({
+    queryKey: ["cust-cart", id],
+    queryFn: () => fsGet<any>(COL.carts, id),
+  });
+
 
   const { data: profile } = useQuery({
     queryKey: ["cust-profile", id],
@@ -253,13 +263,50 @@ function CustomerDetail() {
               )}
             </Panel>
 
+            {/* Cart lines for the deep-linked product */}
+            {productFilter && (
+              <Panel title="In this customer's cart">
+                <div className="flex items-center justify-between gap-3 mb-3 text-[11px]" style={{ color: dark.mute }}>
+                  <span>Filtered to the product you clicked in Products.</span>
+                  <Link to="/admin/customers/$id" params={{ id }} search={{}} style={{ color: dark.accent }}>
+                    Clear filter
+                  </Link>
+                </div>
+                {(() => {
+                  const lines = ((cartDoc?.items ?? []) as any[]).filter((i) => i?.sofaId === productFilter);
+                  if (lines.length === 0) return <Empty text="This product is no longer in their cart." />;
+                  return (
+                    <div className="space-y-2">
+                      {lines.map((l: any, idx: number) => (
+                        <div key={l.id ?? idx} className="flex items-center justify-between gap-3 p-3 rounded-md text-[12px]" style={{ background: dark.bg, border: `1px solid ${dark.border}` }}>
+                          <div className="min-w-0">
+                            <div className="font-semibold truncate">{l.name}</div>
+                            <div className="mt-1" style={{ color: dark.mute }}>
+                              {[l.size, l.fabric, l.color, (l.addons ?? []).join(", ")].filter(Boolean).join(" · ") || "Default configuration"}
+                            </div>
+                            {l.addedAt && (
+                              <div className="mt-0.5" style={{ color: dark.mute }}>Added {new Date(l.addedAt).toLocaleString("en-IN")}</div>
+                            )}
+                          </div>
+                          <div className="text-right shrink-0">
+                            <div style={{ color: dark.accent }}>× {l.quantity}</div>
+                            <div style={{ color: dark.mute }}>{formatINR(Number(l.unitPrice) * Number(l.quantity))}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </Panel>
+            )}
+
             {/* Orders */}
-            <Panel title={`Order history (${(orders ?? []).length})`}>
-              {(orders ?? []).length === 0 ? (
-                <Empty text="No orders yet." />
+            <Panel title={`Order history (${(productFilter ? (orders ?? []).filter((o) => o.sofa_id === productFilter) : (orders ?? [])).length}${productFilter ? " · filtered" : ""})`}>
+              {(productFilter ? (orders ?? []).filter((o) => o.sofa_id === productFilter) : (orders ?? [])).length === 0 ? (
+                <Empty text={productFilter ? "No orders for this product yet." : "No orders yet."} />
               ) : (
                 <div className="space-y-2">
-                  {(orders ?? []).map((o) => {
+                  {(productFilter ? (orders ?? []).filter((o) => o.sofa_id === productFilter) : (orders ?? [])).map((o) => {
                     const snap = (o.sofa_snapshot ?? {}) as { name?: string };
                     return (
                       <Link
