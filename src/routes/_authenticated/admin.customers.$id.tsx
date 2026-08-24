@@ -29,10 +29,17 @@ const dark = {
 
 function CustomerDetail() {
   const { id } = Route.useParams();
+  const { product: productFilter } = Route.useSearch();
   const { user, isStaff, loading: authLoading } = useAuth();
   const adminUserId = user?.uid ?? "";
   const qc = useQueryClient();
   const getAuth = useServerFn(getAuthUserDetails);
+
+  const { data: cartDoc } = useQuery({
+    queryKey: ["cust-cart", id],
+    queryFn: () => fsGet<any>(COL.carts, id),
+  });
+
 
   const { data: profile } = useQuery({
     queryKey: ["cust-profile", id],
