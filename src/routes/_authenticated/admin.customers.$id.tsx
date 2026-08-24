@@ -11,6 +11,10 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin/customers/$id")({
   ssr: false,
+  // `product` deep-links from the admin product cart badge so we can pre-filter.
+  validateSearch: (s: Record<string, unknown>) => ({
+    product: typeof s['product'] === "string" ? (s['product'] as string) : undefined,
+  }),
   head: () => ({ meta: [{ title: "Customer — Admin · True Furniture's" }, { name: "robots", content: "noindex" }] }),
   component: CustomerDetail,
 });
