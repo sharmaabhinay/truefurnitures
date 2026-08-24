@@ -1494,40 +1494,8 @@ function Products() {
         )}
       </div>
 
-      <AModal
-        open={!!cartFor}
-        onClose={() => setCartFor(null)}
-        title="In customers' carts"
-        subtitle={cartFor ? `${cartFor.watchers.length} customer(s) have "${cartFor.name}" in their cart` : ""}
-      >
-        <div className="space-y-2">
-          {(cartFor?.watchers ?? []).map((w) => (
-            <Link
-              key={w.uid}
-              to="/admin/customers/$id"
-              params={{ id: w.uid }}
-              onClick={() => setCartFor(null)}
-              className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 cursor-pointer"
-              style={{ background: "#16161D", border: "1px solid #2A2A38", color: "#E8E8F0" }}
-            >
-              <div className="min-w-0">
-                <div className="text-[13px] font-semibold truncate">{w.name}</div>
-                <div className="text-[11px] truncate" style={{ color: "#888899" }}>
-                  {w.email} · {w.phone}
-                </div>
-              </div>
-              <span className="text-[11px] shrink-0" style={{ color: "#C8A86B" }}>
-                Qty {w.quantity}
-              </span>
-            </Link>
-          ))}
-          {cartFor && cartFor.watchers.length === 0 && (
-            <div className="py-8 text-center text-[13px]" style={{ color: "#888899" }}>
-              Nobody has this product in their cart yet.
-            </div>
-          )}
-        </div>
-      </AModal>
+      <CartWatchersModal target={cartFor} onClose={() => setCartFor(null)} />
+
 
       {editing && (
         <ProductModal
