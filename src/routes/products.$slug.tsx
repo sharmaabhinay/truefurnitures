@@ -437,7 +437,7 @@ function ProductPage() {
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" className="shrink-0 mt-1"><path d="M3 7h13v10H3zM16 10h4l1 3v4h-5"/><circle cx="6.5" cy="17.5" r="1.5"/><circle cx="17.5" cy="17.5" r="1.5"/></svg>
             <div className="min-w-0">
               <p className="text-[10px] font-black uppercase tracking-widest">Expected Delivery</p>
-              <p className="font-display text-lg mt-1">By {eta}</p>
+              <p className="font-display text-lg mt-1">By {eta ?? "—"}</p>
               <p className="text-xs text-[color:var(--brand-dark)]/50 mt-1">Free white-glove delivery in Indore &amp; Ujjain · {sofa.delivery_days} days build time</p>
             </div>
           </div>
