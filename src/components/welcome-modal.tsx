@@ -16,6 +16,9 @@ export function WelcomeModal() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (localStorage.getItem(KEY)) return;
+    // Never interrupt conversion/checkout/account flows with the discount popup.
+    const skipOn = ["/auth", "/checkout", "/payment", "/cart", "/dashboard", "/admin", "/reset-password"];
+    if (skipOn.some((p) => window.location.pathname.startsWith(p))) return;
     const t = setTimeout(() => setOpen(true), 1800);
     return () => clearTimeout(t);
   }, []);

@@ -298,6 +298,11 @@ function ProductPage() {
   const cart = useCart();
   const [activeImage, setActiveImage] = useState(0);
   const [fabric, setFabric] = useState("boucle");
+  // The delivery date depends on `new Date()`, whose local-timezone string differs
+  // between the SSR Worker and the visitor's browser → hydration mismatch.
+  // Compute it only after mount so server and client first-render match.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const options = useMemo(() => parseProductOptions(sofa?.product_options), [sofa?.product_options]);
   const fabricOptions = useMemo(() => {
     if (Array.isArray(options.fabrics) && options.fabrics.length > 0) {
@@ -350,7 +355,7 @@ function ProductPage() {
   const sale = sofa.sale_price ? Number(sofa.sale_price) : null;
   const configuredPrice = (sale ?? price) + (activeFabric?.priceAdjust ?? 0);
   const deposit = Math.round(configuredPrice * 0.2);
-  const eta = estimatedDelivery(sofa.delivery_days ?? 30);
+  const eta = mounted ? estimatedDelivery(sofa.delivery_days ?? 30) : null;
   const specRows = Array.isArray(options.specs) && options.specs.length > 0
     ? options.specs.filter((s) => s.key?.trim() || s.val?.trim())
     : [
@@ -432,7 +437,7 @@ function ProductPage() {
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" className="shrink-0 mt-1"><path d="M3 7h13v10H3zM16 10h4l1 3v4h-5"/><circle cx="6.5" cy="17.5" r="1.5"/><circle cx="17.5" cy="17.5" r="1.5"/></svg>
             <div className="min-w-0">
               <p className="text-[10px] font-black uppercase tracking-widest">Expected Delivery</p>
-              <p className="font-display text-lg mt-1">By {eta}</p>
+              <p className="font-display text-lg mt-1">By {eta ?? "—"}</p>
               <p className="text-xs text-[color:var(--brand-dark)]/50 mt-1">Free white-glove delivery in Indore &amp; Ujjain · {sofa.delivery_days} days build time</p>
             </div>
           </div>
