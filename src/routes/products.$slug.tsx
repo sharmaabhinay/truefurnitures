@@ -298,6 +298,11 @@ function ProductPage() {
   const cart = useCart();
   const [activeImage, setActiveImage] = useState(0);
   const [fabric, setFabric] = useState("boucle");
+  // The delivery date depends on `new Date()`, whose local-timezone string differs
+  // between the SSR Worker and the visitor's browser → hydration mismatch.
+  // Compute it only after mount so server and client first-render match.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const options = useMemo(() => parseProductOptions(sofa?.product_options), [sofa?.product_options]);
   const fabricOptions = useMemo(() => {
     if (Array.isArray(options.fabrics) && options.fabrics.length > 0) {
@@ -350,7 +355,7 @@ function ProductPage() {
   const sale = sofa.sale_price ? Number(sofa.sale_price) : null;
   const configuredPrice = (sale ?? price) + (activeFabric?.priceAdjust ?? 0);
   const deposit = Math.round(configuredPrice * 0.2);
-  const eta = estimatedDelivery(sofa.delivery_days ?? 30);
+  const eta = mounted ? estimatedDelivery(sofa.delivery_days ?? 30) : null;
   const specRows = Array.isArray(options.specs) && options.specs.length > 0
     ? options.specs.filter((s) => s.key?.trim() || s.val?.trim())
     : [
