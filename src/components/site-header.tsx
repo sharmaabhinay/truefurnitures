@@ -1,4 +1,4 @@
-import { useBrand } from "@/lib/brand";
+import { useBrand, DEFAULT_FEATURES } from "@/lib/brand";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, queryOptions } from "@tanstack/react-query";
@@ -274,12 +274,14 @@ export function SiteHeader() {
               Sign in
             </Link>
           )}
+          {f.design3d && (
           <Link
             to="/design"
             className="hidden sm:inline-block px-4 sm:px-6 py-2.5 bg-[color:var(--brand-dark)] text-white text-[10px] font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors whitespace-nowrap"
           >
             Design Yours
           </Link>
+          )}
           <button
             aria-label="Open menu"
             onClick={() => setOpen(true)}
@@ -374,9 +376,11 @@ export function SiteHeader() {
                 <Link to="/auth" onClick={() => setOpen(false)} className="py-3 border-b border-[color:var(--brand-dark)]/10 text-sm font-semibold uppercase tracking-widest">Sign in</Link>
               )}
             </div>
-            <Link to="/design" onClick={() => setOpen(false)} className="mt-auto text-center px-6 py-4 bg-[color:var(--brand-dark)] text-white text-xs font-bold uppercase tracking-widest">
-              Design Yours
-            </Link>
+            {f.design3d && (
+              <Link to="/design" onClick={() => setOpen(false)} className="mt-auto text-center px-6 py-4 bg-[color:var(--brand-dark)] text-white text-xs font-bold uppercase tracking-widest">
+                Design Yours
+              </Link>
+            )}
           </div>
         </div>
       )}
