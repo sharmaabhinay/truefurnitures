@@ -96,13 +96,19 @@ export const DEFAULT_BRAND: BrandSettings = {
     "Bespoke sofas — fabric, colour, size, legs, add-ons. Every stitch, every curve, strictly by your rules.",
   hero_cta: "Start 3D Design",
   hero_image: "",
+  features: DEFAULT_FEATURES,
 };
 
 export const brandQueryKey = ["site-settings"] as const;
 
 export async function fetchBrand(): Promise<BrandSettings> {
   const data = await fsGet<Partial<BrandSettings>>(COL.siteSettings, "default");
-  return { ...DEFAULT_BRAND, ...(data ?? {}) } as BrandSettings;
+  // `features` is merged separately so a partially-saved flag map never drops defaults.
+  return {
+    ...DEFAULT_BRAND,
+    ...(data ?? {}),
+    features: { ...DEFAULT_FEATURES, ...((data?.features ?? {}) as Partial<FeatureFlags>) },
+  } as BrandSettings;
 }
 
 /** Single source of truth for brand details across the storefront + admin. */
@@ -115,6 +121,12 @@ export function useBrand(): BrandSettings {
   });
   return data ?? DEFAULT_BRAND;
 }
+
+/** Section switches for the storefront. */
+export function useFeatures(): FeatureFlags {
+  return useBrand().features ?? DEFAULT_FEATURES;
+}
+
 
 /** e.g. "True Furniture's · Indore & Ujjain" */
 export function brandLine(b: BrandSettings) {
