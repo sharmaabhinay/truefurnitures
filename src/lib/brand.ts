@@ -1,6 +1,46 @@
 import { useQuery } from "@tanstack/react-query";
 import { COL, fsGet } from "@/lib/db/firestore";
 
+/**
+ * Storefront sections the admin can switch off completely.
+ * Every flag hides the entry points AND blocks the route itself.
+ */
+export type FeatureFlags = {
+  design3d: boolean;
+  viewIn3d: boolean;
+  gallery: boolean;
+  blog: boolean;
+  careers: boolean;
+  showrooms: boolean;
+  bookVisit: boolean;
+  hireCarpenter: boolean;
+  reviews: boolean;
+};
+
+export const FEATURE_LABELS: { key: keyof FeatureFlags; label: string; hint: string }[] = [
+  { key: "design3d", label: "3D Designer", hint: "The /design picker and the “Design Yours” buttons." },
+  { key: "viewIn3d", label: "View / Customize in 3D", hint: "3D configurator entry points on product pages." },
+  { key: "gallery", label: "Gallery", hint: "Customer gallery page and its nav link." },
+  { key: "blog", label: "Journal / Blog", hint: "Blog listing, posts and nav link." },
+  { key: "careers", label: "Careers", hint: "Careers page and application form." },
+  { key: "showrooms", label: "Showrooms", hint: "Showroom locations page." },
+  { key: "bookVisit", label: "Book a Visit", hint: "Showroom appointment booking." },
+  { key: "hireCarpenter", label: "Hire a Carpenter", hint: "Carpenter request form and nav link." },
+  { key: "reviews", label: "Customer Reviews", hint: "Review blocks on product pages." },
+];
+
+export const DEFAULT_FEATURES: FeatureFlags = {
+  design3d: true,
+  viewIn3d: true,
+  gallery: true,
+  blog: true,
+  careers: true,
+  showrooms: true,
+  bookVisit: true,
+  hireCarpenter: true,
+  reviews: true,
+};
+
 export type BrandSettings = {
   brand_name: string;
   tagline: string;
@@ -25,7 +65,9 @@ export type BrandSettings = {
   hero_subtext: string;
   hero_cta: string;
   hero_image: string;
+  features: FeatureFlags;
 };
+
 
 /** Fallbacks used before the CMS row loads (and during SSR). */
 export const DEFAULT_BRAND: BrandSettings = {
