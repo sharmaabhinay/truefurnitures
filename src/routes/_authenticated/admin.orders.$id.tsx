@@ -387,7 +387,18 @@ function OrderDetail() {
             <Panel title="Assigned craftsman">
               <select
                 value={order.assigned_craftsman ?? ""}
-                onChange={(e) => update.mutate({ assigned_craftsman: e.target.value || null })}
+                onChange={(e) => {
+                  const label = e.target.value;
+                  // Keep a stable id alongside the display label so renaming a
+                  // carpenter never orphans past assignments.
+                  const match = (carpenters ?? []).find(
+                    (c) => `${c.full_name}${c.city ? ` · ${c.city}` : ""}` === label,
+                  );
+                  update.mutate({
+                    assigned_craftsman: label || null,
+                    carpenter_id: match?.id ?? null,
+                  });
+                }}
                 className="w-full rounded-md px-3 py-2 text-sm mb-2"
                 style={{ background: dark.bg, border: `1px solid ${dark.border}`, color: dark.text }}
               >
