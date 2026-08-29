@@ -77,41 +77,43 @@ export function SiteHeader() {
   }, []);
 
   // Minimal top nav — only the essentials are shown on desktop.
+  const f = brand.features ?? DEFAULT_FEATURES;
   const primaryNav = [
     { to: "/collections", label: "Collections" },
-    { to: "/hire-carpenter", label: "Hire a Carpenter" },
+    ...(f.hireCarpenter ? [{ to: "/hire-carpenter", label: "Hire a Carpenter" }] : []),
     { to: "/contact", label: "Contact" },
-  ] as const;
+  ] as { to: string; label: string }[];
   // The drawer groups everything into collapsible submenus so it never overflows.
   const drawerGroups = [
     {
       title: "Shop",
       items: [
         { to: "/collections", label: "Collections" },
-        { to: "/design", label: "Design Yours" },
-        { to: "/gallery", label: "Gallery" },
+        ...(f.design3d ? [{ to: "/design", label: "Design Yours" }] : []),
+        ...(f.gallery ? [{ to: "/gallery", label: "Gallery" }] : []),
         { to: "/cart", label: "Cart" },
       ],
     },
     {
       title: "Services",
       items: [
-        { to: "/hire-carpenter", label: "Hire a Carpenter" },
-        { to: "/book-visit", label: "Book a Visit" },
-        { to: "/showrooms", label: "Showrooms" },
+        ...(f.hireCarpenter ? [{ to: "/hire-carpenter", label: "Hire a Carpenter" }] : []),
+        ...(f.bookVisit ? [{ to: "/book-visit", label: "Book a Visit" }] : []),
+        ...(f.showrooms ? [{ to: "/showrooms", label: "Showrooms" }] : []),
       ],
     },
     {
       title: "Company",
       items: [
         { to: "/about", label: "The Atelier" },
-        { to: "/blog", label: "Journal" },
-        { to: "/careers", label: "Careers" },
+        ...(f.blog ? [{ to: "/blog", label: "Journal" }] : []),
+        ...(f.careers ? [{ to: "/careers", label: "Careers" }] : []),
         { to: "/faq", label: "FAQ" },
         { to: "/contact", label: "Contact" },
       ],
     },
-  ] as const;
+  ].filter((g) => g.items.length > 0) as { title: string; items: { to: string; label: string }[] }[];
+
 
   const suggestions = useMemo(() => {
     const query = q.trim().toLowerCase();
