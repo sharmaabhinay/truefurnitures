@@ -134,6 +134,7 @@ const TITLES: Record<PanelKey, string> = {
   coupons: "Coupons",
   blog: "Blog & Journal",
   carpenters: "Carpenter Team",
+  carpenterRequests: "Hire a Carpenter Requests",
   designs: "Saved Designs",
   showrooms: "Showrooms",
   careers: "Careers & Applications",
