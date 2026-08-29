@@ -60,6 +60,7 @@ type PanelKey =
   | "coupons"
   | "blog"
   | "carpenters"
+  | "carpenterRequests"
   | "designs"
   | "showrooms"
   | "careers"
