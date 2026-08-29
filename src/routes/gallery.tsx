@@ -1,3 +1,5 @@
+import { useFeatures } from "@/lib/brand";
+import { SectionDisabled } from "@/components/section-disabled";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site-header";
@@ -45,6 +47,8 @@ function Stars({ n }: { n: number }) {
 }
 
 function Gallery() {
+  const _features = useFeatures();
+  if (!_features.gallery) return <SectionDisabled title="Gallery" />;
   const { data: reviews, isLoading } = useQuery({
     queryKey: ["public-reviews"],
     queryFn: async (): Promise<Review[]> => {

@@ -1,3 +1,5 @@
+import { useFeatures } from "@/lib/brand";
+import { SectionDisabled } from "@/components/section-disabled";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, queryOptions } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site-header";
@@ -29,6 +31,8 @@ export const Route = createFileRoute("/blog")({
 });
 
 function Blog() {
+  const _features = useFeatures();
+  if (!_features.blog) return <SectionDisabled title="Journal" />;
   const { data: posts, isLoading } = useQuery(postsQuery);
   return (
     <div className="min-h-screen bg-[color:var(--brand-cream)] text-[color:var(--brand-dark)] flex flex-col">

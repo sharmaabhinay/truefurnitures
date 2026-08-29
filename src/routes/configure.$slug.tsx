@@ -1,3 +1,5 @@
+import { useFeatures } from "@/lib/brand";
+import { SectionDisabled } from "@/components/section-disabled";
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
@@ -162,6 +164,8 @@ function getSizeOptions(options: ProductOptions, basePrice: number): ConfigSize[
 }
 
 function ConfigurePage() {
+  const _features = useFeatures();
+  if (!_features.viewIn3d) return <SectionDisabled title="3D Configurator" />;
   const { slug } = Route.useParams();
   const { data: sofa } = useQuery(sofaQuery(slug));
   const navigate = useNavigate();

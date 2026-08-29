@@ -1,3 +1,5 @@
+import { useFeatures } from "@/lib/brand";
+import { SectionDisabled } from "@/components/section-disabled";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -36,6 +38,8 @@ const schema = z.object({
 const TIMES = ["10:30 AM", "12:00 PM", "2:00 PM", "4:00 PM", "6:00 PM", "7:30 PM"];
 
 function BookVisit() {
+  const _features = useFeatures();
+  if (!_features.bookVisit) return <SectionDisabled title="Book a Visit" />;
   const { user } = useAuth();
   const { data: showrooms } = useQuery({
     queryKey: ["showrooms-list"],
