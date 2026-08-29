@@ -1,3 +1,5 @@
+import { useFeatures } from "@/lib/brand";
+import { SectionDisabled } from "@/components/section-disabled";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -23,6 +25,8 @@ export const Route = createFileRoute("/careers")({
 });
 
 function Careers() {
+  const _features = useFeatures();
+  if (!_features.careers) return <SectionDisabled title="Careers" />;
   const [applying, setApplying] = useState<{ title: string; city: string } | null>(null);
   const { data: roles = FALLBACK_OPENINGS } = useQuery({
     queryKey: ["job-openings"],

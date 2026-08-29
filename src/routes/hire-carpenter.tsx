@@ -1,3 +1,5 @@
+import { useFeatures } from "@/lib/brand";
+import { SectionDisabled } from "@/components/section-disabled";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
@@ -51,6 +53,8 @@ const schema = z.object({
 type FormState = z.infer<typeof schema>;
 
 function HireCarpenter() {
+  const _features = useFeatures();
+  if (!_features.hireCarpenter) return <SectionDisabled title="Hire a Carpenter" />;
   const { user } = useAuth();
   const [form, setForm] = useState<FormState>({
     full_name: "",

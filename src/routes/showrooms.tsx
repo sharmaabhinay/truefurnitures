@@ -1,3 +1,5 @@
+import { useFeatures } from "@/lib/brand";
+import { SectionDisabled } from "@/components/section-disabled";
 import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site-header";
@@ -44,6 +46,8 @@ const images: Record<string, string> = {
 };
 
 function Showrooms() {
+  const _features = useFeatures();
+  if (!_features.showrooms) return <SectionDisabled title="Showrooms" />;
   const { data: showrooms } = useSuspenseQuery(showroomsQuery);
   return (
     <div className="min-h-screen bg-[color:var(--brand-cream)] text-[color:var(--brand-dark)]">

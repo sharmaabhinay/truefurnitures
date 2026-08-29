@@ -1,3 +1,5 @@
+import { useFeatures } from "@/lib/brand";
+import { SectionDisabled } from "@/components/section-disabled";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, queryOptions } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site-header";
@@ -54,6 +56,8 @@ export const Route = createFileRoute("/design")({
 });
 
 function DesignPicker() {
+  const _features = useFeatures();
+  if (!_features.design3d) return <SectionDisabled title="3D Designer" />;
   const { data: sofas, isLoading } = useQuery(sofasQuery);
   return (
     <div className="min-h-screen bg-[color:var(--brand-cream)] text-[color:var(--brand-dark)]">
