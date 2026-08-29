@@ -18,6 +18,7 @@ import { getRemoteVisitors } from "@/lib/visitor-tracker";
 import { BlogManager } from "@/components/admin/blog-manager";
 import { CouponManager } from "@/components/admin/coupon-manager";
 import { CarpenterManager } from "@/components/admin/carpenter-manager";
+import { CarpenterRequests } from "@/components/admin/carpenter-requests";
 import { OrderCreateModal } from "@/components/admin/order-create-modal";
 import { CareersManager } from "@/components/admin/careers-manager";
 import { CampaignManager } from "@/components/admin/campaign-manager";
@@ -60,6 +61,7 @@ type PanelKey =
   | "coupons"
   | "blog"
   | "carpenters"
+  | "carpenterRequests"
   | "designs"
   | "showrooms"
   | "careers"
@@ -84,6 +86,7 @@ const NAV: NavGroup[] = [
       { key: "customers", label: "Customers", icon: <FiUsers /> },
       { key: "inbox", label: "Messages", icon: <FiInbox /> },
       { key: "carpenters", label: "Carpenters", icon: <FiTool /> },
+      { key: "carpenterRequests", label: "Carpenter Requests", icon: <FiTool /> },
     ],
   },
   {
@@ -132,6 +135,7 @@ const TITLES: Record<PanelKey, string> = {
   coupons: "Coupons",
   blog: "Blog & Journal",
   carpenters: "Carpenter Team",
+  carpenterRequests: "Hire a Carpenter Requests",
   designs: "Saved Designs",
   showrooms: "Showrooms",
   careers: "Careers & Applications",
@@ -316,6 +320,7 @@ function AdminHome() {
           {panel === "coupons" && <CouponManager />}
           {panel === "blog" && <BlogManager />}
           {panel === "carpenters" && <CarpenterManager />}
+          {panel === "carpenterRequests" && <CarpenterRequests />}
           {panel === "designs" && <Designs />}
           {panel === "showrooms" && <Showrooms />}
           {panel === "careers" && <CareersManager />}
