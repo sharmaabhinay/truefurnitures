@@ -319,6 +319,7 @@ function AdminHome() {
           {panel === "coupons" && <CouponManager />}
           {panel === "blog" && <BlogManager />}
           {panel === "carpenters" && <CarpenterManager />}
+          {panel === "carpenterRequests" && <CarpenterRequests />}
           {panel === "designs" && <Designs />}
           {panel === "showrooms" && <Showrooms />}
           {panel === "careers" && <CareersManager />}
