@@ -85,6 +85,7 @@ const NAV: NavGroup[] = [
       { key: "customers", label: "Customers", icon: <FiUsers /> },
       { key: "inbox", label: "Messages", icon: <FiInbox /> },
       { key: "carpenters", label: "Carpenters", icon: <FiTool /> },
+      { key: "carpenterRequests", label: "Carpenter Requests", icon: <FiTool /> },
     ],
   },
   {
