@@ -13,7 +13,7 @@ type Json = unknown;
 import { formatINR, formatDate, ORDER_STATUS_STEPS } from "@/lib/format";
 import { toast } from "sonner";
 import { getVisitors, clearVisitors, getDeviceIcon, getBrowser, type VisitorEvent } from "@/lib/visitor-tracker";
-import { brandQueryKey, fetchBrand, DEFAULT_BRAND, type BrandSettings } from "@/lib/brand";
+import { brandQueryKey, fetchBrand, DEFAULT_BRAND, FEATURE_LABELS, type BrandSettings } from "@/lib/brand";
 import { getRemoteVisitors } from "@/lib/visitor-tracker";
 import { BlogManager } from "@/components/admin/blog-manager";
 import { CouponManager } from "@/components/admin/coupon-manager";
