@@ -29,12 +29,14 @@ function ProductGallery({
   setActiveImage,
   sofaName,
   sofaSlug,
+  show3d,
 }: {
   images: GalleryImage[];
   activeImage: number;
   setActiveImage: (i: number) => void;
   sofaName: string;
   sofaSlug: string;
+  show3d: boolean;
 }) {
   const [paused, setPaused] = useState(false);
   useEffect(() => {
@@ -386,6 +388,7 @@ function ProductPage() {
           setActiveImage={setActiveImage}
           sofaName={sofa.name}
           sofaSlug={sofa.slug}
+          show3d={features.viewIn3d}
         />
 
         {/* Details */}
