@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useFeatures } from "@/lib/brand";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { HeroCarousel } from "@/components/hero-carousel";
@@ -41,6 +42,7 @@ const fabrics = [
 ];
 
 function Home() {
+  const features = useFeatures();
   return (
     <div className="bg-[color:var(--brand-cream)] text-[color:var(--brand-dark)]">
       <SiteHeader />
@@ -81,6 +83,7 @@ function Home() {
       <VideoShowcase />
 
       {/* 3D CTA */}
+      {features.design3d && (
       <section className="bg-[color:var(--brand-dark)] py-16 sm:py-24 text-white overflow-hidden">
         <div className="max-w-6xl mx-auto px-6 md:px-10 grid md:grid-cols-2 gap-12 md:gap-16 items-center">
           <div className="relative">
