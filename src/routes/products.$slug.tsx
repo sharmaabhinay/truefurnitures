@@ -19,6 +19,7 @@ import fabricLinen from "@/assets/fabric-linen.jpg";
 import fabricLeather from "@/assets/fabric-leather.jpg";
 import showroomIndore from "@/assets/showroom-indore.jpg";
 import { isProductLive } from "@/lib/availability";
+import { useFeatures } from "@/lib/brand";
 
 type GalleryImage = { src: string; label: string };
 
@@ -87,6 +88,7 @@ function ProductGallery({
         <span className="absolute bottom-3 left-3 tf-chip bg-white/85 backdrop-blur">{images[activeImage].label}</span>
 
         {/* 3D experience button */}
+        {show3d && (
         <Link
           to="/configure/$slug"
           params={{ slug: sofaSlug }}
@@ -95,6 +97,7 @@ function ProductGallery({
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 22V12"/><path d="M21 7l-9 5-9-5"/></svg>
           View in 3D
         </Link>
+        )}
 
         {/* Dots */}
         <div className="absolute bottom-3 right-3 flex gap-1.5">
@@ -273,6 +276,7 @@ export const Route = createFileRoute("/products/$slug")({
 });
 
 function ProductPage() {
+  const features = useFeatures();
   const { slug } = Route.useParams();
   const navigate = useNavigate();
   const { data: sofa } = useQuery(sofaQuery(slug));
@@ -466,6 +470,7 @@ function ProductPage() {
             </Link>
           </div>
 
+          {features.viewIn3d && (
           <Link
             to="/configure/$slug"
             params={{ slug: sofa.slug }}
@@ -480,6 +485,7 @@ function ProductPage() {
             </span>
             <span className="text-lg group-hover:translate-x-1 transition-transform">→</span>
           </Link>
+          )}
 
           {/* Specs */}
           <div className="border-t border-[color:var(--brand-dark)]/10 pt-6 space-y-4 text-sm">
