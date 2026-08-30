@@ -114,6 +114,8 @@ function Home() {
           </div>
         </div>
       </section>
+      )}
+
 
       {/* MATERIALS */}
       <section className="py-16 sm:py-24 px-6 md:px-10 max-w-7xl mx-auto">
