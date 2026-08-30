@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useFeatures } from "@/lib/brand";
 import { useMemo, useState } from "react";
 import { useQuery, queryOptions } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site-header";
@@ -53,6 +54,7 @@ export const Route = createFileRoute("/collections")({
 });
 
 function Collections() {
+  const features = useFeatures();
   const { data: sofas, isLoading } = useQuery(sofasQuery);
   const [priceMax, setPriceMax] = useState(200000);
   const [sort, setSort] = useState<"featured" | "price-asc" | "price-desc" | "name">("featured");
@@ -172,11 +174,13 @@ function Collections() {
             })}
           </div>
         )}
+        {features.design3d && (
         <div className="mt-16 text-center">
           <Link to="/design" className="inline-block px-8 py-4 bg-[color:var(--brand-dark)] text-white text-[10px] font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors">
             Open 3D Designer →
           </Link>
         </div>
+        )}
       </section>
       <SiteFooter />
     </div>
