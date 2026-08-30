@@ -2558,6 +2558,8 @@ function Settings() {
         hero_subtext: brand.hero_subtext,
         hero_cta: brand.hero_cta,
         hero_image: brand.hero_image,
+        features: brand.features,
+
       });
     } catch (e) {
       setSavingBrand(false);
