@@ -2778,6 +2778,33 @@ function Settings() {
                 </button>
               </div>
             </div>
+            <div className="sm:col-span-2 grid gap-2 rounded-lg p-3" style={{ background: "#16161D", border: "1px solid #2A2A38" }}>
+              <div className="text-[11px] uppercase tracking-[0.14em] mb-1" style={{ color: "#C8A86B" }}>Storefront sections</div>
+              <div className="text-[11px] mb-1" style={{ color: "#888899" }}>
+                Switch a section off to hide its buttons, nav links and the page itself.
+              </div>
+              {FEATURE_LABELS.map((f) => {
+                const on = brand.features?.[f.key] ?? true;
+                return (
+                  <div key={f.key} className="flex items-center justify-between py-1">
+                    <div className="text-[13px]">
+                      {f.label}
+                      <div className="text-[11px]" style={{ color: "#888899" }}>{f.hint}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => brandPatch("features", { ...(brand.features ?? DEFAULT_BRAND.features), [f.key]: !on })}
+                      className="relative w-9 h-5 rounded-full shrink-0 transition-colors cursor-pointer"
+                      style={{ background: on ? "#4CAF82" : "#2A2A38" }}
+                      aria-label={`Toggle ${f.label}`}
+                    >
+                      <span className="absolute top-0.5 size-4 rounded-full bg-white transition-all" style={{ left: on ? "18px" : "2px" }} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
             <div className="sm:col-span-2">
               <Field label="Announcement Text">
                 <DarkInput value={brand.announcement ?? ""} onChange={(e) => brandPatch("announcement", e.target.value)} placeholder='e.g. "🎉 Sale — 20% off recliners"' />
