@@ -281,6 +281,8 @@ function ProductPage() {
   const features = useFeatures();
   const { slug } = Route.useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [added, setAdded] = useState(false);
   const { data: sofa } = useQuery(sofaQuery(slug));
   const { data: related } = useQuery(relatedQuery(slug));
   const sofaId = sofa?.id;
