@@ -173,6 +173,7 @@ function ConfigurePage() {
   const { user } = useAuth();
 
   const [mounted, setMounted] = useState(false);
+  const [added, setAdded] = useState(false);
   useEffect(() => setMounted(true), []);
 
   const [color, setColor] = useState<string>("sand");
@@ -422,27 +423,60 @@ function ConfigurePage() {
             </div>
           </div>
 
-          <button
-            onClick={() => {
-              cart.add({
-                sofaId: sofa.id,
-                slug: sofa.slug,
-                name: sofa.name,
-                image: sofa.hero_image ?? "",
-                unitPrice: price,
-                fabric,
-                size: sizeDef.label,
-                color: colorDef.label,
-                colorHex: colorDef.hex,
-                addons: addonList,
-              });
-              toast.success(`${sofa.name} (${sizeDef.label}, ${colorDef.label}) added to cart`);
-              navigate({ to: "/cart" });
-            }}
-            className="w-full px-6 py-4 bg-[color:var(--brand-dark)] text-white text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors"
-          >
-            Add Configuration to Cart · Deposit {formatINR(deposit)}
-          </button>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <button
+              disabled={added}
+              onClick={() => {
+                cart.add({
+                  sofaId: sofa.id,
+                  slug: sofa.slug,
+                  name: sofa.name,
+                  image: sofa.hero_image ?? "",
+                  unitPrice: price,
+                  fabric,
+                  size: sizeDef.label,
+                  color: colorDef.label,
+                  colorHex: colorDef.hex,
+                  addons: addonList,
+                });
+                setAdded(true);
+                toast.success(`${sofa.name} (${sizeDef.label}, ${colorDef.label}) added to cart`);
+                setTimeout(() => navigate({ to: "/cart" }), 750);
+              }}
+              className={`w-full px-6 py-4 text-white text-xs font-bold uppercase tracking-widest transition-colors disabled:opacity-100 ${added ? "bg-[color:var(--brand-accent)] tf-cart-bump" : "bg-[color:var(--brand-dark)] hover:bg-[color:var(--brand-accent)]"}`}
+            >
+              {added ? (
+                <span className="inline-flex items-center gap-2 tf-cart-check">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+                  Added to Cart
+                </span>
+              ) : (
+                <>Add to Cart · Deposit {formatINR(deposit)}</>
+              )}
+            </button>
+            <button
+              onClick={() => {
+                cart.add({
+                  sofaId: sofa.id,
+                  slug: sofa.slug,
+                  name: sofa.name,
+                  image: sofa.hero_image ?? "",
+                  unitPrice: price,
+                  fabric,
+                  size: sizeDef.label,
+                  color: colorDef.label,
+                  colorHex: colorDef.hex,
+                  addons: addonList,
+                });
+                if (!user) navigate({ to: "/auth", search: { redirect: "/checkout" } as never });
+                else navigate({ to: "/checkout" });
+              }}
+              className="w-full px-6 py-4 bg-[color:var(--brand-accent)] text-white text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-dark)] transition-colors hover-lift"
+            >
+              Buy Now · Pay {formatINR(deposit)}
+            </button>
+          </div>
+
           <button
             onClick={openSaveModal}
             className="mt-3 w-full px-6 py-3 border border-[color:var(--brand-dark)] text-[color:var(--brand-dark)] text-[10px] font-bold uppercase tracking-widest hover:bg-[color:var(--brand-dark)] hover:text-white transition-colors"

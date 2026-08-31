@@ -237,3 +237,11 @@ button:disabled { cursor: not-allowed; }
   animation-timing-function: cubic-bezier(0.25, 0.6, 0.4, 1);
   animation-fill-mode: forwards;
 }
+
+/* Add-to-cart feedback */
+@keyframes tf-cart-bump { 0% { transform: scale(1); } 35% { transform: scale(0.95); } 70% { transform: scale(1.04); } 100% { transform: scale(1); } }
+.tf-cart-bump { animation: tf-cart-bump 0.55s cubic-bezier(.2,.9,.3,1.4) both; }
+@keyframes tf-cart-check { 0% { transform: scale(0.2) rotate(-25deg); opacity: 0; } 60% { transform: scale(1.2) rotate(0deg); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+.tf-cart-check { animation: tf-cart-check 0.45s cubic-bezier(.2,.9,.3,1.4) both; }
+@keyframes tf-cart-fly { 0% { transform: translate(0,0) scale(1); opacity: 1; } 100% { transform: translate(0,-90px) scale(0.35); opacity: 0; } }
+.tf-cart-fly { animation: tf-cart-fly 0.7s cubic-bezier(.4,0,.2,1) forwards; }
