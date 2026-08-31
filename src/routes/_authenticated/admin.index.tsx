@@ -24,6 +24,8 @@ import { CareersManager } from "@/components/admin/careers-manager";
 import { CampaignManager } from "@/components/admin/campaign-manager";
 import { InboxManager } from "@/components/admin/inbox-manager";
 import { TrashManager, DeleteReasonModal } from "@/components/admin/trash-manager";
+import { SalesAnalytics } from "@/components/admin/sales-analytics";
+
 import { productStatusLabel } from "@/lib/availability";
 import { AModal, AInput } from "@/components/admin/ui";
 import {
@@ -50,6 +52,7 @@ export const Route = createFileRoute("/_authenticated/admin/")({
 
 type PanelKey =
   | "dashboard"
+  | "analytics"
   | "visitors"
   | "orders"
   | "products"
@@ -81,6 +84,7 @@ const NAV: NavGroup[] = [
   {
     title: "",
     items: [
+      { key: "analytics", label: "Sales Analytics", icon: <FiTrendingUp /> },
       { key: "visitors", label: "Visitor Analytics", icon: <FiEye /> },
       { key: "orders", label: "Orders", icon: <FiPackage /> },
       { key: "customers", label: "Customers", icon: <FiUsers /> },
@@ -124,6 +128,7 @@ const NAV: NavGroup[] = [
 
 const TITLES: Record<PanelKey, string> = {
   dashboard: "Dashboard",
+  analytics: "Sales Analytics",
   visitors: "Visitor Analytics",
   orders: "Orders",
   customers: "Customers",
@@ -309,6 +314,7 @@ function AdminHome() {
 
         <main className="flex-1 p-4 sm:p-8 overflow-x-hidden">
           {panel === "dashboard" && <Dashboard onGo={setPanel} />}
+          {panel === "analytics" && <SalesAnalytics />}
           {panel === "visitors" && <Visitors />}
           {panel === "orders" && <Orders />}
           {panel === "customers" && <Customers />}
