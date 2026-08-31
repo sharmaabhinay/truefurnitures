@@ -173,6 +173,7 @@ function ConfigurePage() {
   const { user } = useAuth();
 
   const [mounted, setMounted] = useState(false);
+  const [added, setAdded] = useState(false);
   useEffect(() => setMounted(true), []);
 
   const [color, setColor] = useState<string>("sand");
