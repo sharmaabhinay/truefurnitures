@@ -453,7 +453,33 @@ function ProductPage() {
           </div>
 
           {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-8">
+          <div className="flex flex-col sm:flex-row gap-3 mb-3">
+            <button
+              disabled={added}
+              onClick={() => {
+                cart.add({
+                  sofaId: sofa.id,
+                  slug: sofa.slug,
+                  name: sofa.name,
+                  image: hero,
+                  unitPrice: configuredPrice,
+                  fabric: activeFabric?.label ?? fabric,
+                });
+                setAdded(true);
+                toast.success(`${sofa.name} added to cart`);
+                setTimeout(() => navigate({ to: "/cart" }), 750);
+              }}
+              className={`relative overflow-hidden flex-1 px-6 py-4 text-white text-xs font-bold uppercase tracking-widest transition-colors disabled:opacity-100 ${added ? "bg-[color:var(--brand-accent)] tf-cart-bump" : "bg-[color:var(--brand-dark)] hover:bg-[color:var(--brand-accent)]"}`}
+            >
+              {added ? (
+                <span className="inline-flex items-center gap-2 tf-cart-check">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+                  Added to Cart
+                </span>
+              ) : (
+                <>Add to Cart · Deposit {formatINR(deposit)}</>
+              )}
+            </button>
             <button
               onClick={() => {
                 cart.add({
@@ -464,17 +490,20 @@ function ProductPage() {
                   unitPrice: configuredPrice,
                   fabric: activeFabric?.label ?? fabric,
                 });
-                toast.success(`${sofa.name} added to cart`);
-                navigate({ to: "/cart" });
+                if (!user) navigate({ to: "/auth", search: { redirect: "/checkout" } as never });
+                else navigate({ to: "/checkout" });
               }}
-              className="flex-1 px-6 py-4 bg-[color:var(--brand-dark)] text-white text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors"
+              className="flex-1 px-6 py-4 bg-[color:var(--brand-accent)] text-white text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-dark)] transition-colors hover-lift"
             >
-              Add to Cart · Deposit {formatINR(deposit)}
+              Buy Now · Pay {formatINR(deposit)}
             </button>
-            <Link to="/showrooms" className="flex-1 text-center px-6 py-4 border border-[color:var(--brand-dark)]/20 text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-dark)] hover:text-white transition-colors">
+          </div>
+          <div className="mb-8">
+            <Link to="/showrooms" className="block text-center px-6 py-4 border border-[color:var(--brand-dark)]/20 text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-dark)] hover:text-white transition-colors">
               Book Showroom Visit
             </Link>
           </div>
+
 
           {features.viewIn3d && (
           <Link
