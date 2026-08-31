@@ -6,6 +6,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { COL, fsFindOne, fsList, where, limit, sortRows } from "@/lib/db/firestore";
 import { formatINR, estimatedDelivery } from "@/lib/format";
 import { useCart } from "@/lib/cart";
+import { useAuth } from "@/lib/auth/auth-context";
 import { toast } from "sonner";
 import sofaMalwa from "@/assets/sofa-malwa.jpg";
 import sofaUjjain from "@/assets/sofa-ujjain.jpg";
