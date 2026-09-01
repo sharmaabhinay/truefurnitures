@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { useQuery, queryOptions } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { COL, fsList, where, sortRows } from "@/lib/db/firestore";
 import { formatINR } from "@/lib/format";
 import { CollectionsGridSkeleton } from "@/components/skeleton";
 import sofaMalwa from "@/assets/sofa-malwa.jpg";
