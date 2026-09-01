@@ -69,6 +69,7 @@ type PanelKey =
   | "showrooms"
   | "careers"
   | "campaigns"
+  | "subscribers"
   | "settings";
 
 type NavItem = { key: PanelKey; label: string; icon: React.ReactNode };
@@ -105,6 +106,7 @@ const NAV: NavGroup[] = [
     items: [
       { key: "campaigns", label: "Ad Campaigns", icon: <FiTrendingUp /> },
       { key: "careers", label: "Careers", icon: <FiBriefcase /> },
+      { key: "subscribers", label: "Subscribers", icon: <FiMail /> },
     ],
   },
   {
@@ -132,6 +134,7 @@ const TITLES: Record<PanelKey, string> = {
   visitors: "Visitor Analytics",
   orders: "Orders",
   customers: "Customers",
+  subscribers: "Newsletter Subscribers",
   inbox: "Messages",
   trash: "Trash",
   products: "Product Manager",
@@ -331,6 +334,7 @@ function AdminHome() {
           {panel === "showrooms" && <Showrooms />}
           {panel === "careers" && <CareersManager />}
           {panel === "campaigns" && <CampaignManager />}
+          {panel === "subscribers" && <Subscribers />}
           {panel === "settings" && <Settings />}
         </main>
       </div>
@@ -988,24 +992,10 @@ function Customers() {
   const [q, setQ] = useState("");
   const [cityFilter, setCityFilter] = useState("all");
   const [segment, setSegment] = useState("all");
+  const fetchCustomers = useServerFn(listAdminCustomers);
   const { data } = useQuery({
     queryKey: ["admin-customers"],
-    queryFn: async () => {
-      const [profiles, orders] = await Promise.all([
-        fsListSorted<any>(COL.profiles, "created_at", "desc"),
-        fsList<any>(COL.orders),
-      ]);
-      const spent = new Map<string, { count: number; sum: number }>();
-      for (const o of orders ?? []) {
-        const cur = spent.get(o.user_id) ?? { count: 0, sum: 0 };
-        cur.count += 1;
-        cur.sum += Number(o.total);
-        spent.set(o.user_id, cur);
-      }
-      return (profiles ?? [])
-        .filter((p) => !p.deleted_at)
-        .map((p) => ({ ...p, ...(spent.get(p.id) ?? { count: 0, sum: 0 }) }));
-    },
+    queryFn: () => fetchCustomers() as Promise<any[]>,
   });
 
   const toggle = (id: string) =>
@@ -1677,6 +1667,8 @@ function ProductModal({
   const [availableTo, setAvailableTo] = useState<string>((product.available_to ?? "").slice(0, 10));
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<"images" | "model" | null>(null);
+  const [uploadPct, setUploadPct] = useState(0);
+  const [uploadLabel, setUploadLabel] = useState("");
 
   const autoSlug = (v: string) =>
     v.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -1684,10 +1676,13 @@ function ProductModal({
   const productFolder = autoSlug(slug || name) || "new-product";
 
   const uploadProductFile = async (file: File, folder: "images" | "models") => {
+    setUploadLabel(file.name);
+    setUploadPct(0);
     const { url, publicId } = await uploadToCloudinary(
       file,
       `product-media/${productFolder}/${folder}`,
       folder === "images" ? "image" : "raw",
+      (pct) => setUploadPct(pct),
     );
     return { path: publicId, url };
   };
@@ -1961,7 +1956,16 @@ function ProductModal({
                   className="block w-full text-[12px] file:mr-4 file:rounded-md file:border-0 file:px-4 file:py-2 file:text-[12px] file:font-semibold"
                   style={{ color: "#888899" }}
                 />
-                {uploading === "images" && <p className="text-[11px] mt-2" style={{ color: "#C8A86B" }}>Uploading images…</p>}
+                {uploading === "images" && (
+                  <div className="mt-2">
+                    <div className="flex items-center justify-between text-[11px] mb-1" style={{ color: "#C8A86B" }}>
+                      <span>Uploading {uploadLabel || "images"}…</span><span>{uploadPct}%</span>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: "#2A2A38" }}>
+                      <div className="h-full transition-all duration-200" style={{ width: `${uploadPct}%`, background: "#C8A86B" }} />
+                    </div>
+                  </div>
+                )}
               </Field>
               {images.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -2106,7 +2110,16 @@ function ProductModal({
                   className="block mx-auto text-[12px] file:mr-4 file:rounded-md file:border-0 file:px-4 file:py-2 file:text-[12px] file:font-semibold"
                   style={{ color: "#888899" }}
                 />
-                {uploading === "model" && <p className="text-[11px] mt-3" style={{ color: "#C8A86B" }}>Uploading 3D model…</p>}
+                {uploading === "model" && (
+                  <div className="mt-2">
+                    <div className="flex items-center justify-between text-[11px] mb-1" style={{ color: "#C8A86B" }}>
+                      <span>Uploading {uploadLabel || "3D model"}…</span><span>{uploadPct}%</span>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: "#2A2A38" }}>
+                      <div className="h-full transition-all duration-200" style={{ width: `${uploadPct}%`, background: "#C8A86B" }} />
+                    </div>
+                  </div>
+                )}
               </div>
               <Field label="3D Model URL">
                 <DarkInput value={modelUrl} onChange={(e) => setModelUrl(e.target.value)} placeholder="https://.../model.glb" />
