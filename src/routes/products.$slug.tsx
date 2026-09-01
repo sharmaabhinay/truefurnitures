@@ -199,12 +199,8 @@ const sofaQuery = (slug: string) =>
   queryOptions({
     queryKey: ["sofa", slug],
     queryFn: async (): Promise<Sofa | null> => {
-      const data = await fsFindOne<Sofa & { is_published?: boolean }>(
-        COL.sofas,
-        where("slug", "==", slug),
-        where("is_published", "==", true),
-      );
-      return data && isProductLive(data) ? data : null;
+      const data = (await getPublishedSofa({ data: { slug } })) as (Sofa & { is_published?: boolean }) | null;
+      return data ?? null;
     },
   });
 
@@ -216,16 +212,14 @@ const relatedQuery = (slug: string) =>
     queryKey: ["sofa-related", slug],
     queryFn: async (): Promise<RelatedSofa[]> => {
       try {
-        const rows = sortRows(
-          await fsList<RelatedSofa & { slug: string }>(COL.sofas, where("is_published", "==", true)),
-          "sort_order",
-        );
-        return rows.filter((r) => r.slug !== slug && isProductLive(r)).slice(0, 3);
+        const rows = (await listPublishedSofas()) as unknown as RelatedSofa[];
+        return rows.filter((r) => r.slug !== slug).slice(0, 3);
       } catch {
         return [];
       }
     },
   });
+
 
 export const Route = createFileRoute("/products/$slug")({
   loader: async ({ params, context }) => {
