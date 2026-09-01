@@ -13,7 +13,7 @@ import sofaIndore from "@/assets/sofa-indore.jpg";
 import sofaEmerald from "@/assets/sofa-emerald.jpg";
 import sofaIvory from "@/assets/sofa-ivory.jpg";
 import sofaTerracotta from "@/assets/sofa-terracotta.jpg";
-import { isProductLive } from "@/lib/availability";
+import { listPublishedSofas } from "@/lib/catalog.functions";
 
 const sofaImages: Record<string, string> = {
   "malwa-modular": sofaMalwa,
@@ -36,8 +36,7 @@ type Sofa = {
 const sofasQuery = queryOptions({
   queryKey: ["sofas", "published"],
   queryFn: async (): Promise<Sofa[]> => {
-    const rows = await fsList<Sofa>(COL.sofas, where("is_published", "==", true));
-    return sortRows(rows.filter((r) => isProductLive(r)), "sort_order");
+    return (await listPublishedSofas()) as unknown as Sofa[];
   },
 });
 
@@ -50,6 +49,7 @@ export const Route = createFileRoute("/collections")({
       { property: "og:description", content: "Browse every silhouette in our fully customizable sofa collection." },
     ],
   }),
+  loader: async ({ context }) => { await context.queryClient.ensureQueryData(sofasQuery); },
   component: Collections,
 });
 

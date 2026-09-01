@@ -21,6 +21,7 @@ import fabricLeather from "@/assets/fabric-leather.jpg";
 import showroomIndore from "@/assets/showroom-indore.jpg";
 import { isProductLive } from "@/lib/availability";
 import { useFeatures } from "@/lib/brand";
+import { getPublishedSofa, listPublishedSofas } from "@/lib/catalog.functions";
 
 type GalleryImage = { src: string; label: string };
 
