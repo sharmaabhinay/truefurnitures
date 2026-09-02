@@ -47,14 +47,14 @@ export const listAdminCustomers = createServerFn({ method: "GET" })
       });
     }
 
-    return Array.from(byId.values())
+    const merged: Row[] = Array.from(byId.values())
       .filter((p) => !p["deleted_at"])
-      .map((p) => ({ ...p, ...(spent.get(p.id) ?? { count: 0, sum: 0 }) }))
-      .sort(
-        (a, b) =>
-          new Date(String(b["created_at"] ?? 0)).getTime() -
-          new Date(String(a["created_at"] ?? 0)).getTime(),
-      );
+      .map((p) => ({ ...p, ...(spent.get(p.id) ?? { count: 0, sum: 0 }) }));
+    return merged.sort(
+      (a, b) =>
+        new Date(String(b["created_at"] ?? 0)).getTime() -
+        new Date(String(a["created_at"] ?? 0)).getTime(),
+    );
   });
 
 /** Everything the customer detail page needs, fetched with admin credentials. */
