@@ -5,8 +5,23 @@ import { requireFirebaseAuth } from "@/lib/auth/firebase-auth-middleware";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Row = Record<string, any> & { id: string };
 
-function staffOnly(role: string | undefined) {
-  if (role !== "admin" && role !== "staff") throw new Response("Forbidden", { status: 403 });
+/**
+ * Staff check. The custom claim is authoritative when present, but many admins
+ * are only recorded in the `user_roles` collection, so fall back to that.
+ */
+async function staffOnly(role: string | undefined, uid: string) {
+  if (role === "admin" || role === "staff") return;
+  const { adminGetDoc, adminQuery } = await import("@/lib/firebase-admin.server");
+  const doc = await adminGetDoc("user_roles", uid).catch(() => null);
+  const docRole = doc ? String((doc as Record<string, unknown>)["role"] ?? "") : "";
+  if (docRole === "admin" || docRole === "staff") return;
+  const rows = await adminQuery("user_roles", [{ field: "user_id", value: uid }]).catch(() => []);
+  const ok = rows.some((r) => {
+    const one = String((r as Record<string, unknown>)["role"] ?? "");
+    const many = ((r as Record<string, unknown>)["roles"] as string[] | undefined) ?? [];
+    return one === "admin" || one === "staff" || many.includes("admin") || many.includes("staff");
+  });
+  if (!ok) throw new Response("Forbidden", { status: 403 });
 }
 
 /**
