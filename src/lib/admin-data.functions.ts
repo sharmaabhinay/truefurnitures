@@ -2,7 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireFirebaseAuth } from "@/lib/auth/firebase-auth-middleware";
 
-type Row = Record<string, unknown> & { id: string };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Row = Record<string, any> & { id: string };
 
 function staffOnly(role: string | undefined) {
   if (role !== "admin" && role !== "staff") throw new Response("Forbidden", { status: 403 });
