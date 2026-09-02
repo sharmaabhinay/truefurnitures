@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
+import { listAdminCustomers, listNewsletterSubscribers } from "@/lib/admin-data.functions";
 import { COL, fsList, fsListSorted, fsGet, fsAdd, fsSet, fsUpdate, fsDelete, fsWatch, where, orderBy } from "@/lib/db/firestore";
 import { downloadCsv } from "@/lib/export";
 import { Pager, usePaged, ACheck } from "@/components/admin/pager";
@@ -32,8 +34,7 @@ import {
   FiBarChart2, FiEye, FiPackage, FiUsers, FiTool, FiShoppingBag, FiShoppingCart, FiMessageCircle,
   FiSettings, FiStar, FiTag, FiEdit3, FiMapPin, FiFeather, FiBriefcase, FiTrendingUp,
   FiGlobe, FiMenu, FiRefreshCw, FiExternalLink, FiInbox, FiTrash2, FiPlus, FiDownload,
-  FiAlertCircle, FiLoader, FiClock,
-
+  FiAlertCircle, FiLoader, FiClock, FiMail,
 } from "react-icons/fi";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
