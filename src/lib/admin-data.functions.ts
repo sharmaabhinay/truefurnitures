@@ -2,7 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireFirebaseAuth } from "@/lib/auth/firebase-auth-middleware";
 
-type Row = Record<string, unknown> & { id: string };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Row = Record<string, any> & { id: string };
 
 function staffOnly(role: string | undefined) {
   if (role !== "admin" && role !== "staff") throw new Response("Forbidden", { status: 403 });
@@ -46,14 +47,14 @@ export const listAdminCustomers = createServerFn({ method: "GET" })
       });
     }
 
-    return Array.from(byId.values())
+    const merged: Row[] = Array.from(byId.values())
       .filter((p) => !p["deleted_at"])
-      .map((p) => ({ ...p, ...(spent.get(p.id) ?? { count: 0, sum: 0 }) }))
-      .sort(
-        (a, b) =>
-          new Date(String(b["created_at"] ?? 0)).getTime() -
-          new Date(String(a["created_at"] ?? 0)).getTime(),
-      );
+      .map((p) => ({ ...p, ...(spent.get(p.id) ?? { count: 0, sum: 0 }) }));
+    return merged.sort(
+      (a, b) =>
+        new Date(String(b["created_at"] ?? 0)).getTime() -
+        new Date(String(a["created_at"] ?? 0)).getTime(),
+    );
   });
 
 /** Everything the customer detail page needs, fetched with admin credentials. */

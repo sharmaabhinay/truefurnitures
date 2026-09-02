@@ -8,7 +8,8 @@ import { isProductLive } from "@/lib/availability";
  * which made /collections and product pages look empty. Reading server-side
  * lets SSR ship the products with the HTML.
  */
-export type CatalogSofa = Record<string, unknown> & {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type CatalogSofa = Record<string, any> & {
   id: string;
   slug: string;
   name: string;
