@@ -1142,6 +1142,79 @@ function Customers() {
   );
 }
 
+/* ================= NEWSLETTER SUBSCRIBERS ================= */
+
+function Subscribers() {
+  const [q, setQ] = useState("");
+  const fetchSubscribers = useServerFn(listNewsletterSubscribers);
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-subscribers"],
+    queryFn: () => fetchSubscribers() as Promise<any[]>,
+  });
+
+  const rows = data ?? [];
+  const filtered = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    if (!s) return rows;
+    return rows.filter((r: any) =>
+      [r.email, r.city, r.source, r.discount_code]
+        .filter(Boolean)
+        .some((v: string) => String(v).toLowerCase().includes(s)),
+    );
+  }, [rows, q]);
+  const paged = usePaged(filtered, 20);
+
+  const exportSubs = () =>
+    downloadCsv(`subscribers-${new Date().toISOString().slice(0, 10)}`, filtered.map((r: any) => ({
+      email: r.email ?? "",
+      city: r.city ?? "",
+      source: r.source ?? "",
+      discount_code: r.discount_code ?? "",
+      subscribed: r.created_at ?? "",
+    })));
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-2 items-center">
+        <DarkInput
+          placeholder="Search email, city, source…"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          style={{ flex: "1 1 220px", minWidth: 200, background: "#16161D", border: "1px solid #2A2A38", color: "#E8E8F0" }}
+        />
+        <button
+          onClick={exportSubs}
+          disabled={filtered.length === 0}
+          className="rounded-md px-4 py-2 text-[13px] font-semibold disabled:opacity-50"
+          style={{ background: "rgba(255,255,255,0.04)", color: "#E8E8F0", border: "1px solid #2A2A38" }}
+        >
+          <span className="inline-flex items-center gap-1.5"><FiDownload /> Export</span>
+        </button>
+        <span className="text-[12px]" style={{ color: "#888899" }}>
+          {filtered.length} subscriber{filtered.length === 1 ? "" : "s"}
+        </span>
+      </div>
+      <Card className="!p-0">
+        <DataTable
+          head={["Email", "City", "Source", "Code", "Subscribed"]}
+          empty={!isLoading && filtered.length === 0}
+        >
+          {paged.slice.map((r: any) => (
+            <tr key={r.id} className="border-b last:border-b-0" style={{ borderColor: "rgba(42,42,56,0.5)" }}>
+              <td className="px-3 py-2.5 font-medium" style={{ color: "#C8A86B" }}>{r.email}</td>
+              <td className="px-3 py-2.5">{r.city ?? "—"}</td>
+              <td className="px-3 py-2.5 text-[11px]" style={{ color: "#888899" }}>{r.source ?? "—"}</td>
+              <td className="px-3 py-2.5 font-mono text-[11px]">{r.discount_code ?? "—"}</td>
+              <td className="px-3 py-2.5 text-[11px]" style={{ color: "#888899" }}>{formatDate(r.created_at)}</td>
+            </tr>
+          ))}
+        </DataTable>
+        <Pager page={paged.page} pages={paged.pages} total={paged.total} onPage={paged.setPage} label="subscribers" />
+      </Card>
+    </div>
+  );
+}
+
 /* ================= PRODUCTS ================= */
 
 type SofaRow = {
