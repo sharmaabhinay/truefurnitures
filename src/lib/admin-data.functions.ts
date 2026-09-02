@@ -32,7 +32,7 @@ async function staffOnly(role: string | undefined, uid: string) {
 export const listAdminCustomers = createServerFn({ method: "GET" })
   .middleware([requireFirebaseAuth])
   .handler(async ({ context }) => {
-    staffOnly(context.role);
+    await staffOnly(context.role, context.userId);
     const { adminQuery, adminListUsers } = await import("@/lib/firebase-admin.server");
     const [authUsers, profiles, orders] = await Promise.all([
       adminListUsers().catch(() => []),
@@ -77,7 +77,7 @@ export const getAdminCustomer = createServerFn({ method: "GET" })
   .middleware([requireFirebaseAuth])
   .inputValidator((d) => z.object({ userId: z.string().min(1) }).parse(d))
   .handler(async ({ context, data }) => {
-    staffOnly(context.role);
+    await staffOnly(context.role, context.userId);
     const { adminQuery, adminGetDoc, adminLookupUser } = await import("@/lib/firebase-admin.server");
     const uid = data.userId;
     const byUser = [{ field: "user_id", value: uid }];
@@ -141,7 +141,7 @@ export const getAdminCustomer = createServerFn({ method: "GET" })
 export const listNewsletterSubscribers = createServerFn({ method: "GET" })
   .middleware([requireFirebaseAuth])
   .handler(async ({ context }) => {
-    staffOnly(context.role);
+    await staffOnly(context.role, context.userId);
     const { adminQuery } = await import("@/lib/firebase-admin.server");
     const rows = await adminQuery("newsletter_subscribers");
     return rows.sort(
