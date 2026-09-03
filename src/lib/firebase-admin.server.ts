@@ -262,36 +262,98 @@ export async function adminAddDoc(col: string, data: Record<string, unknown>): P
   return doc.id;
 }
 
-/** Verify a Firebase ID token and return its uid + claims. */
+type FirebaseTokenClaims = {
+  aud?: string;
+  auth_time?: number;
+  email?: string;
+  exp?: number;
+  iat?: number;
+  iss?: string;
+  role?: string;
+  sub?: string;
+  user_id?: string;
+};
+
+type FirebaseJwk = JsonWebKey & { kid?: string };
+
+let cachedFirebaseJwks: { keys: FirebaseJwk[]; expiresAt: number } | null = null;
+
+function decodeJwtPart<T>(part: string): T {
+  const normalized = part.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+  return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(padded), (c) => c.charCodeAt(0)))) as T;
+}
+
+async function firebaseJwks(): Promise<FirebaseJwk[]> {
+  if (cachedFirebaseJwks && cachedFirebaseJwks.expiresAt > Date.now()) {
+    return cachedFirebaseJwks.keys;
+  }
+  const res = await fetch(
+    "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com",
+  );
+  if (!res.ok) throw new Error("Unable to load Firebase signing keys");
+  const body = (await res.json()) as { keys?: FirebaseJwk[] };
+  if (!body.keys?.length) throw new Error("Firebase signing keys are unavailable");
+  const maxAge = Number(res.headers.get("cache-control")?.match(/max-age=(\d+)/)?.[1] ?? 3600);
+  cachedFirebaseJwks = { keys: body.keys, expiresAt: Date.now() + maxAge * 1000 };
+  return body.keys;
+}
+
+/** Verify a Firebase ID token's signature and required claims. */
 export async function verifyIdToken(
   idToken: string,
 ): Promise<{ uid: string; email?: string; role?: string }> {
-  const res = await fetch(
-    `https://identitytoolkit.googleapis.com/v1/projects/${projectId()}/accounts:lookup`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${await accessToken()}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ idToken }),
-    },
-  );
-  if (!res.ok) throw new Error("Invalid session");
-  const json = (await res.json()) as {
-    users?: Array<{ localId: string; email?: string; customAttributes?: string }>;
-  };
-  const user = json.users?.[0];
-  if (!user) throw new Error("Invalid session");
-  let role: string | undefined;
-  try {
-    role = user.customAttributes
-      ? (JSON.parse(user.customAttributes) as { role?: string }).role
-      : undefined;
-  } catch {
-    role = undefined;
+  const parts = idToken.split(".");
+  if (parts.length !== 3) throw new Error("Invalid session token");
+  const [encodedHeader, encodedPayload, encodedSignature] = parts;
+  if (!encodedHeader || !encodedPayload || !encodedSignature) throw new Error("Invalid session token");
+
+  const header = decodeJwtPart<{ alg?: string; kid?: string }>(encodedHeader);
+  const claims = decodeJwtPart<FirebaseTokenClaims>(encodedPayload);
+  if (header.alg !== "RS256" || !header.kid) throw new Error("Invalid session token header");
+
+  const key = (await firebaseJwks()).find((candidate) => candidate.kid === header.kid);
+  if (!key) {
+    cachedFirebaseJwks = null;
+    throw new Error("Unknown Firebase signing key");
   }
-  return { uid: user.localId, email: user.email, role };
+  const cryptoKey = await crypto.subtle.importKey(
+    "jwk",
+    key,
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["verify"],
+  );
+  const signaturePart = encodedSignature.replace(/-/g, "+").replace(/_/g, "/");
+  const signature = Uint8Array.from(
+    atob(signaturePart.padEnd(Math.ceil(signaturePart.length / 4) * 4, "=")),
+    (c) => c.charCodeAt(0),
+  );
+  const validSignature = await crypto.subtle.verify(
+    "RSASSA-PKCS1-v1_5",
+    cryptoKey,
+    signature,
+    new TextEncoder().encode(`${encodedHeader}.${encodedPayload}`),
+  );
+
+  const firebaseProjectId = projectId();
+  const now = Math.floor(Date.now() / 1000);
+  const uid = claims.sub ?? claims.user_id;
+  if (
+    !validSignature ||
+    !uid ||
+    uid.length > 128 ||
+    claims.aud !== firebaseProjectId ||
+    claims.iss !== `https://securetoken.google.com/${firebaseProjectId}` ||
+    typeof claims.exp !== "number" ||
+    claims.exp <= now ||
+    typeof claims.iat !== "number" ||
+    claims.iat > now + 60 ||
+    (typeof claims.auth_time === "number" && claims.auth_time > now + 60)
+  ) {
+    throw new Error("Invalid or expired session");
+  }
+  return { uid, email: claims.email, role: claims.role };
 }
 
 /** Set the `role` custom claim for a user (admin-only callers). */
