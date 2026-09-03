@@ -994,7 +994,7 @@ function Customers() {
   const [cityFilter, setCityFilter] = useState("all");
   const [segment, setSegment] = useState("all");
   const fetchCustomers = useServerFn(listAdminCustomers);
-  const { data } = useQuery({
+  const { data, error, isLoading, refetch } = useQuery({
     queryKey: ["admin-customers"],
     queryFn: () => fetchCustomers() as Promise<any[]>,
   });
@@ -1051,6 +1051,14 @@ function Customers() {
 
   return (
     <div className="space-y-3">
+      {error && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          <span>Customer records could not be loaded. Your session may need refreshing.</span>
+          <button type="button" onClick={() => refetch()} className="font-semibold underline">
+            Try again
+          </button>
+        </div>
+      )}
       <div className="flex flex-wrap gap-2 items-center">
         <DarkInput
           placeholder="Search name, email, phone, city…"
@@ -1092,8 +1100,15 @@ function Customers() {
     <Card className="!p-0">
       <DataTable
         head={["", "Name", "Phone", "City", "Orders", "Lifetime", "Joined", ""]}
-        empty={filtered.length === 0}
+        empty={!isLoading && filtered.length === 0}
       >
+        {isLoading && (
+          <tr>
+            <td colSpan={8} className="px-4 py-10 text-center text-sm" style={{ color: "#888899" }}>
+              Loading customer records…
+            </td>
+          </tr>
+        )}
         {paged.slice.map((c: any) => (
           <tr
             key={c.id}
