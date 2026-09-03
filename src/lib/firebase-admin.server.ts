@@ -274,7 +274,9 @@ type FirebaseTokenClaims = {
   user_id?: string;
 };
 
-let cachedFirebaseJwks: { keys: JsonWebKey[]; expiresAt: number } | null = null;
+type FirebaseJwk = JsonWebKey & { kid?: string };
+
+let cachedFirebaseJwks: { keys: FirebaseJwk[]; expiresAt: number } | null = null;
 
 function decodeJwtPart<T>(part: string): T {
   const normalized = part.replace(/-/g, "+").replace(/_/g, "/");
@@ -282,7 +284,7 @@ function decodeJwtPart<T>(part: string): T {
   return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(padded), (c) => c.charCodeAt(0)))) as T;
 }
 
-async function firebaseJwks(): Promise<JsonWebKey[]> {
+async function firebaseJwks(): Promise<FirebaseJwk[]> {
   if (cachedFirebaseJwks && cachedFirebaseJwks.expiresAt > Date.now()) {
     return cachedFirebaseJwks.keys;
   }
@@ -290,7 +292,7 @@ async function firebaseJwks(): Promise<JsonWebKey[]> {
     "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com",
   );
   if (!res.ok) throw new Error("Unable to load Firebase signing keys");
-  const body = (await res.json()) as { keys?: JsonWebKey[] };
+  const body = (await res.json()) as { keys?: FirebaseJwk[] };
   if (!body.keys?.length) throw new Error("Firebase signing keys are unavailable");
   const maxAge = Number(res.headers.get("cache-control")?.match(/max-age=(\d+)/)?.[1] ?? 3600);
   cachedFirebaseJwks = { keys: body.keys, expiresAt: Date.now() + maxAge * 1000 };
