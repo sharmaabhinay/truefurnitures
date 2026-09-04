@@ -436,7 +436,9 @@ export async function adminListUsers(): Promise<
         body: JSON.stringify({ returnUserInfo: true, limit: 500, ...(nextPageToken ? { nextPageToken } : {}) }),
       },
     );
-    if (!res.ok) break;
+    if (!res.ok) {
+      throw new Error(`Firebase user list failed (${res.status}): ${await res.text()}`);
+    }
     const json = (await res.json()) as {
       userInfo?: Array<{ localId: string; email?: string; createdAt?: string; lastLoginAt?: string }>;
       nextPageToken?: string;
