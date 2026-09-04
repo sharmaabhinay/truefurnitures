@@ -35,7 +35,7 @@ export const listAdminCustomers = createServerFn({ method: "GET" })
     await staffOnly(context.role, context.userId);
     const { adminQuery, adminListUsers } = await import("@/lib/firebase-admin.server");
     const [authUsers, profiles, orders] = await Promise.all([
-      adminListUsers().catch(() => []),
+      adminListUsers(),
       adminQuery("profiles"),
       adminQuery("orders"),
     ]);
