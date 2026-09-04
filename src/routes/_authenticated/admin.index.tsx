@@ -994,9 +994,47 @@ function Customers() {
   const [cityFilter, setCityFilter] = useState("all");
   const [segment, setSegment] = useState("all");
   const fetchCustomers = useServerFn(listAdminCustomers);
+  const loadCustomers = async () => {
+    try {
+      const serverRows = (await fetchCustomers()) as any[];
+      if (serverRows.length > 0) return serverRows;
+    } catch (serverError) {
+      console.warn("[admin-customers] Server lookup failed; using Firestore fallback", serverError);
+    }
+
+    // Staff can read these collections under Firestore rules. Keeping this
+    // fallback prevents a transient server-session failure from rendering a
+    // misleading empty customer list.
+    const [profiles, orders] = await Promise.all([
+      fsList<any>(COL.profiles),
+      fsList<any>(COL.orders),
+    ]);
+    const spendByUser = new Map<string, { count: number; sum: number }>();
+    for (const order of orders) {
+      const userId = String(order.user_id ?? "");
+      if (!userId) continue;
+      const current = spendByUser.get(userId) ?? { count: 0, sum: 0 };
+      current.count += 1;
+      current.sum += Number(order.total ?? 0) || 0;
+      spendByUser.set(userId, current);
+    }
+    return profiles
+      .filter((profile) => !profile.deleted_at)
+      .map((profile) => ({
+        ...profile,
+        ...(spendByUser.get(profile.id) ?? { count: 0, sum: 0 }),
+      }))
+      .sort(
+        (a, b) =>
+          new Date(String(b.created_at ?? 0)).getTime() -
+          new Date(String(a.created_at ?? 0)).getTime(),
+      );
+  };
   const { data, error, isLoading, refetch } = useQuery({
-    queryKey: ["admin-customers"],
-    queryFn: () => fetchCustomers() as Promise<any[]>,
+    queryKey: ["admin-customers", user?.uid],
+    queryFn: loadCustomers,
+    enabled: Boolean(user?.uid),
+    retry: 1,
   });
 
   const toggle = (id: string) =>
