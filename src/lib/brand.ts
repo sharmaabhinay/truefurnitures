@@ -41,7 +41,43 @@ export const DEFAULT_FEATURES: FeatureFlags = {
   reviews: true,
 };
 
+/** Welcome / discount popup shown to first-time visitors. */
+export type WelcomePopup = {
+  enabled: boolean;
+  delay_seconds: number;
+  /** Days before the popup is offered again to someone who dismissed it. */
+  reshow_after_days: number;
+  /** Bump to re-show the popup to everyone (e.g. after changing the offer). */
+  version: number;
+  badge: string;
+  title: string;
+  italic: string;
+  body: string;
+  cta: string;
+  discount_code: string;
+  discount_percent: number;
+  ask_city: boolean;
+  ask_location: boolean;
+};
+
+export const DEFAULT_WELCOME_POPUP: WelcomePopup = {
+  enabled: true,
+  delay_seconds: 2,
+  reshow_after_days: 14,
+  version: 1,
+  badge: "Welcome to the Atelier",
+  title: "your first bespoke sofa.",
+  italic: "5% off",
+  body: "Join our list for early access to new collections, private showroom invitations, and a welcome discount reserved for first-time clients in Indore & Ujjain.",
+  cta: "Claim 5% Discount",
+  discount_code: "TF5-WELCOME",
+  discount_percent: 5,
+  ask_city: true,
+  ask_location: true,
+};
+
 export type BrandSettings = {
+
   brand_name: string;
   tagline: string;
   cities: string;
