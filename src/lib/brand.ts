@@ -102,6 +102,7 @@ export type BrandSettings = {
   hero_cta: string;
   hero_image: string;
   features: FeatureFlags;
+  welcome_popup: WelcomePopup;
 };
 
 
@@ -133,6 +134,7 @@ export const DEFAULT_BRAND: BrandSettings = {
   hero_cta: "Start 3D Design",
   hero_image: "",
   features: DEFAULT_FEATURES,
+  welcome_popup: DEFAULT_WELCOME_POPUP,
 };
 
 export const brandQueryKey = ["site-settings"] as const;
@@ -144,6 +146,7 @@ export async function fetchBrand(): Promise<BrandSettings> {
     ...DEFAULT_BRAND,
     ...(data ?? {}),
     features: { ...DEFAULT_FEATURES, ...((data?.features ?? {}) as Partial<FeatureFlags>) },
+    welcome_popup: { ...DEFAULT_WELCOME_POPUP, ...((data?.welcome_popup ?? {}) as Partial<WelcomePopup>) },
   } as BrandSettings;
 }
 
