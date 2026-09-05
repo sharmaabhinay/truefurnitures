@@ -128,6 +128,7 @@ export function WelcomeModal() {
                   className="w-full border-b border-[color:var(--brand-dark)]/20 pb-2 focus:outline-none focus:border-[color:var(--brand-accent)] bg-transparent text-base"
                 />
               </div>
+              {popup.ask_city && (
               <div>
                 <div className="flex items-center justify-between mb-2 gap-3">
                   <label className="text-[10px] font-black uppercase tracking-widest">Nearest City</label>
@@ -155,6 +156,7 @@ export function WelcomeModal() {
                   <p className="text-[10px] text-[color:var(--brand-dark)]/40 mt-2">Couldn’t detect your location — please pick your nearest city.</p>
                 )}
               </div>
+              )}
               {status === "error" && <p className="text-xs text-red-600">{message}</p>}
               <button
                 type="submit"
