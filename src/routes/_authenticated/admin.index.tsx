@@ -2326,11 +2326,15 @@ function Bookings() {
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex-1 min-w-[220px]">
                 <div className="font-semibold text-[14px]">
-                  {b.full_name} · {b.party_size} guest{b.party_size === 1 ? "" : "s"}
+                  {b.full_name}
+                  {b.source === "contact_form" ? " · Website contact form" : ` · ${b.party_size} guest${b.party_size === 1 ? "" : "s"}`}
                 </div>
                 <div className="text-[12px]" style={{ color: "#888899" }}>
-                  {sr?.name ?? "—"} · {b.preferred_date} · {b.preferred_time}
+                  {b.source === "contact_form"
+                    ? `Consultation request · ${b.preferred_date} ${b.preferred_time ?? ""}`
+                    : `${sr?.name ?? "—"} · ${b.preferred_date} · ${b.preferred_time}`}
                 </div>
+
                 <div className="text-[11px] mt-1" style={{ color: "#888899" }}>
                   {b.phone}
                   {b.email && ` · ${b.email}`}
