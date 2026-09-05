@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { COL, fsAdd } from "@/lib/db/firestore";
 import { detectCity, geolocationPermission, rememberCity } from "@/lib/geo";
+import { useBrand } from "@/lib/brand";
 
 const KEY = "tf_welcome_v1";
 
 export function WelcomeModal() {
+  const popup = useBrand().welcome_popup;
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [city, setCity] = useState<"Indore" | "Ujjain" | "Other">("Indore");
@@ -15,13 +17,22 @@ export function WelcomeModal() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (localStorage.getItem(KEY)) return;
+    if (!popup.enabled) return;
+    // Stored as "<version>:<dismissed-at>" so admins can re-show it by bumping
+    // the version or shortening the re-show window.
+    const seen = localStorage.getItem(KEY);
+    if (seen) {
+      const [v, at] = seen.split(":");
+      const days = (Date.now() - Number(at || 0)) / 86400000;
+      const sameVersion = Number(v) === Number(popup.version);
+      if (sameVersion && (popup.reshow_after_days <= 0 || days < popup.reshow_after_days)) return;
+    }
     // Never interrupt conversion/checkout/account flows with the discount popup.
     const skipOn = ["/auth", "/checkout", "/payment", "/cart", "/dashboard", "/admin", "/reset-password"];
     if (skipOn.some((p) => window.location.pathname.startsWith(p))) return;
-    const t = setTimeout(() => setOpen(true), 1800);
+    const t = setTimeout(() => setOpen(true), Math.max(0, popup.delay_seconds) * 1000);
     return () => clearTimeout(t);
-  }, []);
+  }, [popup]);
 
   const started = useRef(false);
 
@@ -40,6 +51,7 @@ export function WelcomeModal() {
   // Ask for location once the popup is visible so the browser prompt has context.
   useEffect(() => {
     if (!open || started.current) return;
+    if (!popup.ask_location) { setGeoState("failed"); started.current = true; return; }
     started.current = true;
     void (async () => {
       if ((await geolocationPermission()) === "denied") {
@@ -48,17 +60,17 @@ export function WelcomeModal() {
       }
       await runDetect();
     })();
-  }, [open, runDetect]);
+  }, [open, runDetect, popup.ask_location]);
 
   function dismiss() {
-    localStorage.setItem(KEY, "1");
+    localStorage.setItem(KEY, `${popup.version}:${Date.now()}`);
     setOpen(false);
   }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setStatus("loading");
-    const code = "TF5-WELCOME";
+    const code = popup.discount_code;
     const normalizedEmail = email.trim().toLowerCase();
     try {
       // Subscribers are write-only for the public, so we never read before writing.
@@ -92,17 +104,17 @@ export function WelcomeModal() {
           <div className="text-center py-4">
             <div className="tf-chip mb-6 mx-auto">Welcome Aboard</div>
             <h2 className="font-display text-3xl sm:text-4xl mb-3">Your code is ready.</h2>
-            <p className="text-[color:var(--brand-dark)]/60 mb-6 text-sm">Use this at checkout for 5% off your first order.</p>
+            <p className="text-[color:var(--brand-dark)]/60 mb-6 text-sm">Use this at checkout for {popup.discount_percent}% off your first order.</p>
             <div className="inline-block border-2 border-dashed border-[color:var(--brand-accent)] px-8 py-4 font-mono text-lg tracking-widest">{message}</div>
           </div>
         ) : (
           <>
-            <div className="tf-chip mb-6">Welcome to the Atelier</div>
+            <div className="tf-chip mb-6">{popup.badge}</div>
             <h2 className="font-display text-3xl sm:text-4xl mb-3 text-balance">
-              <span className="italic">5% off</span> your first bespoke sofa.
+              <span className="italic">{popup.italic}</span> {popup.title}
             </h2>
             <p className="text-[color:var(--brand-dark)]/60 mb-6 text-sm sm:text-base">
-              Join our list for early access to new collections, private showroom invitations, and a welcome discount reserved for first-time clients in Indore &amp; Ujjain.
+              {popup.body}
             </p>
             <form onSubmit={submit} className="space-y-4">
               <div>
@@ -149,7 +161,7 @@ export function WelcomeModal() {
                 disabled={status === "loading"}
                 className="w-full mt-2 px-6 py-4 bg-[color:var(--brand-dark)] text-white text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors disabled:opacity-60"
               >
-                {status === "loading" ? "Sending…" : "Claim 5% Discount"}
+                {status === "loading" ? "Sending…" : popup.cta}
               </button>
               <button type="button" onClick={dismiss} className="w-full text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-dark)]/50 hover:text-[color:var(--brand-dark)] pt-2">
                 No thanks
