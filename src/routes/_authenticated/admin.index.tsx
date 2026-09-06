@@ -1286,6 +1286,8 @@ function Subscribers() {
         </DataTable>
         <Pager page={paged.page} pages={paged.pages} total={paged.total} onPage={paged.setPage} label="subscribers" />
       </Card>
+      </>
+      )}
     </div>
   );
 }
