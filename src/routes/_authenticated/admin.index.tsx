@@ -1199,11 +1199,13 @@ function Customers() {
 
 function Subscribers() {
   const [q, setQ] = useState("");
+  const [view, setView] = useState<"list" | "popup">("list");
   const fetchSubscribers = useServerFn(listNewsletterSubscribers);
   const { data, isLoading } = useQuery({
     queryKey: ["admin-subscribers"],
     queryFn: () => fetchSubscribers() as Promise<any[]>,
   });
+
 
   const rows = data ?? [];
   const filtered = useMemo(() => {
