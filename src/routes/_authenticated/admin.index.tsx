@@ -27,6 +27,7 @@ import { CampaignManager } from "@/components/admin/campaign-manager";
 import { InboxManager } from "@/components/admin/inbox-manager";
 import { TrashManager, DeleteReasonModal } from "@/components/admin/trash-manager";
 import { SalesAnalytics } from "@/components/admin/sales-analytics";
+import { WelcomePopupSettings } from "@/components/admin/welcome-popup-settings";
 
 import { productStatusLabel } from "@/lib/availability";
 import { AModal, AInput } from "@/components/admin/ui";
