@@ -27,6 +27,7 @@ import { CampaignManager } from "@/components/admin/campaign-manager";
 import { InboxManager } from "@/components/admin/inbox-manager";
 import { TrashManager, DeleteReasonModal } from "@/components/admin/trash-manager";
 import { SalesAnalytics } from "@/components/admin/sales-analytics";
+import { WelcomePopupSettings } from "@/components/admin/welcome-popup-settings";
 
 import { productStatusLabel } from "@/lib/availability";
 import { AModal, AInput } from "@/components/admin/ui";
@@ -1199,11 +1200,13 @@ function Customers() {
 
 function Subscribers() {
   const [q, setQ] = useState("");
+  const [view, setView] = useState<"list" | "popup">("list");
   const fetchSubscribers = useServerFn(listNewsletterSubscribers);
   const { data, isLoading } = useQuery({
     queryKey: ["admin-subscribers"],
     queryFn: () => fetchSubscribers() as Promise<any[]>,
   });
+
 
   const rows = data ?? [];
   const filtered = useMemo(() => {
@@ -1228,6 +1231,26 @@ function Subscribers() {
 
   return (
     <div className="space-y-3">
+      <div className="flex gap-2">
+        {([["list", "Subscribers"], ["popup", "Welcome popup"]] as const).map(([k, label]) => (
+          <button
+            key={k}
+            onClick={() => setView(k)}
+            className="rounded-md px-4 py-2 text-[12px] font-semibold"
+            style={
+              view === k
+                ? { background: "#C8A86B", color: "#101014" }
+                : { background: "rgba(255,255,255,0.04)", color: "#888899", border: "1px solid #2A2A38" }
+            }
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {view === "popup" ? (
+        <WelcomePopupSettings />
+      ) : (
+      <>
       <div className="flex flex-wrap gap-2 items-center">
         <DarkInput
           placeholder="Search email, city, source…"
@@ -1264,6 +1287,8 @@ function Subscribers() {
         </DataTable>
         <Pager page={paged.page} pages={paged.pages} total={paged.total} onPage={paged.setPage} label="subscribers" />
       </Card>
+      </>
+      )}
     </div>
   );
 }
