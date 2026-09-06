@@ -1205,6 +1205,11 @@ function Subscribers() {
   const { data, isLoading } = useQuery({
     queryKey: ["admin-subscribers"],
     queryFn: () => fetchSubscribers() as Promise<any[]>,
+    // Always show the newest sign-ups: never serve a stale cached list.
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchInterval: 30_000,
   });
 
 
