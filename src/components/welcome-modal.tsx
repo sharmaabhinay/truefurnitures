@@ -73,9 +73,10 @@ export function WelcomeModal() {
   }, [open]);
 
   useEffect(() => {
+    if (!open || !popup.ask_location) return;
     if (geoState === "done") void logPopupEvent("popup_location_allowed", { city: detectedCity ?? undefined });
     if (geoState === "failed") void logPopupEvent("popup_location_denied");
-  }, [geoState, detectedCity]);
+  }, [open, popup.ask_location, geoState, detectedCity]);
 
   function dismiss() {
     localStorage.setItem(KEY, `${popup.version}:${Date.now()}`);
