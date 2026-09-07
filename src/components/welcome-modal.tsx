@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { COL, fsAdd } from "@/lib/db/firestore";
 import { detectCity, geolocationPermission, rememberCity } from "@/lib/geo";
 import { useBrand } from "@/lib/brand";
+import { logPopupEvent } from "@/lib/popup-analytics";
 
 const KEY = "tf_welcome_v1";
 
