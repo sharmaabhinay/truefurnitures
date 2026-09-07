@@ -1201,17 +1201,47 @@ function Customers() {
 function Subscribers() {
   const [q, setQ] = useState("");
   const [view, setView] = useState<"list" | "popup">("list");
+  const { user } = useAuth();
+  const qc = useQueryClient();
   const fetchSubscribers = useServerFn(listNewsletterSubscribers);
-  const { data, isLoading } = useQuery({
-    queryKey: ["admin-subscribers"],
-    queryFn: () => fetchSubscribers() as Promise<any[]>,
+  const subscriberQueryKey = ["admin-subscribers", user?.uid] as const;
+  const loadSubscribers = async () => {
+    try {
+      const serverRows = (await fetchSubscribers()) as any[];
+      if (serverRows.length > 0) return serverRows;
+    } catch (serverError) {
+      console.warn("[admin-subscribers] Server lookup failed; using Firestore fallback", serverError);
+    }
+
+    return fsListSorted<any>(COL.newsletterSubscribers, "created_at", "desc");
+  };
+  const { data, error, isLoading, refetch, isFetching } = useQuery({
+    queryKey: subscriberQueryKey,
+    queryFn: loadSubscribers,
+    enabled: Boolean(user?.uid),
     // Always show the newest sign-ups: never serve a stale cached list.
     staleTime: 0,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
     refetchInterval: 30_000,
+    retry: 1,
   });
 
+  useEffect(() => {
+    if (!user?.uid) return;
+    return fsWatch<any>(
+      COL.newsletterSubscribers,
+      (nextRows) => {
+        const sorted = [...nextRows].sort(
+          (a, b) =>
+            new Date(String(b.created_at ?? 0)).getTime() -
+            new Date(String(a.created_at ?? 0)).getTime(),
+        );
+        qc.setQueryData(subscriberQueryKey, sorted);
+      },
+      (watchError) => console.warn("[admin-subscribers] Live update failed", watchError),
+    );
+  }, [qc, user?.uid]);
 
   const rows = data ?? [];
   const filtered = useMemo(() => {
@@ -1271,10 +1301,26 @@ function Subscribers() {
         >
           <span className="inline-flex items-center gap-1.5"><FiDownload /> Export</span>
         </button>
+        <button
+          type="button"
+          onClick={() => void refetch()}
+          disabled={isFetching}
+          className="rounded-md px-3 py-2 text-[13px] disabled:opacity-50"
+          style={{ background: "rgba(255,255,255,0.04)", color: "#E8E8F0", border: "1px solid #2A2A38" }}
+          aria-label="Refresh subscribers"
+          title="Refresh subscribers"
+        >
+          <FiRefreshCw className={isFetching ? "animate-spin" : ""} />
+        </button>
         <span className="text-[12px]" style={{ color: "#888899" }}>
-          {filtered.length} subscriber{filtered.length === 1 ? "" : "s"}
+          {isLoading ? "Loading subscribers…" : `${filtered.length} subscriber${filtered.length === 1 ? "" : "s"}`}
         </span>
       </div>
+      {error && !isLoading && (
+        <div role="alert" className="rounded-md border px-4 py-3 text-[12px]" style={{ borderColor: "#7F1D1D", background: "rgba(127,29,29,0.14)", color: "#FCA5A5" }}>
+          Subscribers could not be loaded. Use the refresh button to try again.
+        </div>
+      )}
       <Card className="!p-0">
         <DataTable
           head={["Email", "City", "Source", "Code", "Subscribed"]}
