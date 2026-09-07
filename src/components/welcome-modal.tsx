@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { COL, fsAdd } from "@/lib/db/firestore";
 import { detectCity, geolocationPermission, rememberCity } from "@/lib/geo";
 import { useBrand } from "@/lib/brand";
+import { logPopupEvent } from "@/lib/popup-analytics";
 
 const KEY = "tf_welcome_v1";
 
@@ -62,10 +63,27 @@ export function WelcomeModal() {
     })();
   }, [open, runDetect, popup.ask_location]);
 
+  // Funnel tracking: one "shown" event per time the popup actually appears.
+  const loggedShown = useRef(false);
+  const subscribed = useRef(false);
+  useEffect(() => {
+    if (!open || loggedShown.current) return;
+    loggedShown.current = true;
+    void logPopupEvent("popup_shown");
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || !popup.ask_location) return;
+    if (geoState === "done") void logPopupEvent("popup_location_allowed", { city: detectedCity ?? undefined });
+    if (geoState === "failed") void logPopupEvent("popup_location_denied");
+  }, [open, popup.ask_location, geoState, detectedCity]);
+
   function dismiss() {
     localStorage.setItem(KEY, `${popup.version}:${Date.now()}`);
+    if (!subscribed.current) void logPopupEvent("popup_dismissed", { city });
     setOpen(false);
   }
+
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -85,6 +103,8 @@ export function WelcomeModal() {
       setMessage(e instanceof Error ? e.message : "Something went wrong");
       return;
     }
+    subscribed.current = true;
+    void logPopupEvent("popup_subscribed", { city });
     rememberCity(detectedCity ?? city);
     localStorage.setItem("tf_discount", code);
     setStatus("done");
