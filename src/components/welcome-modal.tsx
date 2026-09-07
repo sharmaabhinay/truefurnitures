@@ -63,10 +63,26 @@ export function WelcomeModal() {
     })();
   }, [open, runDetect, popup.ask_location]);
 
+  // Funnel tracking: one "shown" event per time the popup actually appears.
+  const loggedShown = useRef(false);
+  const subscribed = useRef(false);
+  useEffect(() => {
+    if (!open || loggedShown.current) return;
+    loggedShown.current = true;
+    void logPopupEvent("popup_shown");
+  }, [open]);
+
+  useEffect(() => {
+    if (geoState === "done") void logPopupEvent("popup_location_allowed", { city: detectedCity ?? undefined });
+    if (geoState === "failed") void logPopupEvent("popup_location_denied");
+  }, [geoState, detectedCity]);
+
   function dismiss() {
     localStorage.setItem(KEY, `${popup.version}:${Date.now()}`);
+    if (!subscribed.current) void logPopupEvent("popup_dismissed", { city });
     setOpen(false);
   }
+
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
