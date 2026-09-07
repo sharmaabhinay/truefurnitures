@@ -102,6 +102,8 @@ export function WelcomeModal() {
       setMessage(e instanceof Error ? e.message : "Something went wrong");
       return;
     }
+    subscribed.current = true;
+    void logPopupEvent("popup_subscribed", { city });
     rememberCity(detectedCity ?? city);
     localStorage.setItem("tf_discount", code);
     setStatus("done");
