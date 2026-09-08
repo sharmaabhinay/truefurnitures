@@ -517,12 +517,14 @@ function Dashboard({ onGo }: { onGo: (p: PanelKey) => void }) {
   const { data } = useQuery({
     queryKey: ["admin-overview"],
     queryFn: async () => {
-      const [orders, bookings, customers, reviews, products] = await Promise.all([
+      const [orders, bookings, customers, reviews, products, subscribers, popupEvents] = await Promise.all([
         fsList<any>(COL.orders),
         fsList<any>(COL.showroomBookings),
         fsList<any>(COL.profiles),
         fsList<any>(COL.reviews),
         fsList<any>(COL.sofas),
+        fsList<any>(COL.newsletterSubscribers).catch(() => [] as any[]),
+        listPopupEvents().catch(() => [] as any[]),
       ]);
       return {
         orders,
@@ -530,6 +532,8 @@ function Dashboard({ onGo }: { onGo: (p: PanelKey) => void }) {
         customers,
         reviews,
         products,
+        subscribers,
+        popupEvents,
       };
     },
   });
@@ -542,7 +546,16 @@ function Dashboard({ onGo }: { onGo: (p: PanelKey) => void }) {
   const cities = Array.from(
     new Set(orders.map((o: { delivery_city: string | null }) => o.delivery_city).filter(Boolean)),
   );
-  const pendingBookings = (data?.bookings ?? []).filter((b: { status: string }) => b.status === "pending").length;
+  const bookingsAll = data?.bookings ?? [];
+  const pendingBookings = bookingsAll.filter((b: { status: string }) => b.status === "pending").length;
+  const followUpBookings = bookingsAll.filter((b: { status: string }) => b.status === "follow_up").length;
+  const answeredBookings = bookingsAll.filter((b: { status: string }) => b.status === "answered").length;
+  const subscriberCount = data?.subscribers?.length ?? 0;
+  const popupEvents = data?.popupEvents ?? [];
+  const popupShown = popupEvents.filter((e: { type: string }) => e.type === "popup_shown").length;
+  const popupSubscribed = popupEvents.filter((e: { type: string }) => e.type === "popup_subscribed").length;
+  const popupClosed = popupEvents.filter((e: { type: string }) => e.type === "popup_dismissed").length;
+  const popupRate = popupShown ? `${Math.round((popupSubscribed / popupShown) * 100)}% converted` : "no views yet";
   const pendingReviews = (data?.reviews ?? []).filter((r: { approved: boolean }) => !r.approved).length;
   const totalUsers = data?.customers.length ?? 0;
   const monthAgo = Date.now() - 30 * 86400_000;
@@ -596,6 +609,12 @@ function Dashboard({ onGo }: { onGo: (p: PanelKey) => void }) {
 
   return (
     <div className="space-y-6">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <Metric label="Subscribers" value={subscriberCount} icon="✉️" change="newsletter list" />
+        <Metric label="Quote Requests" value={bookingsAll.length} icon="📝" change={`${pendingBookings} pending · ${followUpBookings} follow-up · ${answeredBookings} answered`} />
+        <Metric label="Customers" value={totalUsers} icon="👥" change="registered accounts" />
+        <Metric label="Popup Funnel" value={`${popupShown} / ${popupSubscribed}`} icon="🎯" change={`${popupClosed} closed · ${popupRate}`} />
+      </div>
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <Metric label="Total Users" value={totalUsers} icon="👥" change={totalUsers ? "signed up" : undefined} />
         <Metric label="Quote Requests" value={pendingBookings} icon="💬" change="awaiting follow-up" />
