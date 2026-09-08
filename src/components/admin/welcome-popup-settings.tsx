@@ -78,6 +78,8 @@ export function WelcomePopupSettings() {
         </div>
       </ACard>
 
+      <WelcomePopupPreview popup={form} />
+
       <ACard>
         <div className="grid gap-3 sm:grid-cols-3">
           <AField label="Show after (seconds)" hint="Delay before the popup appears.">
