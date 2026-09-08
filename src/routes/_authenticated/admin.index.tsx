@@ -2396,6 +2396,23 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 /* ================= BOOKINGS ================= */
 
+const QUOTE_STATUS_LABEL: Record<string, string> = {
+  pending: "Pending",
+  answered: "Answered",
+  follow_up: "Follow-up",
+  confirmed: "Confirmed",
+  completed: "Completed",
+  cancelled: "Cancelled",
+};
+const QUOTE_STATUS_COLOR: Record<string, string> = {
+  pending: "#E5A23D",
+  answered: "#4CAF82",
+  follow_up: "#6BA6E5",
+  confirmed: "#C8A86B",
+  completed: "#6BC8B4",
+  cancelled: "#E05050",
+};
+
 function Bookings() {
   const qc = useQueryClient();
   const { data } = useQuery({
@@ -2409,13 +2426,41 @@ function Bookings() {
       return bookings.map((b) => ({ ...b, showroom: byId.get(b.showroom_id) }));
     },
   });
-  const update = async (id: string, status: string) => {
+  const notify = useServerFn(sendQuoteStatusEmail);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const update = async (id: string, status: string, email?: string | null) => {
     try {
-      await fsUpdate(COL.showroomBookings, id, { status });
+      await fsUpdate(COL.showroomBookings, id, {
+        status,
+        status_updated_at: new Date().toISOString(),
+      });
     } catch (e) {
       return toast.error(e instanceof Error ? e.message : "Update failed");
     }
     qc.invalidateQueries({ queryKey: ["admin-bookings"] });
+    toast.success(`Marked as ${QUOTE_STATUS_LABEL[status] ?? status}`);
+    if ((status === "answered" || status === "follow_up") && email) {
+      void sendReminder(id, status);
+    }
+  };
+
+  const sendReminder = async (id: string, status: string) => {
+    setBusy(id);
+    try {
+      const res = (await notify({ data: { bookingId: id, status } })) as { sent: boolean; error?: string };
+      if (res.sent) {
+        await fsUpdate(COL.showroomBookings, id, { last_reminder_at: new Date().toISOString() }).catch(() => {});
+        qc.invalidateQueries({ queryKey: ["admin-bookings"] });
+        toast.success("Email sent to the customer");
+      } else {
+        toast.error(res.error === "no_email" ? "This enquiry has no email address" : "Email could not be sent");
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Email failed");
+    } finally {
+      setBusy(null);
+    }
   };
   return (
     <div className="space-y-3">
@@ -2445,12 +2490,40 @@ function Bookings() {
                   </div>
                 )}
               </div>
-              <DarkSelect value={b.status} onChange={(e) => update(b.id, e.target.value)}>
+              <div className="flex flex-col gap-1.5">
+                <span
+                  className="inline-block rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-center"
+                  style={{
+                    background: `${QUOTE_STATUS_COLOR[b.status] ?? "#888899"}22`,
+                    color: QUOTE_STATUS_COLOR[b.status] ?? "#888899",
+                  }}
+                >
+                  {QUOTE_STATUS_LABEL[b.status] ?? b.status ?? "pending"}
+                </span>
+                {b.last_reminder_at && (
+                  <span className="text-[10px] text-center" style={{ color: "#888899" }}>
+                    Reminded {formatDate(b.last_reminder_at)}
+                  </span>
+                )}
+              </div>
+              <DarkSelect value={b.status ?? "pending"} onChange={(e) => update(b.id, e.target.value, b.email)}>
                 <option value="pending">Pending</option>
+                <option value="answered">Answered</option>
+                <option value="follow_up">Needs follow-up</option>
                 <option value="confirmed">Confirmed</option>
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
               </DarkSelect>
+              <button
+                type="button"
+                onClick={() => void sendReminder(b.id, b.status === "answered" ? "answered" : "reminder")}
+                disabled={busy === b.id || !b.email}
+                title={b.email ? "Email this customer a reminder" : "No email on this enquiry"}
+                className="rounded-md px-3 py-1.5 text-[12px] font-medium disabled:opacity-50"
+                style={{ background: "rgba(255,255,255,0.04)", color: "#E8E8F0", border: "1px solid #2A2A38" }}
+              >
+                {busy === b.id ? "Sending…" : "Email reminder"}
+              </button>
               <a
                 href={`https://wa.me/91${b.phone}`}
                 target="_blank"
