@@ -28,6 +28,9 @@ import { InboxManager } from "@/components/admin/inbox-manager";
 import { TrashManager, DeleteReasonModal } from "@/components/admin/trash-manager";
 import { SalesAnalytics } from "@/components/admin/sales-analytics";
 import { WelcomePopupSettings } from "@/components/admin/welcome-popup-settings";
+import { PopupInsights } from "@/components/admin/popup-insights";
+import { listPopupEvents } from "@/lib/popup-analytics";
+import { sendQuoteStatusEmail } from "@/lib/email.functions";
 
 import { productStatusLabel } from "@/lib/availability";
 import { AModal, AInput } from "@/components/admin/ui";
@@ -514,12 +517,14 @@ function Dashboard({ onGo }: { onGo: (p: PanelKey) => void }) {
   const { data } = useQuery({
     queryKey: ["admin-overview"],
     queryFn: async () => {
-      const [orders, bookings, customers, reviews, products] = await Promise.all([
+      const [orders, bookings, customers, reviews, products, subscribers, popupEvents] = await Promise.all([
         fsList<any>(COL.orders),
         fsList<any>(COL.showroomBookings),
         fsList<any>(COL.profiles),
         fsList<any>(COL.reviews),
         fsList<any>(COL.sofas),
+        fsList<any>(COL.newsletterSubscribers).catch(() => [] as any[]),
+        listPopupEvents().catch(() => [] as any[]),
       ]);
       return {
         orders,
@@ -527,6 +532,8 @@ function Dashboard({ onGo }: { onGo: (p: PanelKey) => void }) {
         customers,
         reviews,
         products,
+        subscribers,
+        popupEvents,
       };
     },
   });
@@ -539,7 +546,16 @@ function Dashboard({ onGo }: { onGo: (p: PanelKey) => void }) {
   const cities = Array.from(
     new Set(orders.map((o: { delivery_city: string | null }) => o.delivery_city).filter(Boolean)),
   );
-  const pendingBookings = (data?.bookings ?? []).filter((b: { status: string }) => b.status === "pending").length;
+  const bookingsAll = data?.bookings ?? [];
+  const pendingBookings = bookingsAll.filter((b: { status: string }) => b.status === "pending").length;
+  const followUpBookings = bookingsAll.filter((b: { status: string }) => b.status === "follow_up").length;
+  const answeredBookings = bookingsAll.filter((b: { status: string }) => b.status === "answered").length;
+  const subscriberCount = data?.subscribers?.length ?? 0;
+  const popupEvents = data?.popupEvents ?? [];
+  const popupShown = popupEvents.filter((e: { type: string }) => e.type === "popup_shown").length;
+  const popupSubscribed = popupEvents.filter((e: { type: string }) => e.type === "popup_subscribed").length;
+  const popupClosed = popupEvents.filter((e: { type: string }) => e.type === "popup_dismissed").length;
+  const popupRate = popupShown ? `${Math.round((popupSubscribed / popupShown) * 100)}% converted` : "no views yet";
   const pendingReviews = (data?.reviews ?? []).filter((r: { approved: boolean }) => !r.approved).length;
   const totalUsers = data?.customers.length ?? 0;
   const monthAgo = Date.now() - 30 * 86400_000;
@@ -593,6 +609,12 @@ function Dashboard({ onGo }: { onGo: (p: PanelKey) => void }) {
 
   return (
     <div className="space-y-6">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <Metric label="Subscribers" value={subscriberCount} icon="✉️" change="newsletter list" />
+        <Metric label="Quote Requests" value={bookingsAll.length} icon="📝" change={`${pendingBookings} pending · ${followUpBookings} follow-up · ${answeredBookings} answered`} />
+        <Metric label="Customers" value={totalUsers} icon="👥" change="registered accounts" />
+        <Metric label="Popup Funnel" value={`${popupShown} / ${popupSubscribed}`} icon="🎯" change={`${popupClosed} closed · ${popupRate}`} />
+      </div>
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <Metric label="Total Users" value={totalUsers} icon="👥" change={totalUsers ? "signed up" : undefined} />
         <Metric label="Quote Requests" value={pendingBookings} icon="💬" change="awaiting follow-up" />
@@ -1200,7 +1222,7 @@ function Customers() {
 
 function Subscribers() {
   const [q, setQ] = useState("");
-  const [view, setView] = useState<"list" | "popup">("list");
+  const [view, setView] = useState<"list" | "popup" | "insights">("list");
   const { user } = useAuth();
   const qc = useQueryClient();
   const fetchSubscribers = useServerFn(listNewsletterSubscribers);
@@ -1267,7 +1289,7 @@ function Subscribers() {
   return (
     <div className="space-y-3">
       <div className="flex gap-2">
-        {([["list", "Subscribers"], ["popup", "Welcome popup"]] as const).map(([k, label]) => (
+        {([["list", "Subscribers"], ["insights", "Popup insights"], ["popup", "Welcome popup"]] as const).map(([k, label]) => (
           <button
             key={k}
             onClick={() => setView(k)}
@@ -1284,6 +1306,8 @@ function Subscribers() {
       </div>
       {view === "popup" ? (
         <WelcomePopupSettings />
+      ) : view === "insights" ? (
+        <PopupInsights />
       ) : (
       <>
       <div className="flex flex-wrap gap-2 items-center">
@@ -2372,6 +2396,23 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 /* ================= BOOKINGS ================= */
 
+const QUOTE_STATUS_LABEL: Record<string, string> = {
+  pending: "Pending",
+  answered: "Answered",
+  follow_up: "Follow-up",
+  confirmed: "Confirmed",
+  completed: "Completed",
+  cancelled: "Cancelled",
+};
+const QUOTE_STATUS_COLOR: Record<string, string> = {
+  pending: "#E5A23D",
+  answered: "#4CAF82",
+  follow_up: "#6BA6E5",
+  confirmed: "#C8A86B",
+  completed: "#6BC8B4",
+  cancelled: "#E05050",
+};
+
 function Bookings() {
   const qc = useQueryClient();
   const { data } = useQuery({
@@ -2385,13 +2426,41 @@ function Bookings() {
       return bookings.map((b) => ({ ...b, showroom: byId.get(b.showroom_id) }));
     },
   });
-  const update = async (id: string, status: string) => {
+  const notify = useServerFn(sendQuoteStatusEmail);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const update = async (id: string, status: string, email?: string | null) => {
     try {
-      await fsUpdate(COL.showroomBookings, id, { status });
+      await fsUpdate(COL.showroomBookings, id, {
+        status,
+        status_updated_at: new Date().toISOString(),
+      });
     } catch (e) {
       return toast.error(e instanceof Error ? e.message : "Update failed");
     }
     qc.invalidateQueries({ queryKey: ["admin-bookings"] });
+    toast.success(`Marked as ${QUOTE_STATUS_LABEL[status] ?? status}`);
+    if ((status === "answered" || status === "follow_up") && email) {
+      void sendReminder(id, status);
+    }
+  };
+
+  const sendReminder = async (id: string, status: string) => {
+    setBusy(id);
+    try {
+      const res = (await notify({ data: { bookingId: id, status } })) as { sent: boolean; error?: string };
+      if (res.sent) {
+        await fsUpdate(COL.showroomBookings, id, { last_reminder_at: new Date().toISOString() }).catch(() => {});
+        qc.invalidateQueries({ queryKey: ["admin-bookings"] });
+        toast.success("Email sent to the customer");
+      } else {
+        toast.error(res.error === "no_email" ? "This enquiry has no email address" : "Email could not be sent");
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Email failed");
+    } finally {
+      setBusy(null);
+    }
   };
   return (
     <div className="space-y-3">
@@ -2421,12 +2490,40 @@ function Bookings() {
                   </div>
                 )}
               </div>
-              <DarkSelect value={b.status} onChange={(e) => update(b.id, e.target.value)}>
+              <div className="flex flex-col gap-1.5">
+                <span
+                  className="inline-block rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-center"
+                  style={{
+                    background: `${QUOTE_STATUS_COLOR[b.status] ?? "#888899"}22`,
+                    color: QUOTE_STATUS_COLOR[b.status] ?? "#888899",
+                  }}
+                >
+                  {QUOTE_STATUS_LABEL[b.status] ?? b.status ?? "pending"}
+                </span>
+                {b.last_reminder_at && (
+                  <span className="text-[10px] text-center" style={{ color: "#888899" }}>
+                    Reminded {formatDate(b.last_reminder_at)}
+                  </span>
+                )}
+              </div>
+              <DarkSelect value={b.status ?? "pending"} onChange={(e) => update(b.id, e.target.value, b.email)}>
                 <option value="pending">Pending</option>
+                <option value="answered">Answered</option>
+                <option value="follow_up">Needs follow-up</option>
                 <option value="confirmed">Confirmed</option>
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
               </DarkSelect>
+              <button
+                type="button"
+                onClick={() => void sendReminder(b.id, b.status === "answered" ? "answered" : "reminder")}
+                disabled={busy === b.id || !b.email}
+                title={b.email ? "Email this customer a reminder" : "No email on this enquiry"}
+                className="rounded-md px-3 py-1.5 text-[12px] font-medium disabled:opacity-50"
+                style={{ background: "rgba(255,255,255,0.04)", color: "#E8E8F0", border: "1px solid #2A2A38" }}
+              >
+                {busy === b.id ? "Sending…" : "Email reminder"}
+              </button>
               <a
                 href={`https://wa.me/91${b.phone}`}
                 target="_blank"

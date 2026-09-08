@@ -9,6 +9,7 @@ import {
   type WelcomePopup,
 } from "@/lib/brand";
 import { ACard, AField, AInput, ATextarea, AButton, AToggle } from "@/components/admin/ui";
+import { WelcomePopupPreview } from "@/components/admin/welcome-popup-preview";
 
 /**
  * Admin controls for the storefront welcome / discount popup.
@@ -76,6 +77,8 @@ export function WelcomePopupSettings() {
           />
         </div>
       </ACard>
+
+      <WelcomePopupPreview popup={form} />
 
       <ACard>
         <div className="grid gap-3 sm:grid-cols-3">
