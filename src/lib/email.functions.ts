@@ -153,3 +153,27 @@ export const sendDepositStatusNotification = createServerFn({ method: "POST" })
 
     return { sent: emailResult.sent || smsResult.sent, email: emailResult, sms: smsResult };
   });
+
+/** Emails the customer when a quote request is answered / needs follow-up. */
+export const sendQuoteStatusEmail = createServerFn({ method: "POST" })
+  .inputValidator((d: { bookingId: string; status: string; note?: string | null }) => d)
+  .handler(async ({ data }) => {
+    const { adminGetDoc } = await import("@/lib/firebase-admin.server");
+    const { quoteStatusHtml, QUOTE_STATUS_COPY } = await import("@/lib/email-templates");
+    const brand = await getBrand();
+    const booking = await adminGetDoc("showroom_bookings", data.bookingId);
+    if (!booking) return { sent: false as const, error: "not_found" };
+    const email = typeof booking['email'] === "string" ? (booking['email'] as string) : null;
+    if (!email) return { sent: false as const, error: "no_email" };
+    const copy = QUOTE_STATUS_COPY[data.status] ?? QUOTE_STATUS_COPY['reminder']!;
+    return sendResend(
+      email,
+      `${copy.subject} · ${brand.brand_name}`,
+      quoteStatusHtml(brand, {
+        name: (booking['full_name'] as string | null) ?? null,
+        status: data.status,
+        note: data.note ?? null,
+      }),
+      brand,
+    );
+  });

@@ -302,3 +302,44 @@ export function depositStatusSms(
     return `${brand.brand_name}: Deposit of ${amt} for order #${args.orderNumber} failed. Retry: ${SITE_URL}/payment-status?orderId=${args.orderId}`;
   return `${brand.brand_name}: Deposit of ${amt} for order #${args.orderNumber} is pending confirmation. Status: ${SITE_URL}/payment-status?orderId=${args.orderId}`;
 }
+
+/* ================= QUOTE / ENQUIRY FOLLOW-UPS ================= */
+
+export const QUOTE_STATUS_COPY: Record<string, { subject: string; heading: string; body: string }> = {
+  answered: {
+    subject: "We've answered your enquiry",
+    heading: "Your enquiry has been answered",
+    body: "Our design team has reviewed your enquiry and shared a response. If anything is still unclear, simply reply to this email and we'll help right away.",
+  },
+  follow_up: {
+    subject: "A quick follow-up on your enquiry",
+    heading: "Just following up",
+    body: "We're still holding your enquiry open and would love to help you finish your custom sofa. Let us know a good time to talk and we'll take it from there.",
+  },
+  reminder: {
+    subject: "Reminder about your enquiry",
+    heading: "A gentle reminder",
+    body: "We haven't heard back from you yet about your enquiry. Whenever you're ready, we're here to design your sofa exactly the way you want it.",
+  },
+};
+
+export function quoteStatusHtml(
+  brand: Brand,
+  args: { name?: string | null; status: string; note?: string | null },
+) {
+  const copy = QUOTE_STATUS_COPY[args.status] ?? QUOTE_STATUS_COPY['reminder']!;
+  const first = args.name ? args.name.split(" ")[0] : "there";
+  const safeNote = args.note ? args.note.replace(/</g, "&lt;").replace(/>/g, "&gt;") : null;
+  return shell(
+    brand,
+    "Your enquiry",
+    `
+      <h1 style="font-size:26px;line-height:1.2;margin:0 0 16px;font-weight:400;">${copy.heading}</h1>
+      <p style="font-size:16px;line-height:1.6;color:#333;">Hi ${first},</p>
+      <p style="font-size:16px;line-height:1.6;color:#333;">${copy.body}</p>
+      ${safeNote ? `<p style="font-size:14px;line-height:1.6;color:#555;background:#faf7f2;padding:14px 16px;border-left:3px solid #a3712a;">${safeNote}</p>` : ""}
+      <p style="margin:28px 0 8px;">
+        <a href="https://wa.me/${brand.whatsapp}" style="display:inline-block;background:#1a1a1a;color:#fff;text-decoration:none;padding:14px 28px;font-size:12px;letter-spacing:0.25em;text-transform:uppercase;">Chat with us</a>
+      </p>`,
+  );
+}
