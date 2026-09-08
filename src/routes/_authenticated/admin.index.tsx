@@ -28,6 +28,9 @@ import { InboxManager } from "@/components/admin/inbox-manager";
 import { TrashManager, DeleteReasonModal } from "@/components/admin/trash-manager";
 import { SalesAnalytics } from "@/components/admin/sales-analytics";
 import { WelcomePopupSettings } from "@/components/admin/welcome-popup-settings";
+import { PopupInsights } from "@/components/admin/popup-insights";
+import { listPopupEvents } from "@/lib/popup-analytics";
+import { sendQuoteStatusEmail } from "@/lib/email.functions";
 
 import { productStatusLabel } from "@/lib/availability";
 import { AModal, AInput } from "@/components/admin/ui";
@@ -1200,7 +1203,7 @@ function Customers() {
 
 function Subscribers() {
   const [q, setQ] = useState("");
-  const [view, setView] = useState<"list" | "popup">("list");
+  const [view, setView] = useState<"list" | "popup" | "insights">("list");
   const { user } = useAuth();
   const qc = useQueryClient();
   const fetchSubscribers = useServerFn(listNewsletterSubscribers);
@@ -1267,7 +1270,7 @@ function Subscribers() {
   return (
     <div className="space-y-3">
       <div className="flex gap-2">
-        {([["list", "Subscribers"], ["popup", "Welcome popup"]] as const).map(([k, label]) => (
+        {([["list", "Subscribers"], ["insights", "Popup insights"], ["popup", "Welcome popup"]] as const).map(([k, label]) => (
           <button
             key={k}
             onClick={() => setView(k)}
@@ -1284,6 +1287,8 @@ function Subscribers() {
       </div>
       {view === "popup" ? (
         <WelcomePopupSettings />
+      ) : view === "insights" ? (
+        <PopupInsights />
       ) : (
       <>
       <div className="flex flex-wrap gap-2 items-center">
