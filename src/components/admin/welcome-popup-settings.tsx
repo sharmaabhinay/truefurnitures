@@ -9,6 +9,7 @@ import {
   type WelcomePopup,
 } from "@/lib/brand";
 import { ACard, AField, AInput, ATextarea, AButton, AToggle } from "@/components/admin/ui";
+import { WelcomePopupPreview } from "@/components/admin/welcome-popup-preview";
 
 /**
  * Admin controls for the storefront welcome / discount popup.
