@@ -616,8 +616,9 @@ function Dashboard({ onGo }: { onGo: (p: PanelKey) => void }) {
         <Metric label="Popup Funnel" value={`${popupShown} / ${popupSubscribed}`} icon="🎯" change={`${popupClosed} closed · ${popupRate}`} />
       </div>
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <Metric label="Total Users" value={totalUsers} icon="👥" change={totalUsers ? "signed up" : undefined} />
-        <Metric label="Quote Requests" value={pendingBookings} icon="💬" change="awaiting follow-up" />
+        <Metric label="Pending Enquiries" value={pendingBookings} icon="💬" change="awaiting follow-up" />
+        <Metric label="Pending Reviews" value={pendingReviews} icon="⭐" change="awaiting approval" />
+
         <Metric label="Active Products" value={data?.products.length ?? 0} icon="🛋️" change="live catalog" />
         <Metric label="Total Revenue" value={formatINR(totalRevenue)} icon="💰" change={monthRevenue ? `${formatINR(monthRevenue)} this month` : undefined} />
       </div>
