@@ -1497,13 +1497,16 @@ function Products() {
     const byUid = new Map<string, any>((profiles ?? []).map((p: any) => [p.id, p]));
     const map = new Map<string, CartWatcher[]>();
     for (const c of carts ?? []) {
+      if (c?.deleted_at) continue;
       const items: any[] = Array.isArray(c.items) ? c.items : [];
       const grouped = new Map<string, CartLine[]>();
       for (const it of items) {
         if (!it?.sofaId) continue;
+        const qty = Math.max(0, Number(it.quantity) || 0);
+        if (qty === 0) continue;
         const list = grouped.get(it.sofaId) ?? [];
         list.push({
-          quantity: Number(it.quantity) || 1,
+          quantity: qty,
           fabric: it.fabric,
           size: it.size,
           color: it.color,
