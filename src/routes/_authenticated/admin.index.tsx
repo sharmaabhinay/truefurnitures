@@ -1480,6 +1480,7 @@ function useLiveCollection<T = any>(col: string) {
 
 function Products() {
   const qc = useQueryClient();
+  const productNav = useNavigate();
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Partial<SofaRow> | null>(null);
   const [cartFor, setCartFor] = useState<{ id: string; name: string; watchers: CartWatcher[] } | null>(null);
@@ -1497,13 +1498,16 @@ function Products() {
     const byUid = new Map<string, any>((profiles ?? []).map((p: any) => [p.id, p]));
     const map = new Map<string, CartWatcher[]>();
     for (const c of carts ?? []) {
+      if (c?.deleted_at) continue;
       const items: any[] = Array.isArray(c.items) ? c.items : [];
       const grouped = new Map<string, CartLine[]>();
       for (const it of items) {
         if (!it?.sofaId) continue;
+        const qty = Math.max(0, Number(it.quantity) || 0);
+        if (qty === 0) continue;
         const list = grouped.get(it.sofaId) ?? [];
         list.push({
-          quantity: Number(it.quantity) || 1,
+          quantity: qty,
           fabric: it.fabric,
           size: it.size,
           color: it.color,
@@ -1532,18 +1536,6 @@ function Products() {
     return map;
   }, [carts, profiles]);
 
-  /** Orders placed per product, for the second badge. */
-  const orderCounts = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const o of liveOrders ?? []) {
-      const sid = o?.sofa_id;
-      if (!sid) continue;
-      map.set(sid, (map.get(sid) ?? 0) + 1);
-    }
-    return map;
-  }, [liveOrders]);
-
-
   const { data } = useQuery({
     queryKey: ["admin-products"],
     queryFn: async () => {
@@ -1551,6 +1543,23 @@ function Products() {
       return rows;
     },
   });
+
+  /**
+   * Real orders placed per product: skips soft-deleted orders and also matches
+   * older orders that only stored the product slug in their snapshot.
+   */
+  const orderCounts = useMemo(() => {
+    const idBySlug = new Map<string, string>();
+    for (const p of data ?? []) if ((p as any).slug) idBySlug.set(String((p as any).slug), p.id);
+    const map = new Map<string, number>();
+    for (const o of liveOrders ?? []) {
+      if (!o || o.deleted_at) continue;
+      const sid = o.sofa_id || idBySlug.get(String(o.sofa_snapshot?.slug ?? ""));
+      if (!sid) continue;
+      map.set(sid, (map.get(sid) ?? 0) + 1);
+    }
+    return map;
+  }, [liveOrders, data]);
 
   const update = async (id: string, patch: any) => {
     try {
@@ -1635,13 +1644,15 @@ function Products() {
                   {p.lead_time_days}d lead
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span
-                    className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                  <button
+                    type="button"
+                    onClick={() => productNav({ to: "/admin/products/$id/orders", params: { id: p.id } })}
+                    className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold cursor-pointer"
                     style={{ background: "#2A2A3866", color: "#9FB8A0" }}
-                    title="Orders placed for this product"
+                    title="View the orders placed for this product"
                   >
                     <FiShoppingBag /> {orderCounts.get(p.id) ?? 0} orders
-                  </span>
+                  </button>
                   {(() => {
                     const watchers = cartMap.get(p.id) ?? [];
                     const count = watchers.reduce((n, w) => n + w.quantity, 0);
@@ -1670,7 +1681,7 @@ function Products() {
                       <button
                         type="button"
                         disabled={watchers.length === 0}
-                        onClick={() => setCartFor({ id: p.id, name: p.name, watchers })}
+                        onClick={() => productNav({ to: "/admin/products/$id/carts", params: { id: p.id } })}
                         title={watchers.length ? "View customers with this in cart" : "No carts yet"}
                         className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold transition-opacity disabled:opacity-50"
                         style={{
