@@ -1480,6 +1480,7 @@ function useLiveCollection<T = any>(col: string) {
 
 function Products() {
   const qc = useQueryClient();
+  const productNav = useNavigate();
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Partial<SofaRow> | null>(null);
   const [cartFor, setCartFor] = useState<{ id: string; name: string; watchers: CartWatcher[] } | null>(null);
