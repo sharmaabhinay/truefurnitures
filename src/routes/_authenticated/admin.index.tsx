@@ -1643,13 +1643,15 @@ function Products() {
                   {p.lead_time_days}d lead
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span
-                    className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                  <button
+                    type="button"
+                    onClick={() => productNav({ to: "/admin/products/$id/orders", params: { id: p.id } })}
+                    className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold cursor-pointer"
                     style={{ background: "#2A2A3866", color: "#9FB8A0" }}
-                    title="Orders placed for this product"
+                    title="View the orders placed for this product"
                   >
                     <FiShoppingBag /> {orderCounts.get(p.id) ?? 0} orders
-                  </span>
+                  </button>
                   {(() => {
                     const watchers = cartMap.get(p.id) ?? [];
                     const count = watchers.reduce((n, w) => n + w.quantity, 0);
