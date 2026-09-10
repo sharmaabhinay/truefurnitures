@@ -150,3 +150,66 @@ export const listNewsletterSubscribers = createServerFn({ method: "GET" })
         new Date(String(a["created_at"] ?? 0)).getTime(),
     );
   });
+
+/** Customers holding a specific product in their cart (staff only, admin credentials). */
+export const listProductCartHolders = createServerFn({ method: "GET" })
+  .middleware([requireFirebaseAuth])
+  .inputValidator((d) => z.object({ productId: z.string().min(1) }).parse(d))
+  .handler(async ({ context, data }) => {
+    await staffOnly(context.role, context.userId);
+    const { adminQuery, adminGetDoc, adminListUsers } = await import("@/lib/firebase-admin.server");
+    const id = data.productId;
+    const [sofa, carts, profiles, authUsers] = await Promise.all([
+      adminGetDoc("sofas", id).catch(() => null),
+      adminQuery("carts").catch(() => []),
+      adminQuery("profiles").catch(() => []),
+      adminListUsers().catch(() => []),
+    ]);
+    const slug = sofa ? String((sofa as Row)["slug"] ?? "") : "";
+    const byUid = new Map<string, Row>((profiles as Row[]).map((p) => [p.id, p]));
+    const authById = new Map(authUsers.map((u) => [u.uid, u]));
+
+    const holders = [] as Array<{
+      uid: string;
+      name: string;
+      email: string;
+      phone: string;
+      quantity: number;
+      lastAdded: string | null;
+      lines: Array<{ quantity: number; fabric?: string; size?: string; color?: string }>;
+    }>;
+
+    for (const c of carts as Row[]) {
+      if (c["deleted_at"]) continue;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const items: any[] = Array.isArray(c["items"]) ? (c["items"] as any[]) : [];
+      const lines = items
+        .filter((it) => it && (it.sofaId === id || (slug && it.slug === slug)))
+        .map((it) => ({
+          quantity: Math.max(0, Number(it.quantity) || 0),
+          fabric: it.fabric,
+          size: it.size,
+          color: it.color,
+          addedAt: typeof it.addedAt === "string" ? it.addedAt : undefined,
+        }))
+        .filter((l) => l.quantity > 0);
+      if (!lines.length) continue;
+      const prof = byUid.get(c.id) ?? ({} as Row);
+      const au = authById.get(c.id);
+      const times = lines.map((l) => l.addedAt).filter(Boolean) as string[];
+      holders.push({
+        uid: c.id,
+        name: String(prof["full_name"] ?? prof["name"] ?? "Guest customer"),
+        email: String(prof["email"] ?? au?.email ?? "—"),
+        phone: String(prof["phone"] ?? "—"),
+        quantity: lines.reduce((n, l) => n + l.quantity, 0),
+        lastAdded: times.length ? times.sort().at(-1)! : (String(c["updated_at"] ?? "") || null),
+        lines: lines.map(({ quantity, fabric, size, color }) => ({ quantity, fabric, size, color })),
+      });
+    }
+
+    return {
+      product: sofa ? { id, name: String((sofa as Row)["name"] ?? "Product") } : { id, name: "Product" },
+      holders: holders.sort((a, b) => (b.lastAdded ?? "").localeCompare(a.lastAdded ?? "")),
+    };
+  });
