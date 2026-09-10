@@ -1680,7 +1680,7 @@ function Products() {
                       <button
                         type="button"
                         disabled={watchers.length === 0}
-                        onClick={() => setCartFor({ id: p.id, name: p.name, watchers })}
+                        onClick={() => productNav({ to: "/admin/products/$id/carts", params: { id: p.id } })}
                         title={watchers.length ? "View customers with this in cart" : "No carts yet"}
                         className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold transition-opacity disabled:opacity-50"
                         style={{
