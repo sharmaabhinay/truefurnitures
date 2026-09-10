@@ -1535,18 +1535,6 @@ function Products() {
     return map;
   }, [carts, profiles]);
 
-  /** Orders placed per product, for the second badge. */
-  const orderCounts = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const o of liveOrders ?? []) {
-      const sid = o?.sofa_id;
-      if (!sid) continue;
-      map.set(sid, (map.get(sid) ?? 0) + 1);
-    }
-    return map;
-  }, [liveOrders]);
-
-
   const { data } = useQuery({
     queryKey: ["admin-products"],
     queryFn: async () => {
@@ -1554,6 +1542,23 @@ function Products() {
       return rows;
     },
   });
+
+  /**
+   * Real orders placed per product: skips soft-deleted orders and also matches
+   * older orders that only stored the product slug in their snapshot.
+   */
+  const orderCounts = useMemo(() => {
+    const idBySlug = new Map<string, string>();
+    for (const p of data ?? []) if ((p as any).slug) idBySlug.set(String((p as any).slug), p.id);
+    const map = new Map<string, number>();
+    for (const o of liveOrders ?? []) {
+      if (!o || o.deleted_at) continue;
+      const sid = o.sofa_id || idBySlug.get(String(o.sofa_snapshot?.slug ?? ""));
+      if (!sid) continue;
+      map.set(sid, (map.get(sid) ?? 0) + 1);
+    }
+    return map;
+  }, [liveOrders, data]);
 
   const update = async (id: string, patch: any) => {
     try {
