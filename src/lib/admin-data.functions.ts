@@ -213,3 +213,56 @@ export const listProductCartHolders = createServerFn({ method: "GET" })
       holders: holders.sort((a, b) => (b.lastAdded ?? "").localeCompare(a.lastAdded ?? "")),
     };
   });
+
+/** Cart-to-checkout funnel calculated from shared events and order records. */
+export const getAdminCartInsights = createServerFn({ method: "GET" })
+  .middleware([requireFirebaseAuth])
+  .handler(async ({ context }) => {
+    await staffOnly(context.role, context.userId);
+    const { adminQuery } = await import("@/lib/firebase-admin.server");
+    const [events, orders, carts] = await Promise.all([
+      adminQuery("visitors").catch(() => []),
+      adminQuery("orders").catch(() => []),
+      adminQuery("carts").catch(() => []),
+    ]);
+
+    const additions = (events as Row[]).filter((e) => e["type"] === "add_to_cart");
+    const visitorKeys = new Set(
+      additions.map((e) => String(e["session"] ?? `${e["ua"] ?? "anon"}|${String(e["time"] ?? "").slice(0, 10)}`)),
+    );
+    const validOrders = (orders as Row[]).filter(
+      (o) => !o["deleted_at"] && !["cancelled", "refunded"].includes(String(o["status"] ?? "")),
+    );
+    const checkoutKeys = new Set(
+      validOrders.map((o) => String(
+        o["checkout_id"] ?? `${o["user_id"] ?? "guest"}|${String(o["created_at"] ?? "").slice(0, 16)}`,
+      )),
+    );
+    const productAdds = new Map<string, number>();
+    for (const e of additions) {
+      const item = String(e["item"] ?? "Unknown product");
+      productAdds.set(item, (productAdds.get(item) ?? 0) + 1);
+    }
+    const productOrders = new Map<string, number>();
+    for (const o of validOrders) {
+      const snapshot = (o["sofa_snapshot"] ?? {}) as Record<string, unknown>;
+      const item = String(snapshot["name"] ?? "Unknown product");
+      productOrders.set(item, (productOrders.get(item) ?? 0) + 1);
+    }
+    const activeCarts = (carts as Row[]).filter(
+      (c) => !c["deleted_at"] && Array.isArray(c["items"]) && (c["items"] as unknown[]).some((i) => {
+        const line = i as Record<string, unknown>;
+        return Number(line["quantity"] ?? 0) > 0;
+      }),
+    ).length;
+
+    return {
+      cartVisitors: visitorKeys.size,
+      addEvents: additions.length,
+      completedCheckouts: checkoutKeys.size,
+      activeCarts,
+      conversionRate: visitorKeys.size ? Math.round((checkoutKeys.size / visitorKeys.size) * 1000) / 10 : 0,
+      productAdds: Array.from(productAdds.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8),
+      productOrders: Array.from(productOrders.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8),
+    };
+  });
