@@ -203,7 +203,7 @@ export const listProductCartHolders = createServerFn({ method: "GET" })
         email: String(prof["email"] ?? au?.email ?? "—"),
         phone: String(prof["phone"] ?? "—"),
         quantity: lines.reduce((n, l) => n + l.quantity, 0),
-        lastAdded: times.length ? times.sort().at(-1)! : (String(c["updated_at"] ?? "") || null),
+        lastAdded: times.length ? (times.sort().at(-1) ?? null) : (String(c["updated_at"] ?? "") || null),
         lines: lines.map(({ quantity, fabric, size, color }) => ({ quantity, fabric, size, color })),
       });
     }
@@ -238,6 +238,11 @@ export const getAdminCartInsights = createServerFn({ method: "GET" })
         o["checkout_id"] ?? `${o["user_id"] ?? "guest"}|${String(o["created_at"] ?? "").slice(0, 16)}`,
       )),
     );
+    const convertedVisitorKeys = new Set(
+      validOrders
+        .map((o) => String(o["checkout_session"] ?? ""))
+        .filter((session) => session && visitorKeys.has(session)),
+    );
     const productAdds = new Map<string, number>();
     for (const e of additions) {
       const item = String(e["item"] ?? "Unknown product");
@@ -261,7 +266,7 @@ export const getAdminCartInsights = createServerFn({ method: "GET" })
       addEvents: additions.length,
       completedCheckouts: checkoutKeys.size,
       activeCarts,
-      conversionRate: visitorKeys.size ? Math.round((checkoutKeys.size / visitorKeys.size) * 1000) / 10 : 0,
+      conversionRate: visitorKeys.size ? Math.round((convertedVisitorKeys.size / visitorKeys.size) * 1000) / 10 : 0,
       productAdds: Array.from(productAdds.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8),
       productOrders: Array.from(productOrders.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8),
     };

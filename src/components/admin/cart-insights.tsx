@@ -62,7 +62,7 @@ export function CartInsights() {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Added to cart" value={isLoading ? "—" : (data?.cartVisitors ?? 0)} note={`${data?.addEvents ?? 0} total add actions`} icon={<FiUsers />} />
         <Stat label="Completed checkout" value={isLoading ? "—" : (data?.completedCheckouts ?? 0)} note="excluding cancelled and refunded" icon={<FiCheckCircle />} />
-        <Stat label="Conversion rate" value={isLoading ? "—" : `${data?.conversionRate ?? 0}%`} note="checkout sessions ÷ cart visitors" icon={<FiTrendingUp />} />
+        <Stat label="Conversion rate" value={isLoading ? "—" : `${data?.conversionRate ?? 0}%`} note="tracked cart visitors who checked out" icon={<FiTrendingUp />} />
         <Stat label="Active customer carts" value={isLoading ? "—" : (data?.activeCarts ?? 0)} note="currently holding at least one item" icon={<FiShoppingCart />} />
       </div>
       <div className="grid gap-3 lg:grid-cols-2">
