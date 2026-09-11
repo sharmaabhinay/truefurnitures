@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import type React from "react";
 import { FiRefreshCw, FiShoppingCart, FiCheckCircle, FiTrendingUp, FiUsers } from "react-icons/fi";
 import { getAdminCartInsights } from "@/lib/admin-data.functions";
 import { AButton, ACard, dark } from "@/components/admin/ui";

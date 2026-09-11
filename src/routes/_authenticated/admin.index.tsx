@@ -29,6 +29,7 @@ import { TrashManager, DeleteReasonModal } from "@/components/admin/trash-manage
 import { SalesAnalytics } from "@/components/admin/sales-analytics";
 import { WelcomePopupSettings } from "@/components/admin/welcome-popup-settings";
 import { PopupInsights } from "@/components/admin/popup-insights";
+import { CartInsights } from "@/components/admin/cart-insights";
 import { listPopupEvents } from "@/lib/popup-analytics";
 import { sendQuoteStatusEmail } from "@/lib/email.functions";
 
@@ -58,6 +59,7 @@ export const Route = createFileRoute("/_authenticated/admin/")({
 type PanelKey =
   | "dashboard"
   | "analytics"
+  | "cartInsights"
   | "visitors"
   | "orders"
   | "products"
@@ -91,6 +93,7 @@ const NAV: NavGroup[] = [
     title: "",
     items: [
       { key: "analytics", label: "Sales Analytics", icon: <FiTrendingUp /> },
+      { key: "cartInsights", label: "Cart Insights", icon: <FiShoppingCart /> },
       { key: "visitors", label: "Visitor Analytics", icon: <FiEye /> },
       { key: "orders", label: "Orders", icon: <FiPackage /> },
       { key: "customers", label: "Customers", icon: <FiUsers /> },
@@ -136,6 +139,7 @@ const NAV: NavGroup[] = [
 const TITLES: Record<PanelKey, string> = {
   dashboard: "Dashboard",
   analytics: "Sales Analytics",
+  cartInsights: "Cart Insights",
   visitors: "Visitor Analytics",
   orders: "Orders",
   customers: "Customers",
@@ -323,6 +327,7 @@ function AdminHome() {
         <main className="flex-1 p-4 sm:p-8 overflow-x-hidden">
           {panel === "dashboard" && <Dashboard onGo={setPanel} />}
           {panel === "analytics" && <SalesAnalytics />}
+          {panel === "cartInsights" && <CartInsights />}
           {panel === "visitors" && <Visitors />}
           {panel === "orders" && <Orders />}
           {panel === "customers" && <Customers />}
@@ -1656,41 +1661,19 @@ function Products() {
                   {(() => {
                     const watchers = cartMap.get(p.id) ?? [];
                     const count = watchers.reduce((n, w) => n + w.quantity, 0);
-                    if (cartError) {
-                      return (
-                        <span
-                          className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold"
-                          style={{ background: "#E0505022", color: "#E05050" }}
-                          title={cartError}
-                        >
-                          <FiAlertCircle /> cart data
-                        </span>
-                      );
-                    }
-                    if (cartLoading) {
-                      return (
-                        <span
-                          className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold"
-                          style={{ background: "#2A2A38", color: "#888899" }}
-                        >
-                          <FiLoader className="animate-spin" /> cart…
-                        </span>
-                      );
-                    }
                     return (
                       <button
                         type="button"
-                        disabled={watchers.length === 0}
                         onClick={() => productNav({ to: "/admin/products/$id/carts", params: { id: p.id } })}
-                        title={watchers.length ? "View customers with this in cart" : "No carts yet"}
-                        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold transition-opacity disabled:opacity-50"
+                        title={cartError ? "Open the staff-authorized cart list" : "View customers with this in cart"}
+                        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold"
                         style={{
                           background: watchers.length ? "#C8A86B22" : "#2A2A38",
                           color: watchers.length ? "#C8A86B" : "#888899",
-                          cursor: watchers.length ? "pointer" : "default",
+                          cursor: "pointer",
                         }}
                       >
-                        <FiShoppingCart /> {count} in cart
+                        {cartLoading ? <FiLoader className="animate-spin" /> : cartError ? <FiAlertCircle /> : <FiShoppingCart />} {cartLoading ? "cart…" : `${count} in cart`}
                         {watchers.length > 0 && (
                           <span style={{ color: "#888899" }}>· {watchers.length} cust.</span>
                         )}
