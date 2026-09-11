@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { COL, fsGet, fsList } from "@/lib/db/firestore";
+import { useServerFn } from "@tanstack/react-start";
+import { listProductCartHolders } from "@/lib/admin-data.functions";
 import { formatDate } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/admin/products/$id/carts")({
@@ -8,6 +9,11 @@ export const Route = createFileRoute("/_authenticated/admin/products/$id/carts")
   head: () => ({
     meta: [
       { title: "In customers' carts — Admin · True Furniture's" },
+      { name: "description", content: "View customers holding this True Furniture's product in their carts." },
+      { property: "og:title", content: "Product Cart Customers — True Furniture's Admin" },
+      { property: "og:description", content: "View customers holding a selected product in their carts." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -36,52 +42,14 @@ type Holder = {
 function ProductCarts() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
-
-  const { data: product } = useQuery({
-    queryKey: ["product-carts-sofa", id],
-    queryFn: () => fsGet<any>(COL.sofas, id),
+  const loadHolders = useServerFn(listProductCartHolders);
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ["product-carts", id],
+    queryFn: () => loadHolders({ data: { productId: id } }),
+    staleTime: 0,
   });
-
-  const { data: holders, isLoading } = useQuery({
-    queryKey: ["product-carts", id, product?.slug ?? ""],
-    queryFn: async (): Promise<Holder[]> => {
-      const [carts, profiles] = await Promise.all([
-        fsList<any>(COL.carts),
-        fsList<any>(COL.profiles).catch(() => []),
-      ]);
-      const byUid = new Map<string, any>((profiles ?? []).map((p: any) => [p.id, p]));
-      const slug = product?.slug;
-      const out: Holder[] = [];
-      for (const c of carts ?? []) {
-        if (c.deleted_at) continue;
-        const items: any[] = Array.isArray(c.items) ? c.items : [];
-        const lines = items
-          .filter((it) => it && (it.sofaId === id || (slug && it.slug === slug)))
-          .map((it) => ({
-            quantity: Math.max(0, Number(it.quantity) || 0),
-            fabric: it.fabric,
-            size: it.size,
-            color: it.color,
-            addedAt: typeof it.addedAt === "string" ? it.addedAt : undefined,
-          }))
-          .filter((l) => l.quantity > 0);
-        if (!lines.length) continue;
-        const prof = byUid.get(c.id) ?? {};
-        const times = lines.map((l) => l.addedAt).filter(Boolean) as string[];
-        out.push({
-          uid: c.id,
-          name: prof.full_name || prof.name || "Guest customer",
-          email: prof.email || "—",
-          phone: prof.phone || "—",
-          quantity: lines.reduce((n, l) => n + l.quantity, 0),
-          lastAdded: times.length ? times.sort().at(-1)! : (c.updated_at ?? null),
-          lines,
-        });
-      }
-      return out.sort((a, b) => (b.lastAdded ?? "").localeCompare(a.lastAdded ?? ""));
-    },
-    enabled: !!product || product === null,
-  });
+  const product = data?.product;
+  const holders = (data?.holders ?? []) as Holder[];
 
   const units = (holders ?? []).reduce((n, h) => n + h.quantity, 0);
 
@@ -98,18 +66,25 @@ function ProductCarts() {
           </div>
           <h1 className="text-[20px] font-semibold">{product?.name ?? "Product"}</h1>
           <div className="mt-2 text-[13px]" style={{ color: dark.mute }}>
-            {units} item(s) held by {holders?.length ?? 0} customer(s)
+            {units} item(s) held by {holders.length} customer(s)
           </div>
         </div>
 
+        {error && (
+          <div className="rounded-xl p-4 text-[13px] flex items-center justify-between gap-3" style={{ background: dark.card, border: `1px solid ${dark.border}`, color: "#E05050" }}>
+            <span>Cart customer data could not be loaded.</span>
+            <button type="button" onClick={() => void refetch()} style={{ color: dark.accent }}>Try again</button>
+          </div>
+        )}
+
         <div className="rounded-xl overflow-hidden" style={{ background: dark.card, border: `1px solid ${dark.border}` }}>
           {isLoading && <div className="p-5 text-[13px]" style={{ color: dark.mute }}>Loading…</div>}
-          {!isLoading && (holders ?? []).length === 0 && (
+          {!isLoading && !error && holders.length === 0 && (
             <div className="p-5 text-[13px]" style={{ color: dark.mute }}>
               Nobody has this product in their cart right now.
             </div>
           )}
-          {(holders ?? []).map((h) => (
+          {holders.map((h) => (
             <button
               key={h.uid}
               type="button"

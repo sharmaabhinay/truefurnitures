@@ -8,6 +8,11 @@ export const Route = createFileRoute("/_authenticated/admin/products/$id/orders"
   head: () => ({
     meta: [
       { title: "Product orders — Admin · True Furniture's" },
+      { name: "description", content: "View orders placed for a selected True Furniture's product." },
+      { property: "og:title", content: "Product Orders — True Furniture's Admin" },
+      { property: "og:description", content: "View orders placed for a selected product." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
   }),

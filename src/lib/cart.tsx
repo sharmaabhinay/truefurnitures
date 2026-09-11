@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/auth/auth-context";
 import { COL, fsGet, fsSet } from "@/lib/db/firestore";
+import { logVisitor } from "@/lib/visitor-tracker";
 
 export type AppliedCoupon = {
   code: string;
@@ -127,6 +128,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return {
       items,
       add: (input) => {
+        logVisitor({ type: "add_to_cart", page: window.location.pathname, item: input.name });
         setItems((cur) => {
           const existing = cur.find(
             (i) =>

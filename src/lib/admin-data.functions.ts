@@ -203,7 +203,7 @@ export const listProductCartHolders = createServerFn({ method: "GET" })
         email: String(prof["email"] ?? au?.email ?? "—"),
         phone: String(prof["phone"] ?? "—"),
         quantity: lines.reduce((n, l) => n + l.quantity, 0),
-        lastAdded: times.length ? times.sort().at(-1)! : (String(c["updated_at"] ?? "") || null),
+        lastAdded: times.length ? (times.sort().at(-1) ?? null) : (String(c["updated_at"] ?? "") || null),
         lines: lines.map(({ quantity, fabric, size, color }) => ({ quantity, fabric, size, color })),
       });
     }
@@ -211,5 +211,63 @@ export const listProductCartHolders = createServerFn({ method: "GET" })
     return {
       product: sofa ? { id, name: String((sofa as Row)["name"] ?? "Product") } : { id, name: "Product" },
       holders: holders.sort((a, b) => (b.lastAdded ?? "").localeCompare(a.lastAdded ?? "")),
+    };
+  });
+
+/** Cart-to-checkout funnel calculated from shared events and order records. */
+export const getAdminCartInsights = createServerFn({ method: "GET" })
+  .middleware([requireFirebaseAuth])
+  .handler(async ({ context }) => {
+    await staffOnly(context.role, context.userId);
+    const { adminQuery } = await import("@/lib/firebase-admin.server");
+    const [events, orders, carts] = await Promise.all([
+      adminQuery("visitors").catch(() => []),
+      adminQuery("orders").catch(() => []),
+      adminQuery("carts").catch(() => []),
+    ]);
+
+    const additions = (events as Row[]).filter((e) => e["type"] === "add_to_cart");
+    const visitorKeys = new Set(
+      additions.map((e) => String(e["session"] ?? `${e["ua"] ?? "anon"}|${String(e["time"] ?? "").slice(0, 10)}`)),
+    );
+    const validOrders = (orders as Row[]).filter(
+      (o) => !o["deleted_at"] && !["cancelled", "refunded"].includes(String(o["status"] ?? "")),
+    );
+    const checkoutKeys = new Set(
+      validOrders.map((o) => String(
+        o["checkout_id"] ?? `${o["user_id"] ?? "guest"}|${String(o["created_at"] ?? "").slice(0, 16)}`,
+      )),
+    );
+    const convertedVisitorKeys = new Set(
+      validOrders
+        .map((o) => String(o["checkout_session"] ?? ""))
+        .filter((session) => session && visitorKeys.has(session)),
+    );
+    const productAdds = new Map<string, number>();
+    for (const e of additions) {
+      const item = String(e["item"] ?? "Unknown product");
+      productAdds.set(item, (productAdds.get(item) ?? 0) + 1);
+    }
+    const productOrders = new Map<string, number>();
+    for (const o of validOrders) {
+      const snapshot = (o["sofa_snapshot"] ?? {}) as Record<string, unknown>;
+      const item = String(snapshot["name"] ?? "Unknown product");
+      productOrders.set(item, (productOrders.get(item) ?? 0) + 1);
+    }
+    const activeCarts = (carts as Row[]).filter(
+      (c) => !c["deleted_at"] && Array.isArray(c["items"]) && (c["items"] as unknown[]).some((i) => {
+        const line = i as Record<string, unknown>;
+        return Number(line["quantity"] ?? 0) > 0;
+      }),
+    ).length;
+
+    return {
+      cartVisitors: visitorKeys.size,
+      addEvents: additions.length,
+      completedCheckouts: checkoutKeys.size,
+      activeCarts,
+      conversionRate: visitorKeys.size ? Math.round((convertedVisitorKeys.size / visitorKeys.size) * 1000) / 10 : 0,
+      productAdds: Array.from(productAdds.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8),
+      productOrders: Array.from(productOrders.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8),
     };
   });

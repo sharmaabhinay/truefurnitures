@@ -12,6 +12,7 @@ import { PaymentMethods } from "@/components/payment-methods";
 import { PhoneVerify, UnverifiedBadge, VerifiedBadge } from "@/components/phone-verify";
 import { useBrand } from "@/lib/brand";
 import { uploadToCloudinary } from "@/lib/upload";
+import { visitorSessionId } from "@/lib/visitor-tracker";
 
 export const Route = createFileRoute("/_authenticated/checkout")({
   ssr: false,
@@ -245,6 +246,8 @@ function Checkout() {
       }
 
       const nowIso = new Date().toISOString();
+      const checkoutId = crypto.randomUUID();
+      const checkoutSession = visitorSessionId();
       const orderIds: string[] = [];
       for (const i of items) {
         const lineSubtotal = i.unitPrice * i.quantity;
@@ -255,6 +258,8 @@ function Checkout() {
         const orderNumber = `TF-${String(Date.now() % 100000).padStart(5, "0")}`;
         const orderId = await fsAdd(COL.orders, {
           user_id: uid,
+          checkout_id: checkoutId,
+          checkout_session: checkoutSession,
           order_number: orderNumber,
           sofa_id: i.sofaId,
           sofa_snapshot: { name: i.name, slug: i.slug, image: i.image, unit_price: i.unitPrice, quantity: i.quantity },

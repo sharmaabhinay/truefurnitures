@@ -17,10 +17,26 @@ export type VisitorEvent = {
   city?: string;
   ua?: string;
   screen?: string;
+  session?: string;
 };
 
 const KEY = "tf_visitors";
 const MAX = 500;
+const SESSION_KEY = "tf_visitor_session";
+
+export function visitorSessionId(): string {
+  if (typeof window === "undefined") return "ssr";
+  try {
+    let id = window.sessionStorage.getItem(SESSION_KEY);
+    if (!id) {
+      id = `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
+      window.sessionStorage.setItem(SESSION_KEY, id);
+    }
+    return id;
+  } catch {
+    return "anonymous";
+  }
+}
 
 export function getVisitors(): VisitorEvent[] {
   if (typeof window === "undefined") return [];
@@ -44,6 +60,7 @@ export function logVisitor(evt: Omit<VisitorEvent, "time"> & { time?: string }) 
       city: evt.city,
       ua: evt.ua ?? window.navigator.userAgent,
       screen: evt.screen ?? `${window.screen.width}×${window.screen.height}`,
+      session: evt.session ?? visitorSessionId(),
     });
     if (list.length > MAX) list.splice(0, list.length - MAX);
     window.localStorage.setItem(KEY, JSON.stringify(list));
