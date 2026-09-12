@@ -35,7 +35,14 @@ type Sofa = {
 const sofasQuery = queryOptions({
   queryKey: ["sofas", "published"],
   queryFn: async (): Promise<Sofa[]> => {
-    return (await listPublishedSofas()) as unknown as Sofa[];
+    let rows: Sofa[] = [];
+    try {
+      rows = (await listPublishedSofas()) as unknown as Sofa[];
+    } catch {
+      rows = [];
+    }
+    if (rows.length > 0) return rows;
+    return (await clientPublishedSofas<Sofa>()) as Sofa[];
   },
 });
 
