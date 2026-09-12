@@ -22,6 +22,7 @@ import showroomIndore from "@/assets/showroom-indore.jpg";
 import { isProductLive } from "@/lib/availability";
 import { useFeatures } from "@/lib/brand";
 import { getPublishedSofa, listPublishedSofas } from "@/lib/catalog.functions";
+import { clientPublishedSofa, clientPublishedSofas } from "@/lib/catalog-fallback";
 
 type GalleryImage = { src: string; label: string };
 
@@ -200,8 +201,14 @@ const sofaQuery = (slug: string) =>
   queryOptions({
     queryKey: ["sofa", slug],
     queryFn: async (): Promise<Sofa | null> => {
-      const data = (await getPublishedSofa({ data: { slug } })) as (Sofa & { is_published?: boolean }) | null;
-      return data ?? null;
+      let data: (Sofa & { is_published?: boolean }) | null = null;
+      try {
+        data = (await getPublishedSofa({ data: { slug } })) as (Sofa & { is_published?: boolean }) | null;
+      } catch {
+        data = null;
+      }
+      if (data) return data;
+      return (await clientPublishedSofa<Sofa>(slug)) as Sofa | null;
     },
   });
 
@@ -213,7 +220,8 @@ const relatedQuery = (slug: string) =>
     queryKey: ["sofa-related", slug],
     queryFn: async (): Promise<RelatedSofa[]> => {
       try {
-        const rows = (await listPublishedSofas()) as unknown as RelatedSofa[];
+        let rows = (await listPublishedSofas()) as unknown as RelatedSofa[];
+        if (!rows || rows.length === 0) rows = (await clientPublishedSofas<RelatedSofa>()) as RelatedSofa[];
         return rows.filter((r) => r.slug !== slug).slice(0, 3);
       } catch {
         return [];
@@ -224,9 +232,10 @@ const relatedQuery = (slug: string) =>
 
 export const Route = createFileRoute("/products/$slug")({
   loader: async ({ params, context }) => {
+    // Never hard-404 here: when the server-side catalogue read is unavailable the
+    // browser retries with the Firestore SDK inside the component.
     const data = await context.queryClient.ensureQueryData(sofaQuery(params.slug));
-    if (!data) throw notFound();
-    return data;
+    return data ?? null;
   },
   head: ({ params, loaderData }) => {
     if (!loaderData) {

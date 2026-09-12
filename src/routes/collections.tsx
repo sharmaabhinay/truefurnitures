@@ -13,6 +13,7 @@ import sofaEmerald from "@/assets/sofa-emerald.jpg";
 import sofaIvory from "@/assets/sofa-ivory.jpg";
 import sofaTerracotta from "@/assets/sofa-terracotta.jpg";
 import { listPublishedSofas } from "@/lib/catalog.functions";
+import { clientPublishedSofas } from "@/lib/catalog-fallback";
 
 const sofaImages: Record<string, string> = {
   "malwa-modular": sofaMalwa,
