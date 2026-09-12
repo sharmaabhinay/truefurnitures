@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, queryOptions } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { SiteHeader } from "@/components/site-header";
@@ -288,7 +288,7 @@ function ProductPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [added, setAdded] = useState(false);
-  const { data: sofa } = useQuery(sofaQuery(slug));
+  const { data: sofa, isLoading: sofaLoading } = useQuery(sofaQuery(slug));
   const { data: related } = useQuery(relatedQuery(slug));
   const sofaId = sofa?.id;
   const { data: reviews } = useQuery({
@@ -345,7 +345,33 @@ function ProductPage() {
     }
   }, [fabric, fabricOptions]);
 
-  if (!sofa) return null;
+  if (!sofa) {
+    return (
+      <div className="min-h-screen bg-[color:var(--brand-cream)] flex flex-col">
+        <SiteHeader />
+        <main className="flex-1 grid place-items-center px-6 py-24 text-center">
+          {sofaLoading ? (
+            <div className="space-y-4 w-full max-w-md">
+              <div className="h-64 bg-[color:var(--brand-muted)] animate-pulse" />
+              <div className="h-4 w-2/3 mx-auto bg-[color:var(--brand-muted)] animate-pulse" />
+              <div className="h-4 w-1/3 mx-auto bg-[color:var(--brand-muted)] animate-pulse" />
+            </div>
+          ) : (
+            <div className="max-w-md space-y-4">
+              <h1 className="font-serif text-3xl">This piece isn't available</h1>
+              <p className="text-sm opacity-70">
+                It may have been renamed or taken off the collection. Browse the full collection to find your sofa.
+              </p>
+              <Link to="/collections" className="inline-block px-6 py-3 bg-[color:var(--brand-dark)] text-white text-[11px] font-bold uppercase tracking-widest">
+                View collections
+              </Link>
+            </div>
+          )}
+        </main>
+        <SiteFooter />
+      </div>
+    );
+  }
 
   const uploadedImages = uniqueImages([sofa.hero_image, ...(sofa.gallery ?? [])]);
   const hero = uploadedImages[0] ?? heroImages[sofa.slug] ?? sofaMalwa;
