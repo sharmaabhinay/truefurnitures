@@ -39,7 +39,6 @@ const TIMES = ["10:30 AM", "12:00 PM", "2:00 PM", "4:00 PM", "6:00 PM", "7:30 PM
 
 function BookVisit() {
   const _features = useFeatures();
-  if (!_features.bookVisit) return <SectionDisabled title="Book a Visit" />;
   const { user } = useAuth();
   const { data: showrooms } = useQuery({
     queryKey: ["showrooms-list"],
@@ -89,6 +88,8 @@ function BookVisit() {
 
   const inputCls = "w-full px-4 py-3 bg-white border border-[color:var(--brand-dark)]/15 focus:border-[color:var(--brand-dark)] focus:outline-none text-sm";
   const labelCls = "block text-[10px] font-black uppercase tracking-widest mb-2";
+
+  if (!_features.bookVisit) return <SectionDisabled title="Book a Visit" />;
 
   return (
     <div className="min-h-screen bg-[color:var(--brand-cream)] text-[color:var(--brand-dark)] flex flex-col">
