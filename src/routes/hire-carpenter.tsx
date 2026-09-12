@@ -138,6 +138,8 @@ function HireCarpenter() {
     "w-full px-4 py-3 bg-white border border-[color:var(--brand-dark)]/15 focus:border-[color:var(--brand-dark)] focus:outline-none text-sm";
   const labelCls = "block text-[10px] font-black uppercase tracking-widest mb-2";
 
+  if (!_features.hireCarpenter) return <SectionDisabled title="Hire a Carpenter" />;
+
   return (
     <div className="min-h-screen bg-[color:var(--brand-cream)] text-[color:var(--brand-dark)]">
       <SiteHeader />
