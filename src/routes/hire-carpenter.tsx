@@ -54,7 +54,6 @@ type FormState = z.infer<typeof schema>;
 
 function HireCarpenter() {
   const _features = useFeatures();
-  if (!_features.hireCarpenter) return <SectionDisabled title="Hire a Carpenter" />;
   const { user } = useAuth();
   const [form, setForm] = useState<FormState>({
     full_name: "",
