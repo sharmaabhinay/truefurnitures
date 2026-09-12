@@ -13,6 +13,7 @@ import sofaEmerald from "@/assets/sofa-emerald.jpg";
 import sofaIvory from "@/assets/sofa-ivory.jpg";
 import sofaTerracotta from "@/assets/sofa-terracotta.jpg";
 import { listPublishedSofas } from "@/lib/catalog.functions";
+import { clientPublishedSofas } from "@/lib/catalog-fallback";
 
 const sofaImages: Record<string, string> = {
   "malwa-modular": sofaMalwa,
@@ -35,7 +36,14 @@ type Sofa = {
 const sofasQuery = queryOptions({
   queryKey: ["sofas", "published"],
   queryFn: async (): Promise<Sofa[]> => {
-    return (await listPublishedSofas()) as unknown as Sofa[];
+    let rows: Sofa[] = [];
+    try {
+      rows = (await listPublishedSofas()) as unknown as Sofa[];
+    } catch {
+      rows = [];
+    }
+    if (rows.length > 0) return rows;
+    return (await clientPublishedSofas<Sofa>()) as Sofa[];
   },
 });
 

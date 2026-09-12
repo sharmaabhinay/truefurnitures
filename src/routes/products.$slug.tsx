@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, queryOptions } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { SiteHeader } from "@/components/site-header";
@@ -22,6 +22,7 @@ import showroomIndore from "@/assets/showroom-indore.jpg";
 import { isProductLive } from "@/lib/availability";
 import { useFeatures } from "@/lib/brand";
 import { getPublishedSofa, listPublishedSofas } from "@/lib/catalog.functions";
+import { clientPublishedSofa, clientPublishedSofas } from "@/lib/catalog-fallback";
 
 type GalleryImage = { src: string; label: string };
 
@@ -200,8 +201,14 @@ const sofaQuery = (slug: string) =>
   queryOptions({
     queryKey: ["sofa", slug],
     queryFn: async (): Promise<Sofa | null> => {
-      const data = (await getPublishedSofa({ data: { slug } })) as (Sofa & { is_published?: boolean }) | null;
-      return data ?? null;
+      let data: (Sofa & { is_published?: boolean }) | null = null;
+      try {
+        data = (await getPublishedSofa({ data: { slug } })) as (Sofa & { is_published?: boolean }) | null;
+      } catch {
+        data = null;
+      }
+      if (data) return data;
+      return (await clientPublishedSofa<Sofa>(slug)) as Sofa | null;
     },
   });
 
@@ -213,7 +220,8 @@ const relatedQuery = (slug: string) =>
     queryKey: ["sofa-related", slug],
     queryFn: async (): Promise<RelatedSofa[]> => {
       try {
-        const rows = (await listPublishedSofas()) as unknown as RelatedSofa[];
+        let rows = (await listPublishedSofas()) as unknown as RelatedSofa[];
+        if (!rows || rows.length === 0) rows = (await clientPublishedSofas<RelatedSofa>()) as RelatedSofa[];
         return rows.filter((r) => r.slug !== slug).slice(0, 3);
       } catch {
         return [];
@@ -224,9 +232,10 @@ const relatedQuery = (slug: string) =>
 
 export const Route = createFileRoute("/products/$slug")({
   loader: async ({ params, context }) => {
+    // Never hard-404 here: when the server-side catalogue read is unavailable the
+    // browser retries with the Firestore SDK inside the component.
     const data = await context.queryClient.ensureQueryData(sofaQuery(params.slug));
-    if (!data) throw notFound();
-    return data;
+    return data ?? null;
   },
   head: ({ params, loaderData }) => {
     if (!loaderData) {
@@ -279,7 +288,7 @@ function ProductPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [added, setAdded] = useState(false);
-  const { data: sofa } = useQuery(sofaQuery(slug));
+  const { data: sofa, isLoading: sofaLoading } = useQuery(sofaQuery(slug));
   const { data: related } = useQuery(relatedQuery(slug));
   const sofaId = sofa?.id;
   const { data: reviews } = useQuery({
@@ -336,7 +345,33 @@ function ProductPage() {
     }
   }, [fabric, fabricOptions]);
 
-  if (!sofa) return null;
+  if (!sofa) {
+    return (
+      <div className="min-h-screen bg-[color:var(--brand-cream)] flex flex-col">
+        <SiteHeader />
+        <main className="flex-1 grid place-items-center px-6 py-24 text-center">
+          {sofaLoading ? (
+            <div className="space-y-4 w-full max-w-md">
+              <div className="h-64 bg-[color:var(--brand-muted)] animate-pulse" />
+              <div className="h-4 w-2/3 mx-auto bg-[color:var(--brand-muted)] animate-pulse" />
+              <div className="h-4 w-1/3 mx-auto bg-[color:var(--brand-muted)] animate-pulse" />
+            </div>
+          ) : (
+            <div className="max-w-md space-y-4">
+              <h1 className="font-serif text-3xl">This piece isn't available</h1>
+              <p className="text-sm opacity-70">
+                It may have been renamed or taken off the collection. Browse the full collection to find your sofa.
+              </p>
+              <Link to="/collections" className="inline-block px-6 py-3 bg-[color:var(--brand-dark)] text-white text-[11px] font-bold uppercase tracking-widest">
+                View collections
+              </Link>
+            </div>
+          )}
+        </main>
+        <SiteFooter />
+      </div>
+    );
+  }
 
   const uploadedImages = uniqueImages([sofa.hero_image, ...(sofa.gallery ?? [])]);
   const hero = uploadedImages[0] ?? heroImages[sofa.slug] ?? sofaMalwa;
