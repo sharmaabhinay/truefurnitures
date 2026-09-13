@@ -98,6 +98,28 @@ async function persist(evt: VisitorEvent) {
   }
 }
 
+/**
+ * Listing impression — recorded once per product per browsing session so the
+ * counts stay meaningful and the log stays small.
+ */
+export function logImpression(p: { sofaId: string; name: string; slug?: string; page?: string }) {
+  if (typeof window === "undefined" || !p.sofaId) return;
+  try {
+    const key = `tf_imp_${p.sofaId}`;
+    if (window.sessionStorage.getItem(key)) return;
+    window.sessionStorage.setItem(key, "1");
+  } catch {
+    /* private mode — still log */
+  }
+  logVisitor({
+    type: "impression",
+    page: p.page ?? window.location.pathname,
+    item: p.name,
+    sofaId: p.sofaId,
+    slug: p.slug,
+  });
+}
+
 
 /** Read the shared (cross-device) event log — staff only, per Firestore rules. */
 export async function getRemoteVisitors(): Promise<VisitorEvent[]> {
