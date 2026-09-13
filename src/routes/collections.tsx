@@ -86,7 +86,13 @@ function Collections() {
     return list;
   }, [sofas, priceMax, sort, q]);
 
+  // Count one listing impression per product per session.
+  useEffect(() => {
+    for (const s of filtered) logImpression({ sofaId: s.id, name: s.name, slug: s.slug });
+  }, [filtered]);
+
   return (
+
     <div className="min-h-screen bg-[color:var(--brand-cream)] text-[color:var(--brand-dark)]">
       <SiteHeader />
       <section className="px-6 md:px-10 pt-16 pb-8 max-w-7xl mx-auto">
