@@ -175,6 +175,18 @@ function ConfigurePage() {
   const [mounted, setMounted] = useState(false);
   const [added, setAdded] = useState(false);
   useEffect(() => setMounted(true), []);
+  // Track that this product was opened in the 3D configurator.
+  useEffect(() => {
+    if (!sofa?.id) return;
+    logVisitor({
+      type: "view_3d",
+      page: window.location.pathname,
+      item: sofa.name,
+      sofaId: sofa.id,
+      slug: sofa.slug,
+    });
+  }, [sofa?.id, sofa?.name, sofa?.slug]);
+
 
   const [color, setColor] = useState<string>("sand");
   const [fabric, setFabric] = useState<string>("boucle");
