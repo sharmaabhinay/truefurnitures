@@ -6,6 +6,7 @@ export type VisitorEvent = {
   type:
     | "session"
     | "visit"
+    | "impression"
     | "product_view"
     | "view_3d"
     | "add_to_cart"
@@ -14,11 +15,17 @@ export type VisitorEvent = {
   time: string;
   page?: string;
   item?: string;
+  /** Product document id, when the event is about a specific product. */
+  sofaId?: string;
+  /** Product slug, kept for legacy records that only stored a slug. */
+  slug?: string;
+  qty?: number;
   city?: string;
   ua?: string;
   screen?: string;
   session?: string;
 };
+
 
 const KEY = "tf_visitors";
 const MAX = 500;
