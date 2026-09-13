@@ -14,6 +14,8 @@ import sofaIvory from "@/assets/sofa-ivory.jpg";
 import sofaTerracotta from "@/assets/sofa-terracotta.jpg";
 import { listPublishedSofas } from "@/lib/catalog.functions";
 import { clientPublishedSofas } from "@/lib/catalog-fallback";
+import { logImpression } from "@/lib/visitor-tracker";
+
 
 const sofaImages: Record<string, string> = {
   "malwa-modular": sofaMalwa,
