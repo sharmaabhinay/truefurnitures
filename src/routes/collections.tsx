@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useFeatures } from "@/lib/brand";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, queryOptions } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
@@ -14,6 +14,8 @@ import sofaIvory from "@/assets/sofa-ivory.jpg";
 import sofaTerracotta from "@/assets/sofa-terracotta.jpg";
 import { listPublishedSofas } from "@/lib/catalog.functions";
 import { clientPublishedSofas } from "@/lib/catalog-fallback";
+import { logImpression } from "@/lib/visitor-tracker";
+
 
 const sofaImages: Record<string, string> = {
   "malwa-modular": sofaMalwa,
@@ -84,7 +86,13 @@ function Collections() {
     return list;
   }, [sofas, priceMax, sort, q]);
 
+  // Count one listing impression per product per session.
+  useEffect(() => {
+    for (const s of filtered) logImpression({ sofaId: s.id, name: s.name, slug: s.slug });
+  }, [filtered]);
+
   return (
+
     <div className="min-h-screen bg-[color:var(--brand-cream)] text-[color:var(--brand-dark)]">
       <SiteHeader />
       <section className="px-6 md:px-10 pt-16 pb-8 max-w-7xl mx-auto">

@@ -271,3 +271,167 @@ export const getAdminCartInsights = createServerFn({ method: "GET" })
       productOrders: Array.from(productOrders.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8),
     };
   });
+
+/** Full performance picture for one product (staff only). */
+export const getProductAnalytics = createServerFn({ method: "GET" })
+  .middleware([requireFirebaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      productId: z.string().min(1),
+      range: z.enum(["7d", "30d", "12m"]).default("30d"),
+    }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    await staffOnly(context.role, context.userId);
+    const { adminQuery, adminGetDoc } = await import("@/lib/firebase-admin.server");
+    const id = data.productId;
+    const [sofa, events, orders, carts] = await Promise.all([
+      adminGetDoc("sofas", id).catch(() => null),
+      adminQuery("visitors").catch(() => []),
+      adminQuery("orders").catch(() => []),
+      adminQuery("carts").catch(() => []),
+    ]);
+    const product = (sofa as Row | null) ?? null;
+    const slug = product ? String(product["slug"] ?? "") : "";
+    const name = product ? String(product["name"] ?? "Product") : "Product";
+
+    const monthly = data.range === "12m";
+    const buckets = monthly ? 12 : data.range === "7d" ? 7 : 30;
+    const now = new Date();
+    const start = new Date(now);
+    if (monthly) start.setMonth(start.getMonth() - (buckets - 1), 1);
+    else start.setDate(start.getDate() - (buckets - 1));
+    start.setHours(0, 0, 0, 0);
+    const keyOf = (iso: string) => (monthly ? iso.slice(0, 7) : iso.slice(0, 10));
+    const labels: string[] = [];
+    for (let i = 0; i < buckets; i++) {
+      const d = new Date(start);
+      if (monthly) d.setMonth(start.getMonth() + i);
+      else d.setDate(start.getDate() + i);
+      labels.push(keyOf(d.toISOString()));
+    }
+    const emptySeries = () => Object.fromEntries(labels.map((l) => [l, 0])) as Record<string, number>;
+    const viewsSeries = emptySeries();
+    const cartSeries = emptySeries();
+    const orderSeries = emptySeries();
+
+    const mine = (e: Row) =>
+      String(e["sofaId"] ?? "") === id ||
+      (slug && String(e["slug"] ?? "") === slug) ||
+      (!e["sofaId"] && !e["slug"] && String(e["item"] ?? "") === name);
+
+    const productEvents = (events as Row[]).filter(mine);
+    const inRange = (iso: string) => new Date(iso).getTime() >= start.getTime();
+    const count = (type: string) => productEvents.filter((e) => e["type"] === type).length;
+
+    const devices = new Map<string, number>();
+    const browsers = new Map<string, number>();
+    const cities = new Map<string, number>();
+    const pages = new Map<string, number>();
+    const viewSessions = new Set<string>();
+    const cartSessions = new Set<string>();
+
+    for (const e of productEvents) {
+      const time = String(e["time"] ?? e["created_at"] ?? "");
+      const type = String(e["type"] ?? "");
+      const session = String(e["session"] ?? time);
+      const ua = String(e["ua"] ?? "").toLowerCase();
+      if (type === "product_view" || type === "view_3d" || type === "impression") {
+        viewSessions.add(session);
+        const device = /mobi|iphone|android/.test(ua) ? "Mobile" : /ipad|tablet/.test(ua) ? "Tablet" : "Desktop";
+        devices.set(device, (devices.get(device) ?? 0) + 1);
+        const browser = ua.includes("edg/") ? "Edge"
+          : ua.includes("chrome/") ? "Chrome"
+          : ua.includes("firefox/") ? "Firefox"
+          : ua.includes("safari/") ? "Safari" : "Other";
+        browsers.set(browser, (browsers.get(browser) ?? 0) + 1);
+        const city = String(e["city"] ?? "").trim();
+        if (city) cities.set(city, (cities.get(city) ?? 0) + 1);
+        const page = String(e["page"] ?? "").trim();
+        if (page) pages.set(page, (pages.get(page) ?? 0) + 1);
+      }
+      if (type === "add_to_cart") cartSessions.add(session);
+      if (!time || !inRange(time)) continue;
+      const bucket = keyOf(time);
+      if (!(bucket in viewsSeries)) continue;
+      if (type === "product_view" || type === "view_3d") viewsSeries[bucket] += 1;
+      if (type === "add_to_cart") cartSeries[bucket] += 1;
+    }
+
+    const productOrders = (orders as Row[]).filter((o) => {
+      if (o["deleted_at"]) return false;
+      const snap = (o["sofa_snapshot"] ?? {}) as Record<string, unknown>;
+      return String(o["sofa_id"] ?? "") === id || (slug && String(snap["slug"] ?? "") === slug);
+    });
+    const paidStatuses = ["cancelled", "refunded"];
+    const validOrders = productOrders.filter((o) => !paidStatuses.includes(String(o["status"] ?? "")));
+    for (const o of validOrders) {
+      const time = String(o["created_at"] ?? "");
+      if (!time || !inRange(time)) continue;
+      const bucket = keyOf(time);
+      if (bucket in orderSeries) orderSeries[bucket] += 1;
+    }
+    const revenue = validOrders.reduce((n, o) => n + (Number(o["total"] ?? 0) || 0), 0);
+
+    let activeCarts = 0;
+    let cartUnits = 0;
+    for (const c of carts as Row[]) {
+      if (c["deleted_at"]) continue;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const items: any[] = Array.isArray(c["items"]) ? (c["items"] as any[]) : [];
+      const qty = items
+        .filter((it) => it && (it.sofaId === id || (slug && it.slug === slug)))
+        .reduce((n, it) => n + (Math.max(0, Number(it.quantity) || 0)), 0);
+      if (qty > 0) { activeCarts += 1; cartUnits += qty; }
+    }
+
+    const views = count("product_view");
+    const impressions = count("impression");
+    const views3d = count("view_3d");
+    const addToCart = count("add_to_cart");
+    const rate = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 1000) / 10 : 0);
+    const top = (m: Map<string, number>, n = 6) =>
+      Array.from(m.entries()).sort((a, b) => b[1] - a[1]).slice(0, n);
+
+    return {
+      product: { id, name, slug, hero_image: product ? (product["hero_image"] ?? null) : null },
+      range: data.range,
+      totals: {
+        impressions,
+        views,
+        views3d,
+        addToCart,
+        activeCarts,
+        cartUnits,
+        orders: validOrders.length,
+        revenue,
+        uniqueViewers: viewSessions.size,
+        cartSessions: cartSessions.size,
+      },
+      conversion: {
+        viewToCart: rate(addToCart, views),
+        cartToOrder: rate(validOrders.length, addToCart),
+        viewToOrder: rate(validOrders.length, views),
+      },
+      series: labels.map((label) => ({
+        label,
+        views: viewsSeries[label] ?? 0,
+        carts: cartSeries[label] ?? 0,
+        orders: orderSeries[label] ?? 0,
+      })),
+      devices: top(devices),
+      browsers: top(browsers),
+      cities: top(cities),
+      pages: top(pages),
+      recent: productEvents
+        .sort((a, b) => String(b["time"] ?? "").localeCompare(String(a["time"] ?? "")))
+        .slice(0, 12)
+        .map((e) => ({
+          type: String(e["type"] ?? ""),
+          time: String(e["time"] ?? e["created_at"] ?? ""),
+          page: String(e["page"] ?? ""),
+          city: String(e["city"] ?? ""),
+          ua: String(e["ua"] ?? ""),
+        })),
+    };
+  });

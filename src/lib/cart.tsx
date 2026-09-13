@@ -128,7 +128,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return {
       items,
       add: (input) => {
-        logVisitor({ type: "add_to_cart", page: window.location.pathname, item: input.name });
+        logVisitor({
+          type: "add_to_cart",
+          page: window.location.pathname,
+          item: input.name,
+          sofaId: input.sofaId,
+          slug: input.slug,
+          qty: input.quantity ?? 1,
+        });
+
         setItems((cur) => {
           const existing = cur.find(
             (i) =>

@@ -6,6 +6,7 @@ export type VisitorEvent = {
   type:
     | "session"
     | "visit"
+    | "impression"
     | "product_view"
     | "view_3d"
     | "add_to_cart"
@@ -14,11 +15,17 @@ export type VisitorEvent = {
   time: string;
   page?: string;
   item?: string;
+  /** Product document id, when the event is about a specific product. */
+  sofaId?: string;
+  /** Product slug, kept for legacy records that only stored a slug. */
+  slug?: string;
+  qty?: number;
   city?: string;
   ua?: string;
   screen?: string;
   session?: string;
 };
+
 
 const KEY = "tf_visitors";
 const MAX = 500;
@@ -48,23 +55,34 @@ export function getVisitors(): VisitorEvent[] {
   }
 }
 
+/** Remove empty values — Firestore rejects a document containing `undefined`. */
+function compact<T extends Record<string, unknown>>(obj: T): T {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined && v !== null && v !== ""),
+  ) as T;
+}
+
 export function logVisitor(evt: Omit<VisitorEvent, "time"> & { time?: string }) {
   if (typeof window === "undefined") return;
   try {
     const list = getVisitors();
-    list.push({
+    const record = compact({
       time: evt.time ?? new Date().toISOString(),
       type: evt.type,
       page: evt.page,
       item: evt.item,
+      sofaId: evt.sofaId,
+      slug: evt.slug,
+      qty: evt.qty,
       city: evt.city,
       ua: evt.ua ?? window.navigator.userAgent,
       screen: evt.screen ?? `${window.screen.width}×${window.screen.height}`,
       session: evt.session ?? visitorSessionId(),
-    });
+    }) as VisitorEvent;
+    list.push(record);
     if (list.length > MAX) list.splice(0, list.length - MAX);
     window.localStorage.setItem(KEY, JSON.stringify(list));
-    void persist(list[list.length - 1]!);
+    void persist(record);
   } catch {
     /* ignore */
   }
@@ -79,6 +97,29 @@ async function persist(evt: VisitorEvent) {
     /* analytics is best-effort */
   }
 }
+
+/**
+ * Listing impression — recorded once per product per browsing session so the
+ * counts stay meaningful and the log stays small.
+ */
+export function logImpression(p: { sofaId: string; name: string; slug?: string; page?: string }) {
+  if (typeof window === "undefined" || !p.sofaId) return;
+  try {
+    const key = `tf_imp_${p.sofaId}`;
+    if (window.sessionStorage.getItem(key)) return;
+    window.sessionStorage.setItem(key, "1");
+  } catch {
+    /* private mode — still log */
+  }
+  logVisitor({
+    type: "impression",
+    page: p.page ?? window.location.pathname,
+    item: p.name,
+    sofaId: p.sofaId,
+    slug: p.slug,
+  });
+}
+
 
 /** Read the shared (cross-device) event log — staff only, per Firestore rules. */
 export async function getRemoteVisitors(): Promise<VisitorEvent[]> {
