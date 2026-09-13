@@ -23,6 +23,8 @@ import { isProductLive } from "@/lib/availability";
 import { useFeatures } from "@/lib/brand";
 import { getPublishedSofa, listPublishedSofas } from "@/lib/catalog.functions";
 import { clientPublishedSofa, clientPublishedSofas } from "@/lib/catalog-fallback";
+import { logVisitor } from "@/lib/visitor-tracker";
+
 
 type GalleryImage = { src: string; label: string };
 
