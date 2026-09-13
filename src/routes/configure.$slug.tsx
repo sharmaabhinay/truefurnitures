@@ -11,6 +11,8 @@ import { formatINR, estimatedDelivery } from "@/lib/format";
 import { useCart } from "@/lib/cart";
 import { toast } from "sonner";
 import { isProductLive } from "@/lib/availability";
+import { logVisitor } from "@/lib/visitor-tracker";
+
 
 const Sofa3D = lazy(() => import("@/components/sofa-3d"));
 
