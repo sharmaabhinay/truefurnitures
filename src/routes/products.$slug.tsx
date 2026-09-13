@@ -318,6 +318,18 @@ function ProductPage() {
   // Compute it only after mount so server and client first-render match.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+  // Record one product view per loaded product so admins see real page traffic.
+  useEffect(() => {
+    if (!sofa?.id) return;
+    logVisitor({
+      type: "product_view",
+      page: window.location.pathname,
+      item: sofa.name,
+      sofaId: sofa.id,
+      slug: sofa.slug,
+    });
+  }, [sofa?.id, sofa?.name, sofa?.slug]);
+
   const options = useMemo(() => parseProductOptions(sofa?.product_options), [sofa?.product_options]);
   const fabricOptions = useMemo(() => {
     if (Array.isArray(options.fabrics) && options.fabrics.length > 0) {
