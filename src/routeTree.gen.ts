@@ -53,6 +53,7 @@ import { Route as AuthenticatedAdminCustomersIdRouteImport } from './routes/_aut
 import { Route as AuthenticatedAdminCarpentersIdRouteImport } from './routes/_authenticated/admin.carpenters.$id'
 import { Route as AuthenticatedAdminProductsIdOrdersRouteImport } from './routes/_authenticated/admin.products.$id.orders'
 import { Route as AuthenticatedAdminProductsIdCartsRouteImport } from './routes/_authenticated/admin.products.$id.carts'
+import { Route as AuthenticatedAdminProductsIdAnalyticsRouteImport } from './routes/_authenticated/admin.products.$id.analytics'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -284,6 +285,12 @@ const AuthenticatedAdminProductsIdCartsRoute =
     path: '/products/$id/carts',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminProductsIdAnalyticsRoute =
+  AuthenticatedAdminProductsIdAnalyticsRouteImport.update({
+    id: '/products/$id/analytics',
+    path: '/products/$id/analytics',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -327,6 +334,7 @@ export interface FileRoutesByFullPath {
   '/admin/orders/$id': typeof AuthenticatedAdminOrdersIdRoute
   '/orders/$id/receipt': typeof AuthenticatedOrdersIdReceiptRoute
   '/api/public/webhooks/razorpay': typeof ApiPublicWebhooksRazorpayRoute
+  '/admin/products/$id/analytics': typeof AuthenticatedAdminProductsIdAnalyticsRoute
   '/admin/products/$id/carts': typeof AuthenticatedAdminProductsIdCartsRoute
   '/admin/products/$id/orders': typeof AuthenticatedAdminProductsIdOrdersRoute
 }
@@ -371,6 +379,7 @@ export interface FileRoutesByTo {
   '/admin/orders/$id': typeof AuthenticatedAdminOrdersIdRoute
   '/orders/$id/receipt': typeof AuthenticatedOrdersIdReceiptRoute
   '/api/public/webhooks/razorpay': typeof ApiPublicWebhooksRazorpayRoute
+  '/admin/products/$id/analytics': typeof AuthenticatedAdminProductsIdAnalyticsRoute
   '/admin/products/$id/carts': typeof AuthenticatedAdminProductsIdCartsRoute
   '/admin/products/$id/orders': typeof AuthenticatedAdminProductsIdOrdersRoute
 }
@@ -418,6 +427,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/orders/$id': typeof AuthenticatedAdminOrdersIdRoute
   '/_authenticated/orders/$id/receipt': typeof AuthenticatedOrdersIdReceiptRoute
   '/api/public/webhooks/razorpay': typeof ApiPublicWebhooksRazorpayRoute
+  '/_authenticated/admin/products/$id/analytics': typeof AuthenticatedAdminProductsIdAnalyticsRoute
   '/_authenticated/admin/products/$id/carts': typeof AuthenticatedAdminProductsIdCartsRoute
   '/_authenticated/admin/products/$id/orders': typeof AuthenticatedAdminProductsIdOrdersRoute
 }
@@ -465,6 +475,7 @@ export interface FileRouteTypes {
     | '/admin/orders/$id'
     | '/orders/$id/receipt'
     | '/api/public/webhooks/razorpay'
+    | '/admin/products/$id/analytics'
     | '/admin/products/$id/carts'
     | '/admin/products/$id/orders'
   fileRoutesByTo: FileRoutesByTo
@@ -509,6 +520,7 @@ export interface FileRouteTypes {
     | '/admin/orders/$id'
     | '/orders/$id/receipt'
     | '/api/public/webhooks/razorpay'
+    | '/admin/products/$id/analytics'
     | '/admin/products/$id/carts'
     | '/admin/products/$id/orders'
   id:
@@ -555,6 +567,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/orders/$id'
     | '/_authenticated/orders/$id/receipt'
     | '/api/public/webhooks/razorpay'
+    | '/_authenticated/admin/products/$id/analytics'
     | '/_authenticated/admin/products/$id/carts'
     | '/_authenticated/admin/products/$id/orders'
   fileRoutesById: FileRoutesById
@@ -900,6 +913,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminProductsIdCartsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/products/$id/analytics': {
+      id: '/_authenticated/admin/products/$id/analytics'
+      path: '/products/$id/analytics'
+      fullPath: '/admin/products/$id/analytics'
+      preLoaderRoute: typeof AuthenticatedAdminProductsIdAnalyticsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
   }
 }
 
@@ -908,6 +928,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminCarpentersIdRoute: typeof AuthenticatedAdminCarpentersIdRoute
   AuthenticatedAdminCustomersIdRoute: typeof AuthenticatedAdminCustomersIdRoute
   AuthenticatedAdminOrdersIdRoute: typeof AuthenticatedAdminOrdersIdRoute
+  AuthenticatedAdminProductsIdAnalyticsRoute: typeof AuthenticatedAdminProductsIdAnalyticsRoute
   AuthenticatedAdminProductsIdCartsRoute: typeof AuthenticatedAdminProductsIdCartsRoute
   AuthenticatedAdminProductsIdOrdersRoute: typeof AuthenticatedAdminProductsIdOrdersRoute
 }
@@ -917,6 +938,8 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminCarpentersIdRoute: AuthenticatedAdminCarpentersIdRoute,
   AuthenticatedAdminCustomersIdRoute: AuthenticatedAdminCustomersIdRoute,
   AuthenticatedAdminOrdersIdRoute: AuthenticatedAdminOrdersIdRoute,
+  AuthenticatedAdminProductsIdAnalyticsRoute:
+    AuthenticatedAdminProductsIdAnalyticsRoute,
   AuthenticatedAdminProductsIdCartsRoute:
     AuthenticatedAdminProductsIdCartsRoute,
   AuthenticatedAdminProductsIdOrdersRoute:
