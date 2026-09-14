@@ -220,24 +220,38 @@ function Checkout() {
 
       const data = parsed.data;
 
-      // Optionally save this delivery address for future orders
-      if (saveAddress && selectedAddrId === "__new") {
-        try {
-          await fsAdd(COL.userAddresses, {
-            user_id: uid,
-            label: "Home",
-            full_name: data.full_name,
-            phone: data.phone,
-            address_line: data.address_line,
-            landmark: data.landmark || null,
-            city: data.city,
-            pincode: data.pincode,
-            is_default: addresses.length === 0,
-          });
-        } catch {
-          // non-fatal
+      // Remember this delivery address so the next order prefills automatically.
+      try {
+        const payload = {
+          user_id: uid,
+          label: "Home",
+          full_name: data.full_name,
+          phone: data.phone,
+          address_line: data.address_line,
+          landmark: data.landmark || null,
+          city: data.city,
+          pincode: data.pincode,
+          is_default: true,
+          updated_at: new Date().toISOString(),
+        };
+        const existing = addresses.find((a) => a.id === selectedAddrId) ?? addresses.find((a) => a.is_default);
+        const sameAsExisting =
+          existing &&
+          existing.address_line === data.address_line &&
+          existing.pincode === data.pincode &&
+          existing.city === data.city;
+        if (existing && (sameAsExisting || selectedAddrId === existing.id)) {
+          await fsUpdate(COL.userAddresses, existing.id, payload);
+        } else if (saveAddress || addresses.length === 0 || selectedAddrId === "__new") {
+          const newId = await fsAdd(COL.userAddresses, { ...payload, created_at: new Date().toISOString() });
+          for (const a of addresses) {
+            if (a.id !== newId && a.is_default) await fsUpdate(COL.userAddresses, a.id, { is_default: false }).catch(() => {});
+          }
         }
+      } catch {
+        // non-fatal
       }
+
 
       // Keep profile in sync (name/phone/city) so future checkouts prefill.
       try {
