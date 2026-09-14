@@ -57,6 +57,22 @@ type SavedAddress = {
   created_at?: string;
 };
 
+/** Split the stored "address · landmark · Pincode · Name · Email" blob back into fields. */
+function parseOrderAddress(blob: string) {
+  if (!blob) return null;
+  const parts = blob.split(" · ").map((p) => p.trim()).filter(Boolean);
+  const pick = (prefix: string) =>
+    parts.find((p) => p.toLowerCase().startsWith(prefix))?.slice(prefix.length).trim() ?? "";
+  const plain = parts.filter((p) => !/^(pincode|name|email):/i.test(p));
+  return {
+    address_line: plain[0] ?? "",
+    landmark: plain[1] ?? "",
+    pincode: pick("pincode:"),
+    full_name: pick("name:"),
+    email: pick("email:"),
+  };
+}
+
 function Checkout() {
   const { items, subtotal, discount, total, coupon, clear } = useCart();
   const navigate = useNavigate();
