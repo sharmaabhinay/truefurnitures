@@ -57,6 +57,22 @@ type SavedAddress = {
   created_at?: string;
 };
 
+/** Split the stored "address · landmark · Pincode · Name · Email" blob back into fields. */
+function parseOrderAddress(blob: string) {
+  if (!blob) return null;
+  const parts = blob.split(" · ").map((p) => p.trim()).filter(Boolean);
+  const pick = (prefix: string) =>
+    parts.find((p) => p.toLowerCase().startsWith(prefix))?.slice(prefix.length).trim() ?? "";
+  const plain = parts.filter((p) => !/^(pincode|name|email):/i.test(p));
+  return {
+    address_line: plain[0] ?? "",
+    landmark: plain[1] ?? "",
+    pincode: pick("pincode:"),
+    full_name: pick("name:"),
+    email: pick("email:"),
+  };
+}
+
 function Checkout() {
   const { items, subtotal, discount, total, coupon, clear } = useCart();
   const navigate = useNavigate();
@@ -111,17 +127,24 @@ function Checkout() {
           landmark: def.landmark ?? "",
           pincode: def.pincode,
         }));
-      } else if (profile) {
+      } else {
+        // No saved address yet — reuse the details from the most recent order.
+        const lastOrder = await fsList<Record<string, unknown>>(COL.orders, where("user_id", "==", user.uid))
+          .then((r) => sortRows(r, "created_at", "desc")[0] ?? null)
+          .catch(() => null);
+        const parsedLast = lastOrder ? parseOrderAddress(String(lastOrder["delivery_address"] ?? "")) : null;
         setForm((s) => ({
           ...s,
-          full_name: profile.full_name ?? s.full_name,
-          phone: profile.phone ?? s.phone,
-          email: profile.email ?? authEmail ?? s.email,
-          city: (profile.city === "Ujjain" ? "Ujjain" : "Indore"),
+          full_name: parsedLast?.full_name || profile?.full_name || s.full_name,
+          phone: String(lastOrder?.["phone"] ?? "") || profile?.phone || s.phone,
+          email: parsedLast?.email || profileEmail || authEmail || s.email,
+          city: (String(lastOrder?.["delivery_city"] ?? profile?.city ?? "") === "Ujjain" ? "Ujjain" : "Indore"),
+          address_line: parsedLast?.address_line || s.address_line,
+          landmark: parsedLast?.landmark || s.landmark,
+          pincode: parsedLast?.pincode || s.pincode,
         }));
-      } else if (authEmail) {
-        setForm((s) => ({ ...s, email: authEmail }));
       }
+
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user, profile]);
@@ -197,24 +220,38 @@ function Checkout() {
 
       const data = parsed.data;
 
-      // Optionally save this delivery address for future orders
-      if (saveAddress && selectedAddrId === "__new") {
-        try {
-          await fsAdd(COL.userAddresses, {
-            user_id: uid,
-            label: "Home",
-            full_name: data.full_name,
-            phone: data.phone,
-            address_line: data.address_line,
-            landmark: data.landmark || null,
-            city: data.city,
-            pincode: data.pincode,
-            is_default: addresses.length === 0,
-          });
-        } catch {
-          // non-fatal
+      // Remember this delivery address so the next order prefills automatically.
+      try {
+        const payload = {
+          user_id: uid,
+          label: "Home",
+          full_name: data.full_name,
+          phone: data.phone,
+          address_line: data.address_line,
+          landmark: data.landmark || null,
+          city: data.city,
+          pincode: data.pincode,
+          is_default: true,
+          updated_at: new Date().toISOString(),
+        };
+        const existing = addresses.find((a) => a.id === selectedAddrId) ?? addresses.find((a) => a.is_default);
+        const sameAsExisting =
+          existing &&
+          existing.address_line === data.address_line &&
+          existing.pincode === data.pincode &&
+          existing.city === data.city;
+        if (existing && (sameAsExisting || selectedAddrId === existing.id)) {
+          await fsUpdate(COL.userAddresses, existing.id, payload);
+        } else if (saveAddress || addresses.length === 0 || selectedAddrId === "__new") {
+          const newId = await fsAdd(COL.userAddresses, { ...payload, created_at: new Date().toISOString() });
+          for (const a of addresses) {
+            if (a.id !== newId && a.is_default) await fsUpdate(COL.userAddresses, a.id, { is_default: false }).catch(() => {});
+          }
         }
+      } catch {
+        // non-fatal
       }
+
 
       // Keep profile in sync (name/phone/city) so future checkouts prefill.
       try {

@@ -59,6 +59,8 @@ export const COL = {
   campaigns: "campaigns",
   jobOpenings: "job_openings",
   carts: "carts",
+  manufacturers: "manufacturers",
+
 } as const;
 
 export type CollectionName = (typeof COL)[keyof typeof COL];

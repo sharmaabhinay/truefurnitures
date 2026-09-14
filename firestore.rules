@@ -87,6 +87,13 @@ service cloud.firestore {
       allow write: if isStaff();
     }
 
+    // Manufacturing partners and their payouts — staff only.
+    match /manufacturers/{id} {
+      allow read: if isStaff();
+      allow write: if isStaff();
+    }
+
+
     match /payment_events/{id} {
       allow read: if isStaff();
       allow write: if false; // webhook only
