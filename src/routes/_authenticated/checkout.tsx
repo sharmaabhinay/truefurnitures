@@ -111,17 +111,24 @@ function Checkout() {
           landmark: def.landmark ?? "",
           pincode: def.pincode,
         }));
-      } else if (profile) {
+      } else {
+        // No saved address yet — reuse the details from the most recent order.
+        const lastOrder = await fsList<Record<string, unknown>>(COL.orders, where("user_id", "==", user.uid))
+          .then((r) => sortRows(r, "created_at", "desc")[0] ?? null)
+          .catch(() => null);
+        const parsedLast = lastOrder ? parseOrderAddress(String(lastOrder["delivery_address"] ?? "")) : null;
         setForm((s) => ({
           ...s,
-          full_name: profile.full_name ?? s.full_name,
-          phone: profile.phone ?? s.phone,
-          email: profile.email ?? authEmail ?? s.email,
-          city: (profile.city === "Ujjain" ? "Ujjain" : "Indore"),
+          full_name: parsedLast?.full_name || profile?.full_name || s.full_name,
+          phone: String(lastOrder?.["phone"] ?? "") || profile?.phone || s.phone,
+          email: parsedLast?.email || profileEmail || authEmail || s.email,
+          city: (String(lastOrder?.["delivery_city"] ?? profile?.city ?? "") === "Ujjain" ? "Ujjain" : "Indore"),
+          address_line: parsedLast?.address_line || s.address_line,
+          landmark: parsedLast?.landmark || s.landmark,
+          pincode: parsedLast?.pincode || s.pincode,
         }));
-      } else if (authEmail) {
-        setForm((s) => ({ ...s, email: authEmail }));
       }
+
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user, profile]);
