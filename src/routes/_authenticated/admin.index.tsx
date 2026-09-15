@@ -88,50 +88,51 @@ const NAV: NavGroup[] = [
     title: "Overview",
     items: [
       { key: "dashboard", label: "Dashboard", icon: <FiBarChart2 /> },
-    ],
-  },
-  {
-    title: "",
-    items: [
       { key: "analytics", label: "Sales Analytics", icon: <FiTrendingUp /> },
       { key: "cartInsights", label: "Cart Insights", icon: <FiShoppingCart /> },
       { key: "visitors", label: "Visitor Analytics", icon: <FiEye /> },
+    ],
+  },
+  {
+    title: "Catalogue",
+    items: [
+      { key: "products", label: "Products", icon: <FiShoppingBag /> },
+      { key: "reviews", label: "Reviews", icon: <FiStar /> },
+      { key: "designs", label: "Saved Designs", icon: <FiFeather /> },
+      { key: "showrooms", label: "Showrooms", icon: <FiMapPin /> },
+    ],
+  },
+  {
+    title: "Sales",
+    items: [
       { key: "orders", label: "Orders", icon: <FiPackage /> },
       { key: "customers", label: "Customers", icon: <FiUsers /> },
+      { key: "bookings", label: "Quote Requests", icon: <FiMessageCircle /> },
+      { key: "coupons", label: "Coupons", icon: <FiTag /> },
       { key: "inbox", label: "Messages", icon: <FiInbox /> },
+    ],
+  },
+  {
+    title: "Supply",
+    items: [
+      { key: "manufacturers", label: "Manufacturers", icon: <FiTruck /> },
       { key: "carpenters", label: "Carpenters", icon: <FiTool /> },
       { key: "carpenterRequests", label: "Carpenter Requests", icon: <FiTool /> },
     ],
   },
   {
-    title: "Store",
-    items: [
-      { key: "products", label: "Products", icon: <FiShoppingBag /> },
-      { key: "bookings", label: "Quote Requests", icon: <FiMessageCircle /> },
-    ],
-  },
-  {
-    title: "Growth",
+    title: "Marketing",
     items: [
       { key: "campaigns", label: "Ad Campaigns", icon: <FiTrendingUp /> },
-      { key: "careers", label: "Careers", icon: <FiBriefcase /> },
       { key: "subscribers", label: "Subscribers", icon: <FiMail /> },
+      { key: "blog", label: "Blog", icon: <FiEdit3 /> },
+      { key: "careers", label: "Careers", icon: <FiBriefcase /> },
     ],
   },
   {
-    title: "Settings",
+    title: "System",
     items: [
       { key: "settings", label: "Settings", icon: <FiSettings /> },
-    ],
-  },
-  {
-    title: "Extras",
-    items: [
-      { key: "reviews", label: "Reviews", icon: <FiStar /> },
-      { key: "coupons", label: "Coupons", icon: <FiTag /> },
-      { key: "designs", label: "Saved Designs", icon: <FiFeather /> },
-      { key: "blog", label: "Blog", icon: <FiEdit3 /> },
-      { key: "showrooms", label: "Showrooms", icon: <FiMapPin /> },
       { key: "trash", label: "Trash", icon: <FiTrash2 /> },
     ],
   },
