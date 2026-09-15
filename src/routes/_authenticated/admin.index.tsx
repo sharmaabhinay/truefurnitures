@@ -20,6 +20,7 @@ import { getRemoteVisitors } from "@/lib/visitor-tracker";
 import { BlogManager } from "@/components/admin/blog-manager";
 import { CouponManager } from "@/components/admin/coupon-manager";
 import { CarpenterManager } from "@/components/admin/carpenter-manager";
+import { ManufacturerManager } from "@/components/admin/manufacturer-manager";
 import { CarpenterRequests } from "@/components/admin/carpenter-requests";
 import { OrderCreateModal } from "@/components/admin/order-create-modal";
 import { CareersManager } from "@/components/admin/careers-manager";
@@ -39,7 +40,7 @@ import {
   FiBarChart2, FiEye, FiPackage, FiUsers, FiTool, FiShoppingBag, FiShoppingCart, FiMessageCircle,
   FiSettings, FiStar, FiTag, FiEdit3, FiMapPin, FiFeather, FiBriefcase, FiTrendingUp,
   FiGlobe, FiMenu, FiRefreshCw, FiExternalLink, FiInbox, FiTrash2, FiPlus, FiDownload,
-  FiAlertCircle, FiLoader, FiClock, FiMail,
+  FiAlertCircle, FiLoader, FiClock, FiMail, FiTruck, FiActivity,
 } from "react-icons/fi";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
@@ -72,6 +73,7 @@ type PanelKey =
   | "blog"
   | "carpenters"
   | "carpenterRequests"
+  | "manufacturers"
   | "designs"
   | "showrooms"
   | "careers"
@@ -87,50 +89,51 @@ const NAV: NavGroup[] = [
     title: "Overview",
     items: [
       { key: "dashboard", label: "Dashboard", icon: <FiBarChart2 /> },
-    ],
-  },
-  {
-    title: "",
-    items: [
       { key: "analytics", label: "Sales Analytics", icon: <FiTrendingUp /> },
       { key: "cartInsights", label: "Cart Insights", icon: <FiShoppingCart /> },
       { key: "visitors", label: "Visitor Analytics", icon: <FiEye /> },
+    ],
+  },
+  {
+    title: "Catalogue",
+    items: [
+      { key: "products", label: "Products", icon: <FiShoppingBag /> },
+      { key: "reviews", label: "Reviews", icon: <FiStar /> },
+      { key: "designs", label: "Saved Designs", icon: <FiFeather /> },
+      { key: "showrooms", label: "Showrooms", icon: <FiMapPin /> },
+    ],
+  },
+  {
+    title: "Sales",
+    items: [
       { key: "orders", label: "Orders", icon: <FiPackage /> },
       { key: "customers", label: "Customers", icon: <FiUsers /> },
+      { key: "bookings", label: "Quote Requests", icon: <FiMessageCircle /> },
+      { key: "coupons", label: "Coupons", icon: <FiTag /> },
       { key: "inbox", label: "Messages", icon: <FiInbox /> },
+    ],
+  },
+  {
+    title: "Supply",
+    items: [
+      { key: "manufacturers", label: "Manufacturers", icon: <FiTruck /> },
       { key: "carpenters", label: "Carpenters", icon: <FiTool /> },
       { key: "carpenterRequests", label: "Carpenter Requests", icon: <FiTool /> },
     ],
   },
   {
-    title: "Store",
-    items: [
-      { key: "products", label: "Products", icon: <FiShoppingBag /> },
-      { key: "bookings", label: "Quote Requests", icon: <FiMessageCircle /> },
-    ],
-  },
-  {
-    title: "Growth",
+    title: "Marketing",
     items: [
       { key: "campaigns", label: "Ad Campaigns", icon: <FiTrendingUp /> },
-      { key: "careers", label: "Careers", icon: <FiBriefcase /> },
       { key: "subscribers", label: "Subscribers", icon: <FiMail /> },
+      { key: "blog", label: "Blog", icon: <FiEdit3 /> },
+      { key: "careers", label: "Careers", icon: <FiBriefcase /> },
     ],
   },
   {
-    title: "Settings",
+    title: "System",
     items: [
       { key: "settings", label: "Settings", icon: <FiSettings /> },
-    ],
-  },
-  {
-    title: "Extras",
-    items: [
-      { key: "reviews", label: "Reviews", icon: <FiStar /> },
-      { key: "coupons", label: "Coupons", icon: <FiTag /> },
-      { key: "designs", label: "Saved Designs", icon: <FiFeather /> },
-      { key: "blog", label: "Blog", icon: <FiEdit3 /> },
-      { key: "showrooms", label: "Showrooms", icon: <FiMapPin /> },
       { key: "trash", label: "Trash", icon: <FiTrash2 /> },
     ],
   },
@@ -153,6 +156,7 @@ const TITLES: Record<PanelKey, string> = {
   blog: "Blog & Journal",
   carpenters: "Carpenter Team",
   carpenterRequests: "Hire a Carpenter Requests",
+  manufacturers: "Manufacturers",
   designs: "Saved Designs",
   showrooms: "Showrooms",
   careers: "Careers & Applications",
@@ -338,6 +342,7 @@ function AdminHome() {
           {panel === "reviews" && <Reviews />}
           {panel === "coupons" && <CouponManager />}
           {panel === "blog" && <BlogManager />}
+          {panel === "manufacturers" && <ManufacturerManager />}
           {panel === "carpenters" && <CarpenterManager />}
           {panel === "carpenterRequests" && <CarpenterRequests />}
           {panel === "designs" && <Designs />}
@@ -1657,6 +1662,15 @@ function Products() {
                     title="View the orders placed for this product"
                   >
                     <FiShoppingBag /> {orderCounts.get(p.id) ?? 0} orders
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => productNav({ to: "/admin/products/$id/analytics", params: { id: p.id } })}
+                    className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold cursor-pointer"
+                    style={{ background: "#C8A86B22", color: "#C8A86B" }}
+                    title="View full performance analytics for this product"
+                  >
+                    <FiActivity /> Analytics
                   </button>
                   {(() => {
                     const watchers = cartMap.get(p.id) ?? [];

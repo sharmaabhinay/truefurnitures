@@ -162,7 +162,7 @@ export function ManufacturerManager() {
         })}
       </div>
 
-      <ManufacturerModal value={editing} onClose={() => setEditing(null)} onSave={save} />
+      <ManufacturerModal value={editing} onClose={() => setEditing(null)} onSave={async (m) => { await save(m); }} />
     </div>
   );
 }
