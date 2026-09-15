@@ -72,6 +72,7 @@ type PanelKey =
   | "blog"
   | "carpenters"
   | "carpenterRequests"
+  | "manufacturers"
   | "designs"
   | "showrooms"
   | "careers"
