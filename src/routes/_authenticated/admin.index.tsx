@@ -20,6 +20,7 @@ import { getRemoteVisitors } from "@/lib/visitor-tracker";
 import { BlogManager } from "@/components/admin/blog-manager";
 import { CouponManager } from "@/components/admin/coupon-manager";
 import { CarpenterManager } from "@/components/admin/carpenter-manager";
+import { ManufacturerManager } from "@/components/admin/manufacturer-manager";
 import { CarpenterRequests } from "@/components/admin/carpenter-requests";
 import { OrderCreateModal } from "@/components/admin/order-create-modal";
 import { CareersManager } from "@/components/admin/careers-manager";
@@ -39,7 +40,7 @@ import {
   FiBarChart2, FiEye, FiPackage, FiUsers, FiTool, FiShoppingBag, FiShoppingCart, FiMessageCircle,
   FiSettings, FiStar, FiTag, FiEdit3, FiMapPin, FiFeather, FiBriefcase, FiTrendingUp,
   FiGlobe, FiMenu, FiRefreshCw, FiExternalLink, FiInbox, FiTrash2, FiPlus, FiDownload,
-  FiAlertCircle, FiLoader, FiClock, FiMail,
+  FiAlertCircle, FiLoader, FiClock, FiMail, FiTruck, FiActivity,
 } from "react-icons/fi";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
@@ -155,6 +156,7 @@ const TITLES: Record<PanelKey, string> = {
   blog: "Blog & Journal",
   carpenters: "Carpenter Team",
   carpenterRequests: "Hire a Carpenter Requests",
+  manufacturers: "Manufacturers",
   designs: "Saved Designs",
   showrooms: "Showrooms",
   careers: "Careers & Applications",
@@ -340,6 +342,7 @@ function AdminHome() {
           {panel === "reviews" && <Reviews />}
           {panel === "coupons" && <CouponManager />}
           {panel === "blog" && <BlogManager />}
+          {panel === "manufacturers" && <ManufacturerManager />}
           {panel === "carpenters" && <CarpenterManager />}
           {panel === "carpenterRequests" && <CarpenterRequests />}
           {panel === "designs" && <Designs />}
@@ -1659,6 +1662,15 @@ function Products() {
                     title="View the orders placed for this product"
                   >
                     <FiShoppingBag /> {orderCounts.get(p.id) ?? 0} orders
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => productNav({ to: "/admin/products/$id/analytics", params: { id: p.id } })}
+                    className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold cursor-pointer"
+                    style={{ background: "#C8A86B22", color: "#C8A86B" }}
+                    title="View full performance analytics for this product"
+                  >
+                    <FiActivity /> Analytics
                   </button>
                   {(() => {
                     const watchers = cartMap.get(p.id) ?? [];
