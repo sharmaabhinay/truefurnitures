@@ -40,6 +40,10 @@ function OrderDetail() {
   const getAuth = useServerFn(getAuthUserDetails);
   const notifyCustomer = useServerFn(sendOrderStatusEmail);
   const { data: carpenters } = useCarpenters();
+  const { data: manufacturers } = useQuery({
+    queryKey: ["admin-manufacturers"],
+    queryFn: () => fsList<{ id: string; company: string; deleted_at?: string | null }>(COL.manufacturers),
+  });
 
   const { data: order, isLoading } = useQuery({
     queryKey: ["admin-order", id],
@@ -418,6 +422,32 @@ function OrderDetail() {
                 defaultValue={order.assigned_craftsman ?? ""}
                 onBlur={(e) => e.target.value !== (order.assigned_craftsman ?? "") && update.mutate({ assigned_craftsman: e.target.value || null })}
                 placeholder="Or enter a custom name…"
+                className="w-full rounded-md px-3 py-2 text-sm"
+                style={{ background: dark.bg, border: `1px solid ${dark.border}`, color: dark.text }}
+              />
+            </Panel>
+
+            <Panel title="Manufacturer">
+              <select
+                value={(order as Record<string, unknown>)['manufacturer_id'] as string ?? ""}
+                onChange={(e) => {
+                  const mid = e.target.value;
+                  const match = (manufacturers ?? []).find((x) => x.id === mid);
+                  update.mutate({ manufacturer_id: mid || null, manufacturer_name: match?.company ?? null });
+                }}
+                className="w-full rounded-md px-3 py-2 text-sm mb-2"
+                style={{ background: dark.bg, border: `1px solid ${dark.border}`, color: dark.text }}
+              >
+                <option value="">— Unassigned —</option>
+                {(manufacturers ?? []).map((x) => (
+                  <option key={x.id} value={x.id}>{x.company}</option>
+                ))}
+              </select>
+              <input
+                type="number"
+                defaultValue={String((order as Record<string, unknown>)['manufacturer_assigned_days'] ?? "")}
+                onBlur={(e) => update.mutate({ manufacturer_assigned_days: e.target.value ? Number(e.target.value) : null })}
+                placeholder="Assigned days to deliver"
                 className="w-full rounded-md px-3 py-2 text-sm"
                 style={{ background: dark.bg, border: `1px solid ${dark.border}`, color: dark.text }}
               />
