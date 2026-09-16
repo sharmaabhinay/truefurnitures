@@ -91,8 +91,7 @@ export function ManufacturerManager() {
       updated_at: new Date().toISOString(),
     };
     try {
-      if (m.id) await fsUpdate(COL.manufacturers, m.id, payload);
-      else await fsAdd(COL.manufacturers, { ...payload, created_at: new Date().toISOString() });
+      await saveOne({ data: { ...(m.id ? { id: m.id } : {}), data: payload } });
     } catch (e) {
       return toast.error(e instanceof Error ? e.message : "Could not save");
     }
