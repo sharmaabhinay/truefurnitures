@@ -2,7 +2,9 @@ import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { COL, fsGet, fsList, fsUpdate } from "@/lib/db/firestore";
+import { useServerFn } from "@tanstack/react-start";
+import { COL, fsList } from "@/lib/db/firestore";
+import { listAdminManufacturers, saveAdminManufacturer } from "@/lib/admin-data.functions";
 import { formatINR, formatDate } from "@/lib/format";
 import { ACard, AEmpty, AButton, AField, AInput, AModal, dark } from "@/components/admin/ui";
 import {
