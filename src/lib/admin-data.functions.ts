@@ -435,3 +435,36 @@ export const getProductAnalytics = createServerFn({ method: "GET" })
         })),
     };
   });
+
+/** Staff-only manufacturer list, read with admin credentials. */
+export const listAdminManufacturers = createServerFn({ method: "GET" })
+  .middleware([requireFirebaseAuth])
+  .handler(async ({ context }) => {
+    await staffOnly(context.role, context.userId);
+    const { adminQuery } = await import("@/lib/firebase-admin.server");
+    const rows = await adminQuery("manufacturers");
+    return rows.filter((r) => !r["deleted_at"]) as Row[];
+  });
+
+/** Staff-only create/update of a manufacturer record. */
+export const saveAdminManufacturer = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z
+      .object({ id: z.string().optional(), data: z.record(z.string(), z.unknown()) })
+      .parse(d),
+  )
+  .middleware([requireFirebaseAuth])
+  .handler(async ({ context, data }) => {
+    await staffOnly(context.role, context.userId);
+    const { adminSetDoc, adminAddDoc } = await import("@/lib/firebase-admin.server");
+    const payload = { ...data.data, updated_at: new Date().toISOString() };
+    if (data.id) {
+      await adminSetDoc("manufacturers", data.id, payload);
+      return { id: data.id };
+    }
+    const id = await adminAddDoc("manufacturers", {
+      ...payload,
+      created_at: new Date().toISOString(),
+    });
+    return { id };
+  });

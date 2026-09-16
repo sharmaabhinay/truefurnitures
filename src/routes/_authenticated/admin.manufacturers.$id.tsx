@@ -2,7 +2,9 @@ import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { COL, fsGet, fsList, fsUpdate } from "@/lib/db/firestore";
+import { useServerFn } from "@tanstack/react-start";
+import { COL, fsList } from "@/lib/db/firestore";
+import { listAdminManufacturers, saveAdminManufacturer } from "@/lib/admin-data.functions";
 import { formatINR, formatDate } from "@/lib/format";
 import { ACard, AEmpty, AButton, AField, AInput, AModal, dark } from "@/components/admin/ui";
 import {
@@ -53,9 +55,15 @@ function ManufacturerDetail() {
   const [pay, setPay] = useState<Payment>({ amount: 0, date: new Date().toISOString().slice(0, 10), note: "" });
   const [deal, setDeal] = useState<Deal>({ title: "", value: 0, start: "", end: "" });
 
+  const loadList = useServerFn(listAdminManufacturers);
+  const saveOne = useServerFn(saveAdminManufacturer);
+
   const { data: m, isLoading } = useQuery({
     queryKey: ["admin-manufacturer", id],
-    queryFn: () => fsGet<Manufacturer>(COL.manufacturers, id),
+    queryFn: async () => {
+      const rows = (await loadList()) as unknown as Manufacturer[];
+      return rows.find((r) => r.id === id) ?? null;
+    },
     staleTime: 0,
   });
 
@@ -75,7 +83,7 @@ function ManufacturerDetail() {
 
   const patch = async (payload: Partial<Manufacturer>) => {
     try {
-      await fsUpdate(COL.manufacturers, id, { ...payload, updated_at: new Date().toISOString() });
+      await saveOne({ data: { id, data: payload as Record<string, unknown> } });
       toast.success("Saved");
       refresh();
     } catch (e) {

@@ -3,7 +3,8 @@ import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { FiPlus, FiTruck } from "react-icons/fi";
-import { COL, fsAdd, fsList, fsUpdate } from "@/lib/db/firestore";
+import { useServerFn } from "@tanstack/react-start";
+import { listAdminManufacturers, saveAdminManufacturer } from "@/lib/admin-data.functions";
 import { formatINR } from "@/lib/format";
 import { ACard, AButton, AField, AInput, AModal, ASelect, ATextarea, AEmpty, dark } from "@/components/admin/ui";
 
@@ -51,9 +52,12 @@ export function ManufacturerManager() {
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Partial<Manufacturer> | null>(null);
 
+  const loadList = useServerFn(listAdminManufacturers);
+  const saveOne = useServerFn(saveAdminManufacturer);
+
   const { data, isLoading } = useQuery({
     queryKey: ["admin-manufacturers"],
-    queryFn: () => fsList<Manufacturer>(COL.manufacturers),
+    queryFn: async () => (await loadList()) as unknown as Manufacturer[],
     staleTime: 0,
   });
 
@@ -87,8 +91,7 @@ export function ManufacturerManager() {
       updated_at: new Date().toISOString(),
     };
     try {
-      if (m.id) await fsUpdate(COL.manufacturers, m.id, payload);
-      else await fsAdd(COL.manufacturers, { ...payload, created_at: new Date().toISOString() });
+      await saveOne({ data: { ...(m.id ? { id: m.id } : {}), data: payload } });
     } catch (e) {
       return toast.error(e instanceof Error ? e.message : "Could not save");
     }
