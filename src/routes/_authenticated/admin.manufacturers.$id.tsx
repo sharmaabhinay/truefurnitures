@@ -83,7 +83,7 @@ function ManufacturerDetail() {
 
   const patch = async (payload: Partial<Manufacturer>) => {
     try {
-      await fsUpdate(COL.manufacturers, id, { ...payload, updated_at: new Date().toISOString() });
+      await saveOne({ data: { id, data: payload as Record<string, unknown> } });
       toast.success("Saved");
       refresh();
     } catch (e) {
