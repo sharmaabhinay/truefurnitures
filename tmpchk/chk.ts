@@ -1,0 +1,10 @@
+import { adminQuery } from "@/lib/firebase-admin.server";
+const v = await adminQuery<any>("visitors");
+const carts = await adminQuery<any>("carts");
+const byType: Record<string, number> = {};
+for (const e of v) byType[e.type] = (byType[e.type] ?? 0) + 1;
+console.log("visitor events:", v.length, byType);
+const adds = v.filter((e) => e.type === "add_to_cart");
+console.log("add_to_cart sessions:", new Set(adds.map((a) => a.session)).size);
+console.log("sample add:", adds.slice(-3).map((a) => ({ item: a.item, sofaId: a.sofaId, time: a.time })));
+console.log("carts:", carts.length, "active:", carts.filter((c) => (c.items ?? []).length > 0).length);
