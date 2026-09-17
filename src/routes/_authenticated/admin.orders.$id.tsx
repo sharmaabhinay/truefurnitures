@@ -6,6 +6,7 @@ import { COL, fsGet, fsList, fsAdd, fsUpdate, where } from "@/lib/db/firestore";
 import { useAuth } from "@/lib/auth/auth-context";
 import { formatINR, formatDate, ORDER_STATUS_STEPS, statusIndex } from "@/lib/format";
 import { getAuthUserDetails } from "@/lib/admin-users.functions";
+import { listAdminManufacturers } from "@/lib/admin-data.functions";
 import { sendOrderStatusEmail } from "@/lib/email.functions";
 import { useCarpenters } from "@/components/admin/carpenter-manager";
 import { toast } from "sonner";
@@ -40,9 +41,12 @@ function OrderDetail() {
   const getAuth = useServerFn(getAuthUserDetails);
   const notifyCustomer = useServerFn(sendOrderStatusEmail);
   const { data: carpenters } = useCarpenters();
+  const loadManufacturers = useServerFn(listAdminManufacturers);
   const { data: manufacturers } = useQuery({
     queryKey: ["admin-manufacturers"],
-    queryFn: () => fsList<{ id: string; company: string; deleted_at?: string | null }>(COL.manufacturers),
+    staleTime: 0,
+    queryFn: async () =>
+      (await loadManufacturers()) as unknown as { id: string; company: string; deleted_at?: string | null }[],
   });
 
   const { data: order, isLoading } = useQuery({
