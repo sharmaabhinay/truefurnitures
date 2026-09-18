@@ -16,6 +16,7 @@ import { VisitorTrackerBoot } from "@/components/visitor-tracker-boot";
 import { CartProvider } from "@/lib/cart";
 import { AuthProvider } from "@/lib/auth/auth-context";
 import { Toaster } from "@/components/ui/sonner";
+import { NavigationProgress } from "@/components/navigation-progress";
 
 function NotFoundComponent() {
   return (
