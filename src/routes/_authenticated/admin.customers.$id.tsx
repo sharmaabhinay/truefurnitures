@@ -1,3 +1,4 @@
+import { AdminBackLink } from "@/components/admin/back-link";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";

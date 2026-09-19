@@ -1,3 +1,4 @@
+import { AdminBackLink } from "@/components/admin/back-link";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { COL, fsGet, fsList } from "@/lib/db/firestore";
