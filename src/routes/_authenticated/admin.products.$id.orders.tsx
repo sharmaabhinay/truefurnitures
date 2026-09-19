@@ -1,3 +1,4 @@
+import { AdminBackLink } from "@/components/admin/back-link";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { COL, fsGet, fsList } from "@/lib/db/firestore";
@@ -57,9 +58,7 @@ function ProductOrders() {
   return (
     <div className="min-h-screen p-5" style={{ background: dark.bg, color: dark.text }}>
       <div className="mx-auto max-w-4xl space-y-4">
-        <Link to="/admin" className="text-[12px]" style={{ color: dark.accent }}>
-          ← Back to admin
-        </Link>
+        <AdminBackLink label="← Back" fallbackPanel="products" />
 
         <div className="rounded-xl p-4" style={{ background: dark.card, border: `1px solid ${dark.border}` }}>
           <div className="text-[11px] uppercase tracking-[0.08em]" style={{ color: dark.mute }}>
