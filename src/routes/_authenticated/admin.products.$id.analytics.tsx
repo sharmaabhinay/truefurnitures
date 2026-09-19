@@ -124,7 +124,7 @@ function ProductAnalytics() {
   return (
     <div className="min-h-screen p-5" style={{ background: dark.bg, color: dark.text }}>
       <div className="mx-auto max-w-5xl space-y-4">
-        <Link to="/admin" className="text-[12px]" style={{ color: dark.accent }}>← Back to admin</Link>
+        <AdminBackLink label="← Back" fallbackPanel="products" />
 
         <div className="rounded-xl p-4 flex flex-wrap items-center justify-between gap-3" style={{ background: dark.card, border: `1px solid ${dark.border}` }}>
           <div>

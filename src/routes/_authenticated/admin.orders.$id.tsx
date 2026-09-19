@@ -161,7 +161,7 @@ function OrderDetail() {
   return (
     <div style={{ background: dark.bg, color: dark.text, minHeight: "100vh" }} className="pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <Link to="/admin" search={{ p: "orders" }} className="text-xs uppercase tracking-widest" style={{ color: dark.mute }}>← Back to Admin</Link>
+        <AdminBackLink label="← Back" fallbackPanel="orders" muted className="text-xs uppercase tracking-widest" />
 
         <header className="mt-4 flex flex-wrap gap-4 items-start justify-between pb-6 border-b" style={{ borderColor: dark.border }}>
           <div>

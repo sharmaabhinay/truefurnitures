@@ -119,9 +119,7 @@ function ManufacturerDetail() {
     <div className="min-h-screen p-4 sm:p-8" style={{ background: dark.bg, color: dark.text }}>
       <div className="mx-auto max-w-5xl space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <Link to="/admin" search={{ p: "manufacturers" }} className="text-[12px]" style={{ color: dark.accent }}>
-            ← Back to manufacturers
-          </Link>
+          <AdminBackLink label="← Back" fallbackPanel="manufacturers" />
           <div className="flex gap-2">
             <AButton variant="ghost" onClick={() => setDealOpen(true)}>Add deal</AButton>
             <AButton variant="ghost" onClick={() => setPayOpen(true)}>Log payment</AButton>

@@ -60,9 +60,7 @@ function CarpenterDetail() {
 
   return (
     <div className="min-h-screen p-4 sm:p-8 space-y-5" style={{ background: dark.bg, color: dark.text }}>
-      <Link to="/admin" search={{ p: "carpenters" }} className="text-[12px]" style={{ color: dark.accent }}>
-        ← Back to carpenter team
-      </Link>
+      <AdminBackLink label="← Back" fallbackPanel="carpenters" />
 
       <ACard>
         <div className="flex flex-wrap items-center gap-4">
