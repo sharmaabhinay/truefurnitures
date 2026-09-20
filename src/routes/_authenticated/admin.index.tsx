@@ -31,6 +31,7 @@ import { SalesAnalytics } from "@/components/admin/sales-analytics";
 import { WelcomePopupSettings } from "@/components/admin/welcome-popup-settings";
 import { PopupInsights } from "@/components/admin/popup-insights";
 import { CartInsights } from "@/components/admin/cart-insights";
+import { AdminUsers } from "@/components/admin/admin-users";
 import { listPopupEvents } from "@/lib/popup-analytics";
 import { sendQuoteStatusEmail } from "@/lib/email.functions";
 
@@ -40,7 +41,7 @@ import {
   FiBarChart2, FiEye, FiPackage, FiUsers, FiTool, FiShoppingBag, FiShoppingCart, FiMessageCircle,
   FiSettings, FiStar, FiTag, FiEdit3, FiMapPin, FiFeather, FiBriefcase, FiTrendingUp,
   FiGlobe, FiMenu, FiRefreshCw, FiExternalLink, FiInbox, FiTrash2, FiPlus, FiDownload,
-  FiAlertCircle, FiLoader, FiClock, FiMail, FiTruck, FiActivity,
+  FiAlertCircle, FiLoader, FiClock, FiMail, FiTruck, FiActivity, FiShield,
 } from "react-icons/fi";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
@@ -79,6 +80,7 @@ type PanelKey =
   | "careers"
   | "campaigns"
   | "subscribers"
+  | "adminUsers"
   | "settings";
 
 type NavItem = { key: PanelKey; label: string; icon: React.ReactNode };
@@ -162,6 +164,7 @@ const TITLES: Record<PanelKey, string> = {
   showrooms: "Showrooms",
   careers: "Careers & Applications",
   campaigns: "Ad Campaigns",
+  adminUsers: "Admin Users",
   settings: "Settings",
 };
 
@@ -351,6 +354,7 @@ function AdminHome() {
           {panel === "careers" && <CareersManager />}
           {panel === "campaigns" && <CampaignManager />}
           {panel === "subscribers" && <Subscribers />}
+          {panel === "adminUsers" && <AdminUsers />}
           {panel === "settings" && <Settings />}
         </main>
       </div>
