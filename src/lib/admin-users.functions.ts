@@ -194,7 +194,7 @@ export const updateAdminAccount = createServerFn({ method: "POST" })
       patch["roles"] = [data.role];
     }
     if (data.name !== undefined) patch["name"] = data.name;
-    await adminSetDoc("user_roles", data.uid, patch, true);
+    await adminSetDoc("user_roles", data.uid, patch);
     return { success: true as const };
   });
 
