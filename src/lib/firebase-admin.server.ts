@@ -461,3 +461,64 @@ export async function adminDeleteDoc(col: string, id: string): Promise<void> {
   const res = await fsFetch(`/${col}/${encodeURIComponent(id)}`, { method: "DELETE" });
   if (!res.ok && res.status !== 404) throw new Error(`Firestore delete failed: ${await res.text()}`);
 }
+
+/** Create a Firebase Auth account (admin-only). Returns the new uid. */
+export async function adminCreateUser(
+  email: string,
+  password: string,
+  displayName?: string,
+): Promise<string> {
+  const res = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/projects/${projectId()}/accounts`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${await accessToken()}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        password,
+        emailVerified: true,
+        ...(displayName ? { displayName } : {}),
+      }),
+    },
+  );
+  const json = (await res.json()) as { localId?: string; error?: { message?: string } };
+  if (!res.ok || !json.localId) {
+    throw new Error(json.error?.message ?? "Could not create the account");
+  }
+  return json.localId;
+}
+
+/** Permanently delete a Firebase Auth account (admin-only). */
+export async function adminDeleteUser(uid: string): Promise<void> {
+  const res = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/projects/${projectId()}/accounts:delete`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${await accessToken()}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ localId: uid }),
+    },
+  );
+  if (!res.ok) throw new Error(`Failed to delete account: ${await res.text()}`);
+}
+
+/** Change an existing account's password (admin-only). */
+export async function adminSetPassword(uid: string, password: string): Promise<void> {
+  const res = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/projects/${projectId()}/accounts:update`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${await accessToken()}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ localId: uid, password }),
+    },
+  );
+  if (!res.ok) throw new Error(`Failed to update password: ${await res.text()}`);
+}
