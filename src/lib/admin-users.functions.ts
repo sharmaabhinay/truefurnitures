@@ -180,7 +180,7 @@ export const updateAdminAccount = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     if (context.role !== "admin") throw new Response("Forbidden", { status: 403 });
-    if (data.uid === context.uid && data.role && data.role !== "admin") {
+    if (data.uid === context.userId && data.role && data.role !== "admin") {
       throw new Response("You cannot remove your own admin access", { status: 400 });
     }
 
@@ -206,7 +206,7 @@ export const removeAdminAccount = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     if (context.role !== "admin") throw new Response("Forbidden", { status: 403 });
-    if (data.uid === context.uid) {
+    if (data.uid === context.userId) {
       throw new Response("You cannot remove your own account", { status: 400 });
     }
 
