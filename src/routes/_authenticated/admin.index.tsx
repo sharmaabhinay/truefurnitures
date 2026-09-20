@@ -133,6 +133,7 @@ const NAV: NavGroup[] = [
   {
     title: "System",
     items: [
+      { key: "adminUsers", label: "Admin Users", icon: <FiShield /> },
       { key: "settings", label: "Settings", icon: <FiSettings /> },
       { key: "trash", label: "Trash", icon: <FiTrash2 /> },
     ],
