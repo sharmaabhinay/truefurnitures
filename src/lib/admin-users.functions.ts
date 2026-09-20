@@ -96,3 +96,123 @@ export const setAdminRole = createServerFn({ method: "POST" })
 
     return { success: true as const };
   });
+
+const ROLE = z.enum(["admin", "staff"]);
+
+/** List only the accounts that carry an admin/staff role (admin only). */
+export const listAdminTeam = createServerFn({ method: "GET" })
+  .middleware([requireFirebaseAuth])
+  .handler(async ({ context }) => {
+    if (context.role !== "admin") throw new Response("Forbidden", { status: 403 });
+
+    const { adminListUsers, adminQuery } = await import("@/lib/firebase-admin.server");
+    const [authUsers, roleDocs] = await Promise.all([adminListUsers(), adminQuery("user_roles")]);
+
+    const byUid = new Map(authUsers.map((u) => [u.uid, u]));
+    return roleDocs
+      .map((d) => {
+        const uid = String(d["user_id"] ?? d.id);
+        const role = String(d["role"] ?? "user");
+        if (role !== "admin" && role !== "staff") return null;
+        const u = byUid.get(uid);
+        return {
+          uid,
+          role: role as "admin" | "staff",
+          email: u?.email ?? ((d["email"] as string | null) ?? null),
+          name: (d["name"] as string | null) ?? null,
+          created_at: u?.createdAt ?? null,
+          last_sign_in_at: u?.lastLoginAt ?? null,
+          exists: !!u,
+        };
+      })
+      .filter((x): x is NonNullable<typeof x> => x !== null)
+      .sort((a, b) => (a.email ?? "").localeCompare(b.email ?? ""));
+  });
+
+/** Create a new admin/staff account (admin only). */
+export const createAdminAccount = createServerFn({ method: "POST" })
+  .middleware([requireFirebaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        email: z.string().email(),
+        password: z.string().min(8).max(72),
+        name: z.string().max(120).optional(),
+        role: ROLE,
+      })
+      .parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    if (context.role !== "admin") throw new Response("Forbidden", { status: 403 });
+
+    const { adminCreateUser, setUserRole, adminSetDoc } = await import("@/lib/firebase-admin.server");
+    const uid = await adminCreateUser(data.email, data.password, data.name);
+    await setUserRole(uid, data.role);
+    await adminSetDoc("user_roles", uid, {
+      user_id: uid,
+      role: data.role,
+      roles: [data.role],
+      email: data.email,
+      name: data.name ?? null,
+      created_at: new Date().toISOString(),
+    });
+    await adminSetDoc("profiles", uid, {
+      id: uid,
+      email: data.email,
+      full_name: data.name ?? null,
+      updated_at: new Date().toISOString(),
+    });
+    return { uid };
+  });
+
+/** Change an admin/staff member's role, name or password (admin only). */
+export const updateAdminAccount = createServerFn({ method: "POST" })
+  .middleware([requireFirebaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        uid: z.string().min(1),
+        role: ROLE.optional(),
+        name: z.string().max(120).optional(),
+        password: z.string().min(8).max(72).optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    if (context.role !== "admin") throw new Response("Forbidden", { status: 403 });
+    if (data.uid === context.uid && data.role && data.role !== "admin") {
+      throw new Response("You cannot remove your own admin access", { status: 400 });
+    }
+
+    const { setUserRole, adminSetDoc, adminSetPassword } = await import("@/lib/firebase-admin.server");
+    if (data.password) await adminSetPassword(data.uid, data.password);
+    if (data.role) await setUserRole(data.uid, data.role);
+
+    const patch: Record<string, unknown> = { user_id: data.uid, updated_at: new Date().toISOString() };
+    if (data.role) {
+      patch["role"] = data.role;
+      patch["roles"] = [data.role];
+    }
+    if (data.name !== undefined) patch["name"] = data.name;
+    await adminSetDoc("user_roles", data.uid, patch, true);
+    return { success: true as const };
+  });
+
+/** Revoke access, and optionally delete the login entirely (admin only). */
+export const removeAdminAccount = createServerFn({ method: "POST" })
+  .middleware([requireFirebaseAuth])
+  .inputValidator((d) =>
+    z.object({ uid: z.string().min(1), deleteLogin: z.boolean().default(false) }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    if (context.role !== "admin") throw new Response("Forbidden", { status: 403 });
+    if (data.uid === context.uid) {
+      throw new Response("You cannot remove your own account", { status: 400 });
+    }
+
+    const { setUserRole, adminDeleteDoc, adminDeleteUser } = await import("@/lib/firebase-admin.server");
+    await setUserRole(data.uid, "user");
+    await adminDeleteDoc("user_roles", data.uid);
+    if (data.deleteLogin) await adminDeleteUser(data.uid);
+    return { success: true as const };
+  });
