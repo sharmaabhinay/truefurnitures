@@ -1559,6 +1559,15 @@ function Products() {
     },
   });
 
+  /** Staff-authorized counts: never blanked out by browser read rules. */
+  const loadProductStats = useServerFn(getAdminProductStats);
+  const { data: productStats, isLoading: statsLoading, error: statsError } = useQuery({
+    queryKey: ["admin-product-stats"],
+    queryFn: () => loadProductStats(),
+    staleTime: 0,
+    refetchInterval: 60_000,
+  });
+
   /**
    * Real orders placed per product: skips soft-deleted orders and also matches
    * older orders that only stored the product slug in their snapshot.
