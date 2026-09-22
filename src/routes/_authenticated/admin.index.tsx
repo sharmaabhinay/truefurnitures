@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
-import { listAdminCustomers, listNewsletterSubscribers } from "@/lib/admin-data.functions";
+import { listAdminCustomers, listNewsletterSubscribers, getAdminProductStats } from "@/lib/admin-data.functions";
 import { COL, fsList, fsListSorted, fsGet, fsAdd, fsSet, fsUpdate, fsDelete, fsWatch, where, orderBy } from "@/lib/db/firestore";
 import { downloadCsv } from "@/lib/export";
 import { Pager, usePaged, ACheck } from "@/components/admin/pager";
@@ -1500,8 +1500,7 @@ function Products() {
   const [editing, setEditing] = useState<Partial<SofaRow> | null>(null);
   const [cartFor, setCartFor] = useState<{ id: string; name: string; watchers: CartWatcher[] } | null>(null);
 
-  const { rows: carts, error: cartError, loading: cartLoading } = useLiveCollection<any>(COL.carts);
-  const { rows: liveOrders } = useLiveCollection<any>(COL.orders);
+  const { rows: carts } = useLiveCollection<any>(COL.carts);
 
   const { data: profiles } = useQuery({
     queryKey: ["admin-cart-profiles"],
@@ -1559,22 +1558,15 @@ function Products() {
     },
   });
 
-  /**
-   * Real orders placed per product: skips soft-deleted orders and also matches
-   * older orders that only stored the product slug in their snapshot.
-   */
-  const orderCounts = useMemo(() => {
-    const idBySlug = new Map<string, string>();
-    for (const p of data ?? []) if ((p as any).slug) idBySlug.set(String((p as any).slug), p.id);
-    const map = new Map<string, number>();
-    for (const o of liveOrders ?? []) {
-      if (!o || o.deleted_at) continue;
-      const sid = o.sofa_id || idBySlug.get(String(o.sofa_snapshot?.slug ?? ""));
-      if (!sid) continue;
-      map.set(sid, (map.get(sid) ?? 0) + 1);
-    }
-    return map;
-  }, [liveOrders, data]);
+  /** Staff-authorized counts: never blanked out by browser read rules. */
+  const loadProductStats = useServerFn(getAdminProductStats);
+  const { data: productStats, isLoading: statsLoading, error: statsError } = useQuery({
+    queryKey: ["admin-product-stats"],
+    queryFn: () => loadProductStats(),
+    staleTime: 0,
+    refetchInterval: 60_000,
+  });
+
 
   const update = async (id: string, patch: any) => {
     try {
@@ -1654,53 +1646,59 @@ function Products() {
                   </span>
                 )}
               </div>
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <div className="text-[11px]" style={{ color: "#888899" }}>
-                  {p.lead_time_days}d lead
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => productNav({ to: "/admin/products/$id/orders", params: { id: p.id } })}
-                    className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold cursor-pointer"
-                    style={{ background: "#2A2A3866", color: "#9FB8A0" }}
-                    title="View the orders placed for this product"
-                  >
-                    <FiShoppingBag /> {orderCounts.get(p.id) ?? 0} orders
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => productNav({ to: "/admin/products/$id/analytics", params: { id: p.id } })}
-                    className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold cursor-pointer"
-                    style={{ background: "#C8A86B22", color: "#C8A86B" }}
-                    title="View full performance analytics for this product"
-                  >
-                    <FiActivity /> Analytics
-                  </button>
-                  {(() => {
-                    const watchers = cartMap.get(p.id) ?? [];
-                    const count = watchers.reduce((n, w) => n + w.quantity, 0);
-                    return (
-                      <button
-                        type="button"
-                        onClick={() => productNav({ to: "/admin/products/$id/carts", params: { id: p.id } })}
-                        title={cartError ? "Open the staff-authorized cart list" : "View customers with this in cart"}
-                        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold"
-                        style={{
-                          background: watchers.length ? "#C8A86B22" : "#2A2A38",
-                          color: watchers.length ? "#C8A86B" : "#888899",
-                          cursor: "pointer",
-                        }}
-                      >
-                        {cartLoading ? <FiLoader className="animate-spin" /> : cartError ? <FiAlertCircle /> : <FiShoppingCart />} {cartLoading ? "cart…" : `${count} in cart`}
-                        {watchers.length > 0 && (
-                          <span style={{ color: "#888899" }}>· {watchers.length} cust.</span>
-                        )}
-                      </button>
-                    );
-                  })()}
-                </div>
+              <div className="text-[11px]" style={{ color: "#888899" }}>
+                {p.lead_time_days}d lead
               </div>
+              {(() => {
+                const s = productStats?.[p.id];
+                const pending = statsLoading && !s;
+                const cell = "flex flex-col items-center justify-center gap-0.5 rounded-md px-2 py-1.5 text-center cursor-pointer";
+                const val = "text-[13px] font-semibold leading-none";
+                const cap = "text-[10px] leading-none";
+                return (
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => productNav({ to: "/admin/products/$id/orders", params: { id: p.id } })}
+                      className={cell}
+                      style={{ background: "#2A2A3866", color: "#9FB8A0" }}
+                      title="View the orders placed for this product"
+                    >
+                      <span className={val}>{pending ? "…" : (s?.orders ?? 0)}</span>
+                      <span className={cap} style={{ color: "#888899" }}>orders</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => productNav({ to: "/admin/products/$id/analytics", params: { id: p.id } })}
+                      className={cell}
+                      style={{ background: "#C8A86B22", color: "#C8A86B" }}
+                      title="View full performance analytics for this product"
+                    >
+                      <span className="inline-flex items-center gap-1 text-[12px] font-semibold leading-none"><FiActivity /> Analytics</span>
+                      <span className={cap} style={{ color: "#888899" }}>
+                        {pending ? "…" : `${s?.views ?? 0} views`}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => productNav({ to: "/admin/products/$id/carts", params: { id: p.id } })}
+                      title="View customers with this in cart"
+                      className={cell}
+                      style={{
+                        background: (s?.cartUnits ?? 0) > 0 ? "#C8A86B22" : "#2A2A38",
+                        color: (s?.cartUnits ?? 0) > 0 ? "#C8A86B" : "#888899",
+                      }}
+                    >
+                      <span className={val}>
+                        {pending ? "…" : statsError ? <FiAlertCircle /> : (s?.cartUnits ?? 0)}
+                      </span>
+                      <span className={cap} style={{ color: "#888899" }}>
+                        in cart{(s?.cartCustomers ?? 0) > 0 ? ` · ${s?.cartCustomers} cust.` : ""}
+                      </span>
+                    </button>
+                  </div>
+                );
+              })()}
 
               <div className="flex gap-2 pt-1">
                 <button
