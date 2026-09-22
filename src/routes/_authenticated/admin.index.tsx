@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
-import { listAdminCustomers, listNewsletterSubscribers } from "@/lib/admin-data.functions";
+import { listAdminCustomers, listNewsletterSubscribers, getAdminProductStats } from "@/lib/admin-data.functions";
 import { COL, fsList, fsListSorted, fsGet, fsAdd, fsSet, fsUpdate, fsDelete, fsWatch, where, orderBy } from "@/lib/db/firestore";
 import { downloadCsv } from "@/lib/export";
 import { Pager, usePaged, ACheck } from "@/components/admin/pager";
