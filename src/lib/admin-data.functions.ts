@@ -465,3 +465,77 @@ export const saveAdminManufacturer = createServerFn({ method: "POST" })
     });
     return { id };
   });
+
+/**
+ * Tolerant product matching for activity records. Older events stored only a
+ * slug or the product name, newer ones carry the document id.
+ */
+function eventMatchesProduct(e: Row, id: string, slug: string, name: string) {
+  const eid = String(e["sofaId"] ?? e["sofa_id"] ?? "");
+  if (eid) return eid === id;
+  const es = String(e["slug"] ?? e["sofa_slug"] ?? "");
+  if (es) return !!slug && es === slug;
+  const item = String(e["item"] ?? "").trim().toLowerCase();
+  return !!name && item === name.trim().toLowerCase();
+}
+
+/**
+ * Per-product headline counts for the admin product grid, read with admin
+ * credentials so browser Firestore rules never blank them out.
+ */
+export const getAdminProductStats = createServerFn({ method: "GET" })
+  .middleware([requireFirebaseAuth])
+  .handler(async ({ context }) => {
+    await staffOnly(context.role, context.userId);
+    const { adminQuery } = await import("@/lib/firebase-admin.server");
+    const [sofas, events, orders, carts] = await Promise.all([
+      adminQuery("sofas"),
+      adminQuery("visitors"),
+      adminQuery("orders"),
+      adminQuery("carts"),
+    ]);
+
+    const liveOrders = (orders as Row[]).filter((o) => !o["deleted_at"]);
+    const liveCarts = (carts as Row[]).filter((c) => !c["deleted_at"]);
+
+    const stats: Record<
+      string,
+      { orders: number; cartUnits: number; cartCustomers: number; impressions: number; views: number; addToCart: number }
+    > = {};
+
+    for (const s of sofas as Row[]) {
+      const id = s.id;
+      const slug = String(s["slug"] ?? "");
+      const name = String(s["name"] ?? "");
+
+      const mine = (events as Row[]).filter((e) => eventMatchesProduct(e, id, slug, name));
+      const countType = (t: string) => mine.filter((e) => String(e["type"] ?? "") === t).length;
+
+      const orderCount = liveOrders.filter((o) => {
+        const snap = (o["sofa_snapshot"] ?? {}) as Record<string, unknown>;
+        return String(o["sofa_id"] ?? "") === id || (!!slug && String(snap["slug"] ?? "") === slug);
+      }).length;
+
+      let cartUnits = 0;
+      let cartCustomers = 0;
+      for (const c of liveCarts) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const items: any[] = Array.isArray(c["items"]) ? (c["items"] as any[]) : [];
+        const qty = items
+          .filter((it) => it && (it.sofaId === id || (!!slug && it.slug === slug)))
+          .reduce((n, it) => n + Math.max(0, Number(it.quantity) || 0), 0);
+        if (qty > 0) { cartUnits += qty; cartCustomers += 1; }
+      }
+
+      stats[id] = {
+        orders: orderCount,
+        cartUnits,
+        cartCustomers,
+        impressions: countType("impression"),
+        views: countType("product_view"),
+        addToCart: countType("add_to_cart"),
+      };
+    }
+
+    return stats;
+  });
