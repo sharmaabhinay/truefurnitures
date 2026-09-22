@@ -1500,8 +1500,7 @@ function Products() {
   const [editing, setEditing] = useState<Partial<SofaRow> | null>(null);
   const [cartFor, setCartFor] = useState<{ id: string; name: string; watchers: CartWatcher[] } | null>(null);
 
-  const { rows: carts, error: cartError, loading: cartLoading } = useLiveCollection<any>(COL.carts);
-  const { rows: liveOrders } = useLiveCollection<any>(COL.orders);
+  const { rows: carts } = useLiveCollection<any>(COL.carts);
 
   const { data: profiles } = useQuery({
     queryKey: ["admin-cart-profiles"],
