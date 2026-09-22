@@ -315,10 +315,7 @@ export const getProductAnalytics = createServerFn({ method: "GET" })
     const cartSeries = emptySeries();
     const orderSeries = emptySeries();
 
-    const mine = (e: Row) =>
-      String(e["sofaId"] ?? "") === id ||
-      (slug && String(e["slug"] ?? "") === slug) ||
-      (!e["sofaId"] && !e["slug"] && String(e["item"] ?? "") === name);
+    const mine = (e: Row) => eventMatchesProduct(e, id, slug, name);
 
     const productEvents = (events as Row[]).filter(mine);
     const inRange = (iso: string) => new Date(iso).getTime() >= start.getTime();
