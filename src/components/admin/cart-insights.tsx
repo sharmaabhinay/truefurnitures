@@ -44,7 +44,9 @@ export function CartInsights() {
     queryKey: ["admin-cart-insights"],
     queryFn: () => load(),
     staleTime: 0,
-    refetchInterval: 60_000,
+    refetchInterval: 15_000,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 
   return (
@@ -53,6 +55,7 @@ export function CartInsights() {
         <div>
           <div className="text-[15px] font-semibold">Cart funnel</div>
           <div className="text-[11px]" style={{ color: dark.mute }}>Unique cart visitors compared with completed checkout sessions.</div>
+          {data?.updatedAt && <div className="mt-1 text-[10px]" style={{ color: dark.mute }}>Updated {new Date(data.updatedAt).toLocaleTimeString()}</div>}
         </div>
         <AButton variant="ghost" onClick={() => void refetch()} disabled={isFetching}>
           <span className="inline-flex items-center gap-2"><FiRefreshCw className={isFetching ? "animate-spin" : ""} /> Refresh</span>
