@@ -3,8 +3,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { FiRefreshCw } from "react-icons/fi";
 import { getProductAnalytics } from "@/lib/admin-data.functions";
 import { formatDate } from "@/lib/format";
+import { AButton } from "@/components/admin/ui";
 
 export const Route = createFileRoute("/_authenticated/admin/products/$id/analytics")({
   ssr: false,
@@ -113,10 +115,13 @@ function ProductAnalytics() {
   const { id } = Route.useParams();
   const [range, setRange] = useState<Range>("30d");
   const load = useServerFn(getProductAnalytics);
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isFetching, refetch, error } = useQuery({
     queryKey: ["product-analytics", id, range],
     queryFn: () => load({ data: { productId: id, range } }),
     staleTime: 0,
+    refetchInterval: 15_000,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 
   const t = data?.totals;
@@ -147,6 +152,9 @@ function ProductAnalytics() {
                 {r.label}
               </button>
             ))}
+            <AButton variant="ghost" onClick={() => void refetch()} disabled={isFetching} title="Refresh analytics">
+              <FiRefreshCw className={isFetching ? "animate-spin" : ""} />
+            </AButton>
           </div>
         </div>
 

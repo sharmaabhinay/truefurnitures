@@ -221,9 +221,9 @@ export const getAdminCartInsights = createServerFn({ method: "GET" })
     await staffOnly(context.role, context.userId);
     const { adminQuery } = await import("@/lib/firebase-admin.server");
     const [events, orders, carts] = await Promise.all([
-      adminQuery("visitors").catch(() => []),
-      adminQuery("orders").catch(() => []),
-      adminQuery("carts").catch(() => []),
+      adminQuery("visitors"),
+      adminQuery("orders"),
+      adminQuery("carts"),
     ]);
 
     const additions = (events as Row[]).filter((e) => e["type"] === "add_to_cart");
@@ -269,6 +269,7 @@ export const getAdminCartInsights = createServerFn({ method: "GET" })
       conversionRate: visitorKeys.size ? Math.round((convertedVisitorKeys.size / visitorKeys.size) * 1000) / 10 : 0,
       productAdds: Array.from(productAdds.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8),
       productOrders: Array.from(productOrders.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8),
+      updatedAt: new Date().toISOString(),
     };
   });
 
@@ -286,12 +287,13 @@ export const getProductAnalytics = createServerFn({ method: "GET" })
     const { adminQuery, adminGetDoc } = await import("@/lib/firebase-admin.server");
     const id = data.productId;
     const [sofa, events, orders, carts] = await Promise.all([
-      adminGetDoc("sofas", id).catch(() => null),
-      adminQuery("visitors").catch(() => []),
-      adminQuery("orders").catch(() => []),
-      adminQuery("carts").catch(() => []),
+      adminGetDoc("sofas", id),
+      adminQuery("visitors"),
+      adminQuery("orders"),
+      adminQuery("carts"),
     ]);
     const product = (sofa as Row | null) ?? null;
+    if (!product) throw new Error("Product not found");
     const slug = product ? String(product["slug"] ?? "") : "";
     const name = product ? String(product["name"] ?? "Product") : "Product";
 
@@ -318,8 +320,12 @@ export const getProductAnalytics = createServerFn({ method: "GET" })
     const mine = (e: Row) => eventMatchesProduct(e, id, slug, name);
 
     const productEvents = (events as Row[]).filter(mine);
-    const inRange = (iso: string) => new Date(iso).getTime() >= start.getTime();
-    const count = (type: string) => productEvents.filter((e) => e["type"] === type).length;
+    const inRange = (iso: string) => {
+      const time = new Date(iso).getTime();
+      return Number.isFinite(time) && time >= start.getTime() && time <= now.getTime();
+    };
+    const rangedEvents = productEvents.filter((e) => inRange(String(e["time"] ?? e["created_at"] ?? "")));
+    const count = (type: string) => rangedEvents.filter((e) => e["type"] === type).length;
 
     const devices = new Map<string, number>();
     const browsers = new Map<string, number>();
@@ -328,7 +334,7 @@ export const getProductAnalytics = createServerFn({ method: "GET" })
     const viewSessions = new Set<string>();
     const cartSessions = new Set<string>();
 
-    for (const e of productEvents) {
+    for (const e of rangedEvents) {
       const time = String(e["time"] ?? e["created_at"] ?? "");
       const type = String(e["type"] ?? "");
       const session = String(e["session"] ?? time);
@@ -348,7 +354,6 @@ export const getProductAnalytics = createServerFn({ method: "GET" })
         if (page) pages.set(page, (pages.get(page) ?? 0) + 1);
       }
       if (type === "add_to_cart") cartSessions.add(session);
-      if (!time || !inRange(time)) continue;
       const bucket = keyOf(time);
       if (!(bucket in viewsSeries)) continue;
       if (type === "product_view" || type === "view_3d") viewsSeries[bucket] += 1;
@@ -368,7 +373,8 @@ export const getProductAnalytics = createServerFn({ method: "GET" })
       const bucket = keyOf(time);
       if (bucket in orderSeries) orderSeries[bucket] += 1;
     }
-    const revenue = validOrders.reduce((n, o) => n + (Number(o["total"] ?? 0) || 0), 0);
+    const rangedOrders = validOrders.filter((o) => inRange(String(o["created_at"] ?? "")));
+    const revenue = rangedOrders.reduce((n, o) => n + (Number(o["total"] ?? 0) || 0), 0);
 
     let activeCarts = 0;
     let cartUnits = 0;
@@ -400,15 +406,15 @@ export const getProductAnalytics = createServerFn({ method: "GET" })
         addToCart,
         activeCarts,
         cartUnits,
-        orders: validOrders.length,
+        orders: rangedOrders.length,
         revenue,
         uniqueViewers: viewSessions.size,
         cartSessions: cartSessions.size,
       },
       conversion: {
         viewToCart: rate(addToCart, views),
-        cartToOrder: rate(validOrders.length, addToCart),
-        viewToOrder: rate(validOrders.length, views),
+        cartToOrder: rate(rangedOrders.length, addToCart),
+        viewToOrder: rate(rangedOrders.length, views),
       },
       series: labels.map((label) => ({
         label,
@@ -420,7 +426,7 @@ export const getProductAnalytics = createServerFn({ method: "GET" })
       browsers: top(browsers),
       cities: top(cities),
       pages: top(pages),
-      recent: productEvents
+      recent: rangedEvents
         .sort((a, b) => String(b["time"] ?? "").localeCompare(String(a["time"] ?? "")))
         .slice(0, 12)
         .map((e) => ({
@@ -471,12 +477,18 @@ export const saveAdminManufacturer = createServerFn({ method: "POST" })
  * slug or the product name, newer ones carry the document id.
  */
 function eventMatchesProduct(e: Row, id: string, slug: string, name: string) {
-  const eid = String(e["sofaId"] ?? e["sofa_id"] ?? "");
-  if (eid) return eid === id;
-  const es = String(e["slug"] ?? e["sofa_slug"] ?? "");
-  if (es) return !!slug && es === slug;
-  const item = String(e["item"] ?? "").trim().toLowerCase();
-  return !!name && item === name.trim().toLowerCase();
+  const ids = [e["sofaId"], e["sofa_id"], e["productId"], e["product_id"]]
+    .map((value) => String(value ?? "").trim())
+    .filter(Boolean);
+  const slugs = [e["slug"], e["sofa_slug"], e["product_slug"]]
+    .map((value) => String(value ?? "").trim().toLowerCase())
+    .filter(Boolean);
+  const names = [e["item"], e["name"], e["product_name"]]
+    .map((value) => String(value ?? "").trim().toLowerCase())
+    .filter(Boolean);
+  return ids.includes(id)
+    || (!!slug && slugs.includes(slug.trim().toLowerCase()))
+    || (!!name && names.includes(name.trim().toLowerCase()));
 }
 
 /**
