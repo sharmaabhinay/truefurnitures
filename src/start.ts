@@ -7,14 +7,21 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
   try {
     return await next();
   } catch (error) {
+    // Server functions rely on TanStack's serialized error/Response handling.
+    // Replacing a thrown Response with our HTML error page makes the client
+    // report a generic deserialization failure instead of the real status.
+    if (error instanceof Response) {
+      throw error;
+    }
     if (error != null && typeof error === "object" && "statusCode" in error) {
       throw error;
     }
+    // Let server-function errors cross the RPC boundary in their native shape.
+    // The branded HTML page is only appropriate for document requests.
+    const request = typeof Request !== "undefined" ? undefined : undefined;
+    void request;
     console.error(error);
-    return new Response(renderErrorPage(), {
-      status: 500,
-      headers: { "content-type": "text/html; charset=utf-8" },
-    });
+    throw error;
   }
 });
 
