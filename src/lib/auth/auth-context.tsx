@@ -45,6 +45,20 @@ type AuthState = {
 
 const AuthContext = createContext<AuthState | null>(null);
 
+async function settleWithin<T>(promise: Promise<T>, milliseconds: number): Promise<T | null> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<null>((resolve) => {
+        timer = setTimeout(() => resolve(null), milliseconds);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 async function ensureProfile(user: User): Promise<Profile> {
   const existing = await fsGet<Profile>(COL.profiles, user.uid);
   const patch: Profile = {
@@ -81,11 +95,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const claimRole = (token.claims as { role?: string }).role;
         let resolved: AppRole = claimRole === "admin" || claimRole === "staff" ? claimRole : "user";
         if (resolved === "user") {
-          const roleDoc = await fsGet<{ role?: string }>(COL.userRoles, u.uid).catch(() => null);
+          const roleDoc = await settleWithin(
+            fsGet<{ role?: string }>(COL.userRoles, u.uid).catch(() => null),
+            5_000,
+          );
           if (roleDoc?.role === "admin" || roleDoc?.role === "staff") resolved = roleDoc.role;
         }
         setRole(resolved);
-        setProfile(await ensureProfile(u));
+        const loadedProfile = await settleWithin(ensureProfile(u), 5_000);
+        setProfile(loadedProfile ?? { id: u.uid, email: u.email, full_name: u.displayName });
       } catch {
         setProfile({ id: u.uid, email: u.email, full_name: u.displayName });
       } finally {
