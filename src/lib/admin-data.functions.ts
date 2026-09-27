@@ -9,6 +9,11 @@ type Row = Record<string, any> & { id: string };
  * Staff check. The custom claim is authoritative when present, but many admins
  * are only recorded in the `user_roles` collection, so fall back to that.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function safeQuery(q: (col: string) => Promise<any[]>, col: string): Promise<Row[]> {
+  try { return (await q(col)) as Row[]; } catch (e) { console.error(`[admin] ${col} read failed`, e); return []; }
+}
+
 async function staffOnly(role: string | undefined, uid: string) {
   if (role === "admin" || role === "staff") return;
   const { adminGetDoc, adminQuery } = await import("@/lib/firebase-admin.server");
@@ -37,7 +42,7 @@ export const listAdminCustomers = createServerFn({ method: "GET" })
     const [authUsers, profiles, orders] = await Promise.all([
       adminListUsers(),
       adminQuery("profiles"),
-      adminQuery("orders"),
+      safeQuery(adminQuery, "orders"),
     ]);
 
     const spent = new Map<string, { count: number; sum: number }>();
@@ -221,9 +226,9 @@ export const getAdminCartInsights = createServerFn({ method: "GET" })
     await staffOnly(context.role, context.userId);
     const { adminQuery } = await import("@/lib/firebase-admin.server");
     const [events, orders, carts] = await Promise.all([
-      adminQuery("visitors"),
-      adminQuery("orders"),
-      adminQuery("carts"),
+      safeQuery(adminQuery, "visitors"),
+      safeQuery(adminQuery, "orders"),
+      safeQuery(adminQuery, "carts"),
     ]);
 
     const additions = (events as Row[]).filter((e) => e["type"] === "add_to_cart");
@@ -288,9 +293,9 @@ export const getProductAnalytics = createServerFn({ method: "GET" })
     const id = data.productId;
     const [sofa, events, orders, carts] = await Promise.all([
       adminGetDoc("sofas", id),
-      adminQuery("visitors"),
-      adminQuery("orders"),
-      adminQuery("carts"),
+      safeQuery(adminQuery, "visitors"),
+      safeQuery(adminQuery, "orders"),
+      safeQuery(adminQuery, "carts"),
     ]);
     const product = (sofa as Row | null) ?? null;
     if (!product) throw new Error("Product not found");
@@ -501,10 +506,10 @@ export const getAdminProductStats = createServerFn({ method: "GET" })
     await staffOnly(context.role, context.userId);
     const { adminQuery } = await import("@/lib/firebase-admin.server");
     const [sofas, events, orders, carts] = await Promise.all([
-      adminQuery("sofas"),
-      adminQuery("visitors"),
-      adminQuery("orders"),
-      adminQuery("carts"),
+      safeQuery(adminQuery, "sofas"),
+      safeQuery(adminQuery, "visitors"),
+      safeQuery(adminQuery, "orders"),
+      safeQuery(adminQuery, "carts"),
     ]);
 
     const liveOrders = (orders as Row[]).filter((o) => !o["deleted_at"]);
