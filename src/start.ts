@@ -33,15 +33,19 @@ const attachFirebaseAuth = createMiddleware({ type: "function" }).client(async (
   // otherwise a call made right after a reload ships no Authorization header.
   const currentUser = (await firebaseAuthReady()) ?? getFirebaseAuth().currentUser;
   let token: string | null = null;
-  try {
-    // Force a refresh: long-running flows (e.g. the Razorpay modal) can otherwise
-    // ship a near-expired cached token, which the server rejects as invalid.
-    token = currentUser ? await currentUser.getIdToken(true) : null;
-  } catch {
+  if (currentUser) {
     try {
-      token = currentUser ? await currentUser.getIdToken() : null;
+      // getIdToken() refreshes automatically within 5 min of expiry. Forcing a
+      // refresh on every call (admin screens poll) gets rate-limited by Firebase.
+      token = await currentUser.getIdToken();
+      const exp = JSON.parse(atob(token.split(".")[1]!.replace(/-/g, "+").replace(/_/g, "/"))).exp as number;
+      if (exp * 1000 - Date.now() < 120_000) token = await currentUser.getIdToken(true);
     } catch {
-      token = null;
+      try {
+        token = await currentUser.getIdToken(true);
+      } catch {
+        token = null;
+      }
     }
   }
   return next({
