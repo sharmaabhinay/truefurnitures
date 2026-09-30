@@ -44,7 +44,8 @@ export function CartInsights() {
     queryKey: ["admin-cart-insights"],
     queryFn: () => load(),
     staleTime: 0,
-    refetchInterval: 15_000,
+    retry: 2,
+    refetchInterval: 30_000,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
   });
@@ -61,7 +62,7 @@ export function CartInsights() {
           <span className="inline-flex items-center gap-2"><FiRefreshCw className={isFetching ? "animate-spin" : ""} /> Refresh</span>
         </AButton>
       </div>
-      {error && <ACard><div className="text-[12px]" style={{ color: dark.danger }}>Cart insights could not be loaded. Try refreshing.</div></ACard>}
+      {error && !data && <ACard><div className="text-[12px]" style={{ color: dark.danger }}>Cart insights could not be loaded{error instanceof Error && error.message ? ` — ${error.message}` : ""}. Try refreshing or sign in again.</div></ACard>}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Added to cart" value={isLoading ? "—" : (data?.cartVisitors ?? 0)} note={`${data?.addEvents ?? 0} total add actions`} icon={<FiUsers />} />
         <Stat label="Completed checkout" value={isLoading ? "—" : (data?.completedCheckouts ?? 0)} note="excluding cancelled and refunded" icon={<FiCheckCircle />} />

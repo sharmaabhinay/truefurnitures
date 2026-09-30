@@ -119,7 +119,8 @@ function ProductAnalytics() {
     queryKey: ["product-analytics", id, range],
     queryFn: () => load({ data: { productId: id, range } }),
     staleTime: 0,
-    refetchInterval: 15_000,
+    retry: 2,
+    refetchInterval: 30_000,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
   });
@@ -158,9 +159,9 @@ function ProductAnalytics() {
           </div>
         </div>
 
-        {error && (
+        {error && !data && (
           <div className="rounded-xl p-4 text-[13px]" style={{ background: dark.card, border: `1px solid ${dark.border}`, color: "#E05050" }}>
-            Analytics could not be loaded.
+            Analytics could not be loaded{error instanceof Error && error.message ? ` — ${error.message}` : ""}. Try Refresh or sign in again.
           </div>
         )}
         {isLoading && <div className="text-[13px]" style={{ color: dark.mute }}>Loading…</div>}

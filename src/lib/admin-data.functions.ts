@@ -345,7 +345,7 @@ export const getProductAnalytics = createServerFn({ method: "GET" })
       const session = String(e["session"] ?? time);
       const ua = String(e["ua"] ?? "").toLowerCase();
       if (type === "product_view" || type === "view_3d" || type === "impression") {
-        viewSessions.add(session);
+        if (type !== "impression") viewSessions.add(session);
         const device = /mobi|iphone|android/.test(ua) ? "Mobile" : /ipad|tablet/.test(ua) ? "Tablet" : "Desktop";
         devices.set(device, (devices.get(device) ?? 0) + 1);
         const browser = ua.includes("edg/") ? "Edge"
