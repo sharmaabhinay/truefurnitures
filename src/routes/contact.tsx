@@ -8,9 +8,9 @@ import { COL, fsAdd } from "@/lib/db/firestore";
 export const Route = createFileRoute("/contact")({
   head: () => ({
     meta: [
-      { title: "Contact — Avant-Garde Atelier" },
+      { title: "Contact — True Furniture's" },
       { name: "description", content: "Speak with a design consultant. WhatsApp, email or visit our showrooms in Indore and Ujjain." },
-      { property: "og:title", content: "Contact — Avant-Garde Atelier" },
+      { property: "og:title", content: "Contact — True Furniture's" },
       { property: "og:description", content: "Speak with a design consultant in Indore or Ujjain." },
     ],
   }),

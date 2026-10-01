@@ -1,7 +1,7 @@
 import { useFeatures } from "@/lib/brand";
 import { SectionDisabled } from "@/components/section-disabled";
 import { createFileRoute } from "@tanstack/react-router";
-import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
+import { useQuery, queryOptions } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { COL, fsList, fsListSorted, orderBy } from "@/lib/db/firestore";
@@ -22,7 +22,14 @@ type Showroom = {
 const showroomsQuery = queryOptions({
   queryKey: ["showrooms"],
   queryFn: async (): Promise<Showroom[]> => {
-    return fsListSorted<Showroom>(COL.showrooms, "sort_order", "asc");
+    try {
+      return await Promise.race([
+        fsListSorted<Showroom>(COL.showrooms, "sort_order", "asc"),
+        new Promise<Showroom[]>((r) => setTimeout(() => r([]), 6000)),
+      ]);
+    } catch {
+      return [];
+    }
   },
 });
 
@@ -30,15 +37,19 @@ export const Route = createFileRoute("/showrooms")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Showrooms in Indore & Ujjain — Avant-Garde" },
+      { title: "Showrooms in Indore & Ujjain — True Furniture's" },
       { name: "description", content: "Visit our flagship showroom in Indore or our studio in Ujjain. Experience every fabric, frame and finish in person." },
       { property: "og:title", content: "Showrooms — Indore & Ujjain" },
-      { property: "og:description", content: "Visit the Avant-Garde showroom in Indore or the Ujjain studio." },
+      { property: "og:description", content: "Visit the True Furniture's showroom in Indore or the Ujjain studio." },
     ],
   }),
-  loader: ({ context }) => context.queryClient.ensureQueryData(showroomsQuery),
   component: Showrooms,
 });
+
+const FALLBACK: Showroom[] = [
+  { id: "indore", slug: "indore-flagship", name: "Indore Flagship", city: "Indore", address: "Visit us in Indore — call ahead to book a guided tour.", is_flagship: true },
+  { id: "ujjain", slug: "ujjain-studio", name: "Ujjain Studio", city: "Ujjain", address: "Visit our Ujjain studio — call ahead to book a guided tour." },
+];
 
 const images: Record<string, string> = {
   "indore-flagship": showroomIndore,
@@ -47,8 +58,9 @@ const images: Record<string, string> = {
 
 function Showrooms() {
   const _features = useFeatures();
+  const { data, isLoading } = useQuery(showroomsQuery);
   if (!_features.showrooms) return <SectionDisabled title="Showrooms" />;
-  const { data: showrooms } = useSuspenseQuery(showroomsQuery);
+  const showrooms: Showroom[] = data && data.length ? data : FALLBACK;
   return (
     <div className="min-h-screen bg-[color:var(--brand-cream)] text-[color:var(--brand-dark)]">
       <SiteHeader />
@@ -59,7 +71,7 @@ function Showrooms() {
         </h1>
       </section>
       <section className="px-6 md:px-10 pb-24 max-w-6xl mx-auto grid md:grid-cols-2 gap-10">
-        {showrooms.map((s) => (
+        {isLoading ? <p className="opacity-60">Loading showrooms…</p> : showrooms.map((s) => (
           <article key={s.id} className="bg-white border border-[color:var(--brand-dark)]/5 overflow-hidden">
             <img src={images[s.slug] ?? showroomIndore} alt={`${s.name} interior`} loading="lazy" className="w-full aspect-[4/3] object-cover" />
             <div className="p-8 md:p-10">
