@@ -12,9 +12,9 @@ export const Route = createFileRoute("/auth")({
     typeof s['next'] === "string" ? { next: s['next'] } : {},
   head: () => ({
     meta: [
-      { title: "Sign in — Avant-Garde Atelier" },
-      { name: "description", content: "Sign in or create your Avant-Garde account to save designs, place reservations, and track your bespoke sofa order." },
-      { property: "og:title", content: "Sign in — Avant-Garde Atelier" },
+      { title: "Sign in — True Furniture's" },
+      { name: "description", content: "Sign in or create your True Furniture's account to save designs, place reservations, and track your bespoke sofa order." },
+      { property: "og:title", content: "Sign in — True Furniture's" },
       { property: "og:description", content: "Access your account." },
     ],
   }),

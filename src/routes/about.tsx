@@ -5,9 +5,9 @@ import { SiteFooter } from "@/components/site-footer";
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "The Atelier — Avant-Garde" },
-      { name: "description", content: "The story behind Avant-Garde Atelier — a bespoke custom sofa house serving Indore, Ujjain and the discerning homes of Madhya Pradesh." },
-      { property: "og:title", content: "The Atelier — Avant-Garde" },
+      { title: "The Atelier — True Furniture's" },
+      { name: "description", content: "The story behind True Furniture's — a bespoke custom sofa house serving Indore, Ujjain and the discerning homes of Madhya Pradesh." },
+      { property: "og:title", content: "The Atelier — True Furniture's" },
       { property: "og:description", content: "Bespoke custom sofas, hand-tailored in Central India." },
     ],
   }),
@@ -24,7 +24,7 @@ function About() {
           A house of <span className="italic">quiet craft.</span>
         </h1>
         <div className="mt-12 space-y-8 text-lg font-light leading-relaxed text-[color:var(--brand-dark)]/75 max-w-2xl">
-          <p>Avant-Garde Atelier began in a small workshop on the edge of Indore in 2018 — a single carpenter, one leather cutter, and a stubborn refusal to make anything ordinary.</p>
+          <p>True Furniture's began in a small workshop on the edge of Indore in 2018 — a single carpenter, one leather cutter, and a stubborn refusal to make anything ordinary.</p>
           <p>Today, our sofas live in some of the most considered homes of Madhya Pradesh. Every piece is still hand-built to order. Nothing sits on a shelf; nothing is mass-produced. Only what you asked for, exactly as you asked for it.</p>
           <p>We work with a shortlist of Belgian linens, Italian leathers, and hand-loomed Indian cottons. Every frame is kiln-dried teak. Every stitch is checked twice.</p>
         </div>
