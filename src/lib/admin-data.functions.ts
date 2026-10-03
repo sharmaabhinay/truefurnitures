@@ -235,19 +235,31 @@ export const getAdminCartInsights = createServerFn({ method: "GET" })
     const visitorKeys = new Set(
       additions.map((e) => String(e["session"] ?? `${e["ua"] ?? "anon"}|${String(e["time"] ?? "").slice(0, 10)}`)),
     );
+    // Only compare like with like: checkouts placed after cart tracking began.
+    const trackingStart = additions
+      .map((e) => String(e["time"] ?? e["created_at"] ?? ""))
+      .filter(Boolean)
+      .sort()[0] ?? "";
     const validOrders = (orders as Row[]).filter(
-      (o) => !o["deleted_at"] && !["cancelled", "refunded"].includes(String(o["status"] ?? "")),
+      (o) =>
+        !o["deleted_at"] &&
+        !["cancelled", "refunded"].includes(String(o["status"] ?? "")) &&
+        (!trackingStart || String(o["created_at"] ?? "") >= trackingStart),
     );
     const checkoutKeys = new Set(
       validOrders.map((o) => String(
         o["checkout_id"] ?? `${o["user_id"] ?? "guest"}|${String(o["created_at"] ?? "").slice(0, 16)}`,
       )),
     );
-    const convertedVisitorKeys = new Set(
-      validOrders
-        .map((o) => String(o["checkout_session"] ?? ""))
-        .filter((session) => session && visitorKeys.has(session)),
-    );
+    // A checkout counts as converted when it is linked to a tracked cart session;
+    // older orders without a session link count once per checkout.
+    const convertedVisitorKeys = new Set<string>();
+    for (const o of validOrders) {
+      const session = String(o["checkout_session"] ?? "");
+      if (session && visitorKeys.has(session)) convertedVisitorKeys.add(session);
+      else if (!session) convertedVisitorKeys.add(`order:${String(o["checkout_id"] ?? o["id"] ?? "")}`);
+    }
+    const conversionBase = Math.max(visitorKeys.size, convertedVisitorKeys.size);
     const productAdds = new Map<string, number>();
     for (const e of additions) {
       const item = String(e["item"] ?? "Unknown product");
@@ -271,7 +283,7 @@ export const getAdminCartInsights = createServerFn({ method: "GET" })
       addEvents: additions.length,
       completedCheckouts: checkoutKeys.size,
       activeCarts,
-      conversionRate: visitorKeys.size ? Math.round((convertedVisitorKeys.size / visitorKeys.size) * 1000) / 10 : 0,
+      conversionRate: conversionBase ? Math.round((convertedVisitorKeys.size / conversionBase) * 1000) / 10 : 0,
       productAdds: Array.from(productAdds.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8),
       productOrders: Array.from(productOrders.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8),
       updatedAt: new Date().toISOString(),

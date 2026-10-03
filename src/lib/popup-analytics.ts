@@ -47,6 +47,8 @@ export async function logPopupEvent(
   if (typeof window === "undefined") return;
   const time = new Date().toISOString();
   try {
+    const { isTestTraffic } = await import("@/lib/visitor-tracker");
+    if (isTestTraffic()) return;
     await fsAdd(COL.visitors, {
       type,
       time,

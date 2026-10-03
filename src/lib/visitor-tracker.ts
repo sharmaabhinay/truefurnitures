@@ -91,6 +91,7 @@ export function logVisitor(evt: Omit<VisitorEvent, "time"> & { time?: string }) 
 /** Mirror the event into Firestore so admins see traffic from every device. */
 async function persist(evt: VisitorEvent) {
   try {
+    if (isTestTraffic()) return;
     const { COL, fsAdd } = await import("@/lib/db/firestore");
     await fsAdd(COL.visitors, { ...evt, created_at: evt.time });
   } catch {

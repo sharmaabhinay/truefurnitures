@@ -65,7 +65,7 @@ export function CartInsights() {
       {error && !data && <ACard><div className="text-[12px]" style={{ color: dark.danger }}>Cart insights could not be loaded{error instanceof Error && error.message ? ` — ${error.message}` : ""}. Try refreshing or sign in again.</div></ACard>}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Added to cart" value={isLoading ? "—" : (data?.cartVisitors ?? 0)} note={`${data?.addEvents ?? 0} total add actions`} icon={<FiUsers />} />
-        <Stat label="Completed checkout" value={isLoading ? "—" : (data?.completedCheckouts ?? 0)} note="excluding cancelled and refunded" icon={<FiCheckCircle />} />
+        <Stat label="Completed checkout" value={isLoading ? "—" : (data?.completedCheckouts ?? 0)} note="since cart tracking began · excl. cancelled / refunded" icon={<FiCheckCircle />} />
         <Stat label="Conversion rate" value={isLoading ? "—" : `${data?.conversionRate ?? 0}%`} note="tracked cart visitors who checked out" icon={<FiTrendingUp />} />
         <Stat label="Active customer carts" value={isLoading ? "—" : (data?.activeCarts ?? 0)} note="currently holding at least one item" icon={<FiShoppingCart />} />
       </div>
