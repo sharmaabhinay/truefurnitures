@@ -210,7 +210,8 @@ function ConfigurePage() {
 
 function ConfigureStudio() {
   const { slug } = Route.useParams();
-  const { data: sofa } = useQuery(sofaQuery(slug));
+  const loaded = Route.useLoaderData();
+  const { data: sofa } = useQuery({ ...sofaQuery(slug), initialData: loaded ?? undefined });
   const navigate = useNavigate();
   const cart = useCart();
   const { user } = useAuth();

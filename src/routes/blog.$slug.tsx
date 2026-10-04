@@ -72,7 +72,8 @@ export const Route = createFileRoute("/blog/$slug")({
 
 function BlogPost() {
   const { slug } = Route.useParams();
-  const { data: post } = useQuery(postQuery(slug));
+  const loaded = Route.useLoaderData();
+  const { data: post } = useQuery({ ...postQuery(slug), initialData: loaded ?? undefined });
   if (!post) return null;
 
   return (
