@@ -29,9 +29,14 @@ export function WelcomeModal() {
       if (sameVersion && (popup.reshow_after_days <= 0 || days < popup.reshow_after_days)) return;
     }
     // Never interrupt conversion/checkout/account flows with the discount popup.
-    const skipOn = ["/auth", "/checkout", "/payment", "/cart", "/dashboard", "/admin", "/reset-password"];
+    const skipOn = ["/auth", "/checkout", "/payment", "/cart", "/dashboard", "/admin", "/reset-password", "/products/", "/configure/", "/profile", "/messages", "/my-designs", "/orders"];
     if (skipOn.some((p) => window.location.pathname.startsWith(p))) return;
-    const t = setTimeout(() => setOpen(true), Math.max(0, popup.delay_seconds) * 1000);
+    // Give shoppers time to look around first, and never pop up over a page
+    // they navigated to after the timer started (e.g. a product page).
+    const t = setTimeout(() => {
+      if (skipOn.some((p) => window.location.pathname.startsWith(p))) return;
+      setOpen(true);
+    }, Math.max(8, popup.delay_seconds) * 1000);
     return () => clearTimeout(t);
   }, [popup]);
 
