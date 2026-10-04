@@ -90,25 +90,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(false);
         return;
       }
+      // Show a basic profile immediately; enrich it in the background so account
+      // pages never wait on slow profile reads.
+      setProfile((prev) => (prev?.id === u.uid ? prev : { id: u.uid, email: u.email, full_name: u.displayName }));
+      const profilePromise = settleWithin(ensureProfile(u), 8_000).then((p) => {
+        if (p) setProfile(p);
+      }).catch(() => undefined);
       try {
-        const token = await u.getIdTokenResult(true);
+        // Cached token is fine here — it is refreshed automatically before expiry.
+        const token = await u.getIdTokenResult();
         const claimRole = (token.claims as { role?: string }).role;
         let resolved: AppRole = claimRole === "admin" || claimRole === "staff" ? claimRole : "user";
         if (resolved === "user") {
           const roleDoc = await settleWithin(
             fsGet<{ role?: string }>(COL.userRoles, u.uid).catch(() => null),
-            5_000,
+            3_000,
           );
           if (roleDoc?.role === "admin" || roleDoc?.role === "staff") resolved = roleDoc.role;
         }
         setRole(resolved);
-        const loadedProfile = await settleWithin(ensureProfile(u), 5_000);
-        setProfile(loadedProfile ?? { id: u.uid, email: u.email, full_name: u.displayName });
       } catch {
-        setProfile({ id: u.uid, email: u.email, full_name: u.displayName });
+        setRole("user");
       } finally {
         setLoading(false);
       }
+      void profilePromise;
     });
     return unsub;
   }, []);

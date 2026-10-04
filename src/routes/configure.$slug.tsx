@@ -12,6 +12,8 @@ import { useCart } from "@/lib/cart";
 import { toast } from "sonner";
 import { isProductLive } from "@/lib/availability";
 import { logVisitor } from "@/lib/visitor-tracker";
+import { getPublishedSofa } from "@/lib/catalog.functions";
+import { clientPublishedSofa } from "@/lib/catalog-fallback";
 
 
 const Sofa3D = lazy(() => import("@/components/sofa-3d"));
@@ -57,11 +59,20 @@ const sofaQuery = (slug: string) =>
   queryOptions({
     queryKey: ["configure-sofa", slug],
     queryFn: async (): Promise<Sofa | null> => {
-      const data = await fsFindOne<Sofa & { is_published?: boolean }>(
-        COL.sofas,
-        where("slug", "==", slug),
-        where("is_published", "==", true),
-      );
+      // Fast server read first (works during SSR), browser SDK as a fallback.
+      let data: (Sofa & { is_published?: boolean }) | null = null;
+      try {
+        data = (await getPublishedSofa({ data: { slug } })) as (Sofa & { is_published?: boolean }) | null;
+      } catch {
+        data = null;
+      }
+      if (!data && typeof window !== "undefined") {
+        data = await fsFindOne<Sofa & { is_published?: boolean }>(
+          COL.sofas,
+          where("slug", "==", slug),
+          where("is_published", "==", true),
+        ).catch(() => clientPublishedSofa<Sofa>(slug));
+      }
       return data && isProductLive(data) ? data : null;
     },
   });
@@ -72,6 +83,10 @@ export const Route = createFileRoute("/configure/$slug")({
     if (!data) throw notFound();
     return data;
   },
+  pendingComponent: ConfigureLoading,
+  pendingMs: 150,
+  notFoundComponent: ConfigureNotFound,
+  errorComponent: ConfigureNotFound,
   head: ({ loaderData }) => {
     const name = loaderData?.name ?? "Sofa";
     const title = `Customize ${name} in 3D — True Furniture's`;
@@ -165,11 +180,38 @@ function getSizeOptions(options: ProductOptions, basePrice: number): ConfigSize[
   return SIZES.map((s) => ({ ...s }));
 }
 
+function ConfigureLoading() {
+  return (
+    <div className="min-h-screen bg-[color:var(--brand-cream)] flex flex-col items-center justify-center gap-4">
+      <div className="size-10 border-2 border-[color:var(--brand-dark)]/15 border-t-[color:var(--brand-accent)] rounded-full animate-spin" />
+      <p className="text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-dark)]/60">Preparing your 3D studio…</p>
+    </div>
+  );
+}
+
+function ConfigureNotFound() {
+  return (
+    <div className="min-h-screen bg-[color:var(--brand-cream)] text-[color:var(--brand-dark)] flex flex-col">
+      <SiteHeader />
+      <main className="flex-1 flex flex-col items-center justify-center gap-6 px-6 py-24 text-center">
+        <h1 className="text-3xl font-display">This sofa isn't available right now</h1>
+        <Link to="/collections" className="px-6 py-4 bg-[color:var(--brand-dark)] text-white text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors">Browse Collections</Link>
+      </main>
+      <SiteFooter />
+    </div>
+  );
+}
+
 function ConfigurePage() {
   const _features = useFeatures();
   if (!_features.viewIn3d) return <SectionDisabled title="3D Configurator" />;
+  return <ConfigureStudio />;
+}
+
+function ConfigureStudio() {
   const { slug } = Route.useParams();
-  const { data: sofa } = useQuery(sofaQuery(slug));
+  const loaded = Route.useLoaderData();
+  const { data: sofa } = useQuery({ ...sofaQuery(slug), initialData: loaded ?? undefined });
   const navigate = useNavigate();
   const cart = useCart();
   const { user } = useAuth();
@@ -238,7 +280,7 @@ function ConfigurePage() {
   const deposit = Math.round(price * 0.2);
   const eta = estimatedDelivery(sofa?.delivery_days ?? 30);
 
-  if (!sofa) return null;
+  if (!sofa) return <ConfigureLoading />;
 
   const addonList = ADDONS.filter((a) => addons[a.key]).map((a) => a.label);
 

@@ -3,7 +3,7 @@ import { z } from "zod";
 
 /** Returns a short-lived Cloudinary upload signature so the browser can upload directly. */
 export const signCloudinaryUpload = createServerFn({ method: "POST" })
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         folder: z.string().min(1).max(120),

@@ -290,7 +290,9 @@ function ProductPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [added, setAdded] = useState(false);
-  const { data: sofa, isLoading: sofaLoading } = useQuery(sofaQuery(slug));
+  // Seed from the server-rendered loader result so the first browser render matches the HTML.
+  const loaded = Route.useLoaderData();
+  const { data: sofa, isLoading: sofaLoading } = useQuery({ ...sofaQuery(slug), initialData: loaded ?? undefined });
   const { data: related } = useQuery(relatedQuery(slug));
   const sofaId = sofa?.id;
   const { data: reviews } = useQuery({
