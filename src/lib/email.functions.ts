@@ -13,7 +13,7 @@ import {
 } from "@/lib/email-templates";
 
 export const sendWelcomeEmail = createServerFn({ method: "POST" })
-  .inputValidator((d: { email: string; name?: string | null }) => d)
+  .validator((d: { email: string; name?: string | null }) => d)
   .handler(async ({ data }) => {
     if (!data.email) return { sent: false as const, error: "no_email" };
     const brand = await getBrand();
@@ -21,7 +21,7 @@ export const sendWelcomeEmail = createServerFn({ method: "POST" })
   });
 
 export const sendOrderConfirmationEmail = createServerFn({ method: "POST" })
-  .inputValidator((d: { orderId: string }) => d)
+  .validator((d: { orderId: string }) => d)
   .handler(async ({ data }) => {
     const { adminGetDoc } = await import("@/lib/firebase-admin.server");
     const brand = await getBrand();
@@ -56,7 +56,7 @@ export const sendOrderConfirmationEmail = createServerFn({ method: "POST" })
 
 /** Notifies the customer when an admin moves the order to a new status. */
 export const sendOrderStatusEmail = createServerFn({ method: "POST" })
-  .inputValidator((d: { orderId: string; status: string; note?: string | null }) => d)
+  .validator((d: { orderId: string; status: string; note?: string | null }) => d)
   .handler(async ({ data }) => {
     const copy = STATUS_EMAIL_COPY[data.status];
     if (!copy) return { sent: false as const, error: "no_template_for_status" };
@@ -86,7 +86,7 @@ export const sendOrderStatusEmail = createServerFn({ method: "POST" })
   });
 
 export const sendMessageReplyEmail = createServerFn({ method: "POST" })
-  .inputValidator((d: { customerId: string; body: string }) => d)
+  .validator((d: { customerId: string; body: string }) => d)
   .handler(async ({ data }) => {
     const { adminGetDoc } = await import("@/lib/firebase-admin.server");
     const brand = await getBrand();
@@ -103,7 +103,7 @@ export const sendMessageReplyEmail = createServerFn({ method: "POST" })
 
 /** Emails (and SMSes, when a provider is configured) the customer on deposit status changes. */
 export const sendDepositStatusNotification = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     (d: { orderId: string; state: "paid" | "failed" | "pending"; reason?: string | null }) => d,
   )
   .handler(async ({ data }) => {
@@ -156,7 +156,7 @@ export const sendDepositStatusNotification = createServerFn({ method: "POST" })
 
 /** Emails the customer when a quote request is answered / needs follow-up. */
 export const sendQuoteStatusEmail = createServerFn({ method: "POST" })
-  .inputValidator((d: { bookingId: string; status: string; note?: string | null }) => d)
+  .validator((d: { bookingId: string; status: string; note?: string | null }) => d)
   .handler(async ({ data }) => {
     const { adminGetDoc } = await import("@/lib/firebase-admin.server");
     const { quoteStatusHtml, QUOTE_STATUS_COPY } = await import("@/lib/email-templates");

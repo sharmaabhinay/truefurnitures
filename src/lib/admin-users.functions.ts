@@ -5,7 +5,7 @@ import { requireFirebaseAuth } from "@/lib/auth/firebase-auth-middleware";
 /** Fetch a single user's Firebase Auth + profile details (admin/staff only). */
 export const getAuthUserDetails = createServerFn({ method: "GET" })
   .middleware([requireFirebaseAuth])
-  .inputValidator((d) => z.object({ userId: z.string().min(1) }).parse(d))
+  .validator((d) => z.object({ userId: z.string().min(1) }).parse(d))
   .handler(async ({ context, data }) => {
     if (context.role !== "admin" && context.role !== "staff") {
       throw new Response("Forbidden", { status: 403 });
@@ -66,7 +66,7 @@ export const listAdminUsers = createServerFn({ method: "GET" })
  * the Firebase custom claim and the `user_roles` Firestore doc. */
 export const setAdminRole = createServerFn({ method: "POST" })
   .middleware([requireFirebaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         targetUserId: z.string().min(1),
@@ -132,7 +132,7 @@ export const listAdminTeam = createServerFn({ method: "GET" })
 /** Create a new admin/staff account (admin only). */
 export const createAdminAccount = createServerFn({ method: "POST" })
   .middleware([requireFirebaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         email: z.string().email(),
@@ -168,7 +168,7 @@ export const createAdminAccount = createServerFn({ method: "POST" })
 /** Change an admin/staff member's role, name or password (admin only). */
 export const updateAdminAccount = createServerFn({ method: "POST" })
   .middleware([requireFirebaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z
       .object({
         uid: z.string().min(1),
@@ -201,7 +201,7 @@ export const updateAdminAccount = createServerFn({ method: "POST" })
 /** Revoke access, and optionally delete the login entirely (admin only). */
 export const removeAdminAccount = createServerFn({ method: "POST" })
   .middleware([requireFirebaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z.object({ uid: z.string().min(1), deleteLogin: z.boolean().default(false) }).parse(d),
   )
   .handler(async ({ context, data }) => {

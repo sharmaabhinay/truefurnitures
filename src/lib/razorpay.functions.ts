@@ -6,7 +6,7 @@ import { requireFirebaseAuth } from "@/lib/auth/firebase-auth-middleware";
 // Sums their (balance-safe) deposit amounts and returns Razorpay order info + public key id.
 export const createRazorpayOrder = createServerFn({ method: "POST" })
   .middleware([requireFirebaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z.object({ orderIds: z.array(z.string().min(1)).min(1).max(50) }).parse(input),
   )
   .handler(async ({ data, context }) => {
@@ -72,7 +72,7 @@ export const createRazorpayOrder = createServerFn({ method: "POST" })
 
 export const verifyRazorpayPayment = createServerFn({ method: "POST" })
   .middleware([requireFirebaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         razorpay_order_id: z.string().min(4),

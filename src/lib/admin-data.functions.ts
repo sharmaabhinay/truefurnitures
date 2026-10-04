@@ -100,7 +100,7 @@ export const listAdminCustomers = createServerFn({ method: "GET" })
 /** Everything the customer detail page needs, fetched with admin credentials. */
 export const getAdminCustomer = createServerFn({ method: "GET" })
   .middleware([requireFirebaseAuth])
-  .inputValidator((d) => z.object({ userId: z.string().min(1) }).parse(d))
+  .validator((d) => z.object({ userId: z.string().min(1) }).parse(d))
   .handler(async ({ context, data }) => {
     await staffOnly(context.role, context.userId);
     const { adminQuery, adminGetDoc, adminLookupUser } = await import("@/lib/firebase-admin.server");
@@ -179,7 +179,7 @@ export const listNewsletterSubscribers = createServerFn({ method: "GET" })
 /** Customers holding a specific product in their cart (staff only, admin credentials). */
 export const listProductCartHolders = createServerFn({ method: "GET" })
   .middleware([requireFirebaseAuth])
-  .inputValidator((d) => z.object({ productId: z.string().min(1) }).parse(d))
+  .validator((d) => z.object({ productId: z.string().min(1) }).parse(d))
   .handler(async ({ context, data }) => {
     await staffOnly(context.role, context.userId);
     const { adminQuery, adminGetDoc, adminListUsers } = await import("@/lib/firebase-admin.server");
@@ -313,7 +313,7 @@ export const getAdminCartInsights = createServerFn({ method: "GET" })
 /** Full performance picture for one product (staff only). */
 export const getProductAnalytics = createServerFn({ method: "GET" })
   .middleware([requireFirebaseAuth])
-  .inputValidator((d) =>
+  .validator((d) =>
     z.object({
       productId: z.string().min(1),
       range: z.enum(["7d", "30d", "12m"]).default("30d"),
@@ -496,7 +496,7 @@ export const listAdminManufacturers = createServerFn({ method: "GET" })
 /** Staff-only create/update of a manufacturer record. */
 export const saveAdminManufacturer = createServerFn({ method: "POST" })
   .middleware([requireFirebaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({ id: z.string().optional(), data: z.record(z.string(), z.unknown()) })
       .parse(d),

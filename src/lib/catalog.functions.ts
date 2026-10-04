@@ -35,7 +35,7 @@ export const listPublishedSofas = createServerFn({ method: "GET" }).handler(asyn
 });
 
 export const getPublishedSofa = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => z.object({ slug: z.string().min(1) }).parse(data))
+  .validator((data: unknown) => z.object({ slug: z.string().min(1) }).parse(data))
   .handler(async ({ data }) => {
     try {
       const rows = await published();
