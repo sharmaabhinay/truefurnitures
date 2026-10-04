@@ -58,13 +58,14 @@ export const Route = createFileRoute("/collections")({
       { property: "og:description", content: "Browse every silhouette in our fully customizable sofa collection." },
     ],
   }),
-  loader: async ({ context }) => { await context.queryClient.ensureQueryData(sofasQuery); },
+  loader: async ({ context }) => context.queryClient.ensureQueryData(sofasQuery),
   component: Collections,
 });
 
 function Collections() {
   const features = useFeatures();
-  const { data: sofas, isLoading } = useQuery(sofasQuery);
+  const loaded = Route.useLoaderData();
+  const { data: sofas, isLoading } = useQuery({ ...sofasQuery, initialData: loaded ?? undefined });
   const [priceMax, setPriceMax] = useState(200000);
   const [sort, setSort] = useState<"featured" | "price-asc" | "price-desc" | "name">("featured");
   const [q, setQ] = useState("");
