@@ -10,8 +10,28 @@ type Row = Record<string, any> & { id: string };
  * are only recorded in the `user_roles` collection, so fall back to that.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function safeQuery(q: (col: string) => Promise<any[]>, col: string): Promise<Row[]> {
-  try { return (await q(col)) as Row[]; } catch (e) { console.error(`[admin] ${col} read failed`, e); return []; }
+// Short-lived per-worker cache: admin screens poll and several panels read the
+// same collections at once, so identical reads within a few seconds are shared.
+const readCache = new Map<string, { at: number; data: Promise<Row[]> }>();
+const READ_TTL_MS = 10_000;
+
+async function safeQuery(
+  q: (col: string, filters?: any[]) => Promise<any[]>,
+  col: string,
+  filters: Array<{ field: string; op?: string; value: unknown }> = [],
+): Promise<Row[]> {
+  const key = `${col}|${JSON.stringify(filters)}`;
+  const hit = readCache.get(key);
+  if (hit && Date.now() - hit.at < READ_TTL_MS) return hit.data;
+  const data = (async () => {
+    try { return (await q(col, filters)) as Row[]; } catch (e) {
+      console.error(`[admin] ${col} read failed`, e);
+      readCache.delete(key);
+      return [];
+    }
+  })();
+  readCache.set(key, { at: Date.now(), data });
+  return data;
 }
 
 async function staffOnly(role: string | undefined, uid: string) {
@@ -303,9 +323,16 @@ export const getProductAnalytics = createServerFn({ method: "GET" })
     await staffOnly(context.role, context.userId);
     const { adminQuery, adminGetDoc } = await import("@/lib/firebase-admin.server");
     const id = data.productId;
+    // Only fetch visitor events inside the selected window (much smaller read).
+    const windowStart = new Date();
+    if (data.range === "12m") windowStart.setMonth(windowStart.getMonth() - 11, 1);
+    else windowStart.setDate(windowStart.getDate() - (data.range === "7d" ? 6 : 29));
+    windowStart.setHours(0, 0, 0, 0);
     const [sofa, events, orders, carts] = await Promise.all([
       adminGetDoc("sofas", id),
-      safeQuery(adminQuery, "visitors"),
+      safeQuery(adminQuery, "visitors", [
+        { field: "created_at", op: "GREATER_THAN_OR_EQUAL", value: windowStart.toISOString() },
+      ]),
       safeQuery(adminQuery, "orders"),
       safeQuery(adminQuery, "carts"),
     ]);
