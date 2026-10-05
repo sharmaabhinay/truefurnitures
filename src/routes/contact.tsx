@@ -3,7 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { COL, fsAdd } from "@/lib/db/firestore";
+import { submitContactRequest } from "@/lib/contact.functions";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
@@ -29,19 +29,7 @@ function Contact() {
     if (!/^[0-9+\-\s]{8,20}$/.test(form.phone.trim())) return toast.error("Please add a valid phone number");
     setSaving(true);
     try {
-      const now = new Date();
-      await fsAdd(COL.showroomBookings, {
-        status: "pending",
-        source: "contact_form",
-        full_name: form.full_name.trim().slice(0, 120),
-        phone: form.phone.trim().slice(0, 20),
-        email: form.email.trim().slice(0, 200) || null,
-        notes: form.message.trim().slice(0, 2000) || null,
-        party_size: 1,
-        showroom_id: null,
-        preferred_date: now.toISOString().slice(0, 10),
-        preferred_time: now.toTimeString().slice(0, 5),
-      });
+      await submitContactRequest({ data: { full_name: form.full_name, phone: form.phone, email: form.email, message: form.message } });
       setDone(true);
       setForm({ full_name: "", phone: "", email: "", message: "" });
       toast.success("Request sent — our team will call you shortly");
