@@ -118,6 +118,7 @@ export function WelcomeModal() {
       return;
     }
     subscribed.current = true;
+    localStorage.setItem(SUB_KEY, String(popup.version));
     void logPopupEvent("popup_subscribed", { city });
     rememberCity(detectedCity ?? city);
     localStorage.setItem("tf_discount", code);
