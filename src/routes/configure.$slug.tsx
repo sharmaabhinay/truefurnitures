@@ -16,7 +16,10 @@ import { getPublishedSofa } from "@/lib/catalog.functions";
 import { clientPublishedSofa } from "@/lib/catalog-fallback";
 
 
-const Sofa3D = lazy(() => import("@/components/sofa-3d"));
+const loadSofa3D = () => import("@/components/sofa-3d");
+// Start fetching the 3D engine immediately in the browser, in parallel with sofa data.
+if (typeof window !== "undefined") void loadSofa3D();
+const Sofa3D = lazy(loadSofa3D);
 
 type Sofa = {
   id: string;
