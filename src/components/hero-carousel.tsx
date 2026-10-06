@@ -63,7 +63,7 @@ export function HeroCarousel() {
     <section className="relative min-h-[92vh] flex items-center overflow-hidden bg-[color:var(--brand-cream)]">
       {/* background image */}
       <div key={i} className="absolute inset-0">
-        <img src={s.image} alt="" aria-hidden className="w-full h-full object-cover animate-kenburns" />
+        <img src={s.image} alt="" aria-hidden fetchPriority={i === 0 ? "high" : "auto"} decoding="async" className="w-full h-full object-cover animate-kenburns" />
         <div className="absolute inset-0 bg-gradient-to-r from-[color:var(--brand-cream)] via-[color:var(--brand-cream)]/70 md:via-[color:var(--brand-cream)]/50 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-[color:var(--brand-cream)]/60 via-transparent to-transparent md:hidden" />
       </div>
