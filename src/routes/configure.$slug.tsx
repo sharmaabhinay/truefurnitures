@@ -86,7 +86,7 @@ export const Route = createFileRoute("/configure/$slug")({
   pendingComponent: ConfigureLoading,
   pendingMs: 150,
   notFoundComponent: ConfigureNotFound,
-  errorComponent: ConfigureNotFound,
+  errorComponent: ConfigureError,
   head: ({ loaderData }) => {
     const name = loaderData?.name ?? "Sofa";
     const title = `Customize ${name} in 3D — True Furniture's`;
@@ -187,6 +187,10 @@ function ConfigureLoading() {
       <p className="text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-dark)]/60">Preparing your 3D studio…</p>
     </div>
   );
+}
+
+function ConfigureError() {
+  return <ConfigureNotFound />;
 }
 
 function ConfigureNotFound() {
