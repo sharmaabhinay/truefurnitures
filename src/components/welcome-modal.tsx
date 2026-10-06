@@ -5,6 +5,8 @@ import { useBrand } from "@/lib/brand";
 import { logPopupEvent } from "@/lib/popup-analytics";
 
 const KEY = "tf_welcome_v1";
+const SUB_KEY = "tf_welcome_subscribed";
+const SESSION_KEY = "tf_welcome_session";
 
 export function WelcomeModal() {
   const popup = useBrand().welcome_popup;
@@ -19,26 +21,32 @@ export function WelcomeModal() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!popup.enabled) return;
-    // Stored as "<version>:<dismissed-at>" so admins can re-show it by bumping
-    // the version or shortening the re-show window.
+    // Subscribers never see it again (for this popup version).
+    if (localStorage.getItem(SUB_KEY) === String(popup.version)) return;
+    const path = window.location.pathname;
+    const onHome = path === "/" || path === "";
     const seen = localStorage.getItem(KEY);
+    let suppressed = false;
     if (seen) {
       const [v, at] = seen.split(":");
       const days = (Date.now() - Number(at || 0)) / 86400000;
       const sameVersion = Number(v) === Number(popup.version);
-      if (sameVersion && (popup.reshow_after_days <= 0 || days < popup.reshow_after_days)) return;
+      suppressed = sameVersion && (popup.reshow_after_days <= 0 || days < popup.reshow_after_days);
     }
-    // Never interrupt conversion/checkout/account flows with the discount popup.
+    // Landing on the home page always shows it once per visit (browser session).
+    if (onHome) {
+      if (sessionStorage.getItem(SESSION_KEY)) return;
+    } else if (suppressed) return;
     const skipOn = ["/auth", "/checkout", "/payment", "/cart", "/dashboard", "/admin", "/reset-password", "/products/", "/configure/", "/profile", "/messages", "/my-designs", "/orders"];
-    if (skipOn.some((p) => window.location.pathname.startsWith(p))) return;
-    // Give shoppers time to look around first, and never pop up over a page
-    // they navigated to after the timer started (e.g. a product page).
+    if (skipOn.some((p) => path.startsWith(p))) return;
+    const delay = onHome ? Math.max(2, Math.min(popup.delay_seconds, 5)) : Math.max(8, popup.delay_seconds);
     const t = setTimeout(() => {
       if (skipOn.some((p) => window.location.pathname.startsWith(p))) return;
+      sessionStorage.setItem(SESSION_KEY, "1");
       setOpen(true);
-    }, Math.max(8, popup.delay_seconds) * 1000);
+    }, delay * 1000);
     return () => clearTimeout(t);
-  }, [popup]);
+  }, [popup.enabled, popup.version, popup.reshow_after_days, popup.delay_seconds]);
 
   const started = useRef(false);
 
@@ -85,7 +93,8 @@ export function WelcomeModal() {
 
   function dismiss() {
     localStorage.setItem(KEY, `${popup.version}:${Date.now()}`);
-    if (!subscribed.current) void logPopupEvent("popup_dismissed", { city });
+    if (subscribed.current) localStorage.setItem(SUB_KEY, String(popup.version));
+    else void logPopupEvent("popup_dismissed", { city });
     setOpen(false);
   }
 
@@ -109,6 +118,7 @@ export function WelcomeModal() {
       return;
     }
     subscribed.current = true;
+    localStorage.setItem(SUB_KEY, String(popup.version));
     void logPopupEvent("popup_subscribed", { city });
     rememberCity(detectedCity ?? city);
     localStorage.setItem("tf_discount", code);
