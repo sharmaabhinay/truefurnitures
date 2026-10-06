@@ -1,6 +1,6 @@
 import { Component, Suspense, useMemo, useRef, type ReactNode } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, ContactShadows, Environment, useGLTF, Html, useProgress } from "@react-three/drei";
+import { OrbitControls, ContactShadows, Environment, Lightformer, useGLTF, Html, useProgress } from "@react-three/drei";
 import type { Group } from "three";
 
 export type Sofa3DProps = {
@@ -196,7 +196,7 @@ export default function Sofa3D(props: Sofa3DProps) {
   return (
     <Canvas
       shadows
-      dpr={[1, 2]}
+      dpr={[1, 1.5]}
       camera={{ position: [3.2, 2.2, 4.2], fov: 40 }}
       gl={{ antialias: true }}
     >
@@ -211,7 +211,11 @@ export default function Sofa3D(props: Sofa3DProps) {
         ) : (
           <SofaModel {...props} />
         )}
-        <Environment preset="apartment" />
+        <Environment resolution={64} frames={1}>
+          <Lightformer intensity={2} position={[0, 4, 3]} scale={[8, 4, 1]} color="#fff6ea" />
+          <Lightformer intensity={1} position={[-4, 2, -2]} scale={[4, 4, 1]} color="#f4efe6" />
+          <Lightformer intensity={0.8} position={[4, 1, -3]} scale={[4, 3, 1]} color="#e9dcc6" />
+        </Environment>
       </Suspense>
       <ContactShadows position={[0, -0.4, 0]} opacity={0.5} scale={10} blur={2.4} far={2} />
       <OrbitControls enablePan={false} minDistance={3} maxDistance={8} maxPolarAngle={Math.PI / 2.05} />

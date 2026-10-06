@@ -18,7 +18,19 @@ export type CatalogSofa = Record<string, any> & {
   hero_image: string | null;
 };
 
-async function published(): Promise<CatalogSofa[]> {
+let cache: { at: number; data: Promise<CatalogSofa[]> } | null = null;
+const TTL_MS = 60_000;
+
+// Shared short-lived cache: every visitor sees the same catalogue, so one read
+// per minute per worker is enough and keeps Collections/product pages fast.
+function published(): Promise<CatalogSofa[]> {
+  if (cache && Date.now() - cache.at < TTL_MS) return cache.data;
+  const data = fetchPublished().catch((e) => { cache = null; throw e; });
+  cache = { at: Date.now(), data };
+  return data;
+}
+
+async function fetchPublished(): Promise<CatalogSofa[]> {
   const { adminQuery } = await import("@/lib/firebase-admin.server");
   const rows = (await adminQuery("sofas", [{ field: "is_published", value: true }])) as CatalogSofa[];
   return rows
