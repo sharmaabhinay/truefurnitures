@@ -158,17 +158,17 @@ export function getBrowser(ua = "") {
   return "Other";
 }
 /**
- * Editor previews, local development and automated browsers are not real
- * shoppers — keep them out of the shared analytics so admin numbers stay honest.
+ * Automated browsers and local development are not real shoppers — keep them
+ * out of the shared analytics. The editor preview IS counted so the owner can
+ * try actions and immediately see them reflected in Admin.
  */
 export function isTestTraffic(): boolean {
   try {
     const host = window.location.hostname;
     const ua = window.navigator.userAgent;
     if (window.navigator.webdriver) return true;
-    if (/HeadlessChrome|Lovable\/|Electron\//.test(ua)) return true;
+    if (/HeadlessChrome/.test(ua)) return true;
     if (host === "localhost" || host === "127.0.0.1") return true;
-    if (host.startsWith("id-preview--") || host.endsWith("lovableproject.com")) return true;
     return false;
   } catch {
     return false;
