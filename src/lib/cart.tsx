@@ -191,8 +191,28 @@ export function CartProvider({ children }: { children: ReactNode }) {
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
 
+const noop = () => {};
+/**
+ * Empty cart used when a component renders outside the provider — e.g. the
+ * root error / not-found screens (which replace the root layout) or right
+ * after a hot reload. Prevents the whole page from blanking.
+ */
+const EMPTY_CART: CartContextValue = {
+  items: [],
+  add: noop,
+  remove: noop,
+  setQty: noop,
+  clear: noop,
+  count: 0,
+  subtotal: 0,
+  coupon: null,
+  applyCoupon: noop,
+  removeCoupon: noop,
+  discount: 0,
+  total: 0,
+};
+
 export function useCart(): CartContextValue {
   const ctx = useContext(CartContext);
-  if (!ctx) throw new Error("useCart must be used within CartProvider");
-  return ctx;
+  return ctx ?? EMPTY_CART;
 }
