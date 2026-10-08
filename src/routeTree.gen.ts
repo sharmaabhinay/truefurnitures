@@ -50,6 +50,7 @@ import { Route as AuthenticatedAdminCarpentersIdRouteImport } from './routes/_au
 import { Route as AuthenticatedAdminCustomersIdRouteImport } from './routes/_authenticated/admin.customers.$id'
 import { Route as AuthenticatedAdminManufacturersIdRouteImport } from './routes/_authenticated/admin.manufacturers.$id'
 import { Route as AuthenticatedAdminOrdersIdRouteImport } from './routes/_authenticated/admin.orders.$id'
+import { Route as AuthenticatedAdminProductsCompareRouteImport } from './routes/_authenticated/admin.products.compare'
 import { Route as AuthenticatedOrdersIdReceiptRouteImport } from './routes/_authenticated/orders.$id.receipt'
 import { Route as ApiPublicWebhooksRazorpayRouteImport } from './routes/api/public/webhooks/razorpay'
 import { Route as AuthenticatedAdminProductsIdAnalyticsRouteImport } from './routes/_authenticated/admin.products.$id.analytics'
@@ -268,6 +269,12 @@ const AuthenticatedAdminOrdersIdRoute =
     path: '/orders/$id',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminProductsCompareRoute =
+  AuthenticatedAdminProductsCompareRouteImport.update({
+    id: '/products/compare',
+    path: '/products/compare',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedOrdersIdReceiptRoute =
   AuthenticatedOrdersIdReceiptRouteImport.update({
     id: '/orders/$id/receipt',
@@ -340,6 +347,7 @@ export interface FileRoutesByFullPath {
   '/admin/customers/$id': typeof AuthenticatedAdminCustomersIdRoute
   '/admin/manufacturers/$id': typeof AuthenticatedAdminManufacturersIdRoute
   '/admin/orders/$id': typeof AuthenticatedAdminOrdersIdRoute
+  '/admin/products/compare': typeof AuthenticatedAdminProductsCompareRoute
   '/orders/$id/receipt': typeof AuthenticatedOrdersIdReceiptRoute
   '/api/public/webhooks/razorpay': typeof ApiPublicWebhooksRazorpayRoute
   '/admin/products/$id/analytics': typeof AuthenticatedAdminProductsIdAnalyticsRoute
@@ -386,6 +394,7 @@ export interface FileRoutesByTo {
   '/admin/customers/$id': typeof AuthenticatedAdminCustomersIdRoute
   '/admin/manufacturers/$id': typeof AuthenticatedAdminManufacturersIdRoute
   '/admin/orders/$id': typeof AuthenticatedAdminOrdersIdRoute
+  '/admin/products/compare': typeof AuthenticatedAdminProductsCompareRoute
   '/orders/$id/receipt': typeof AuthenticatedOrdersIdReceiptRoute
   '/api/public/webhooks/razorpay': typeof ApiPublicWebhooksRazorpayRoute
   '/admin/products/$id/analytics': typeof AuthenticatedAdminProductsIdAnalyticsRoute
@@ -435,6 +444,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/customers/$id': typeof AuthenticatedAdminCustomersIdRoute
   '/_authenticated/admin/manufacturers/$id': typeof AuthenticatedAdminManufacturersIdRoute
   '/_authenticated/admin/orders/$id': typeof AuthenticatedAdminOrdersIdRoute
+  '/_authenticated/admin/products/compare': typeof AuthenticatedAdminProductsCompareRoute
   '/_authenticated/orders/$id/receipt': typeof AuthenticatedOrdersIdReceiptRoute
   '/api/public/webhooks/razorpay': typeof ApiPublicWebhooksRazorpayRoute
   '/_authenticated/admin/products/$id/analytics': typeof AuthenticatedAdminProductsIdAnalyticsRoute
@@ -484,6 +494,7 @@ export interface FileRouteTypes {
     | '/admin/customers/$id'
     | '/admin/manufacturers/$id'
     | '/admin/orders/$id'
+    | '/admin/products/compare'
     | '/orders/$id/receipt'
     | '/api/public/webhooks/razorpay'
     | '/admin/products/$id/analytics'
@@ -530,6 +541,7 @@ export interface FileRouteTypes {
     | '/admin/customers/$id'
     | '/admin/manufacturers/$id'
     | '/admin/orders/$id'
+    | '/admin/products/compare'
     | '/orders/$id/receipt'
     | '/api/public/webhooks/razorpay'
     | '/admin/products/$id/analytics'
@@ -578,6 +590,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/customers/$id'
     | '/_authenticated/admin/manufacturers/$id'
     | '/_authenticated/admin/orders/$id'
+    | '/_authenticated/admin/products/compare'
     | '/_authenticated/orders/$id/receipt'
     | '/api/public/webhooks/razorpay'
     | '/_authenticated/admin/products/$id/analytics'
@@ -905,6 +918,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminOrdersIdRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/products/compare': {
+      id: '/_authenticated/admin/products/compare'
+      path: '/products/compare'
+      fullPath: '/admin/products/compare'
+      preLoaderRoute: typeof AuthenticatedAdminProductsCompareRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/orders/$id/receipt': {
       id: '/_authenticated/orders/$id/receipt'
       path: '/orders/$id/receipt'
@@ -949,6 +969,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminCustomersIdRoute: typeof AuthenticatedAdminCustomersIdRoute
   AuthenticatedAdminManufacturersIdRoute: typeof AuthenticatedAdminManufacturersIdRoute
   AuthenticatedAdminOrdersIdRoute: typeof AuthenticatedAdminOrdersIdRoute
+  AuthenticatedAdminProductsCompareRoute: typeof AuthenticatedAdminProductsCompareRoute
   AuthenticatedAdminProductsIdAnalyticsRoute: typeof AuthenticatedAdminProductsIdAnalyticsRoute
   AuthenticatedAdminProductsIdCartsRoute: typeof AuthenticatedAdminProductsIdCartsRoute
   AuthenticatedAdminProductsIdOrdersRoute: typeof AuthenticatedAdminProductsIdOrdersRoute
@@ -961,6 +982,8 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminManufacturersIdRoute:
     AuthenticatedAdminManufacturersIdRoute,
   AuthenticatedAdminOrdersIdRoute: AuthenticatedAdminOrdersIdRoute,
+  AuthenticatedAdminProductsCompareRoute:
+    AuthenticatedAdminProductsCompareRoute,
   AuthenticatedAdminProductsIdAnalyticsRoute:
     AuthenticatedAdminProductsIdAnalyticsRoute,
   AuthenticatedAdminProductsIdCartsRoute:
