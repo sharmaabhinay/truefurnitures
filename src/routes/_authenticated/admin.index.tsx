@@ -1603,6 +1603,14 @@ function Products() {
           style={{ flex: "1 1 240px", minWidth: 200, background: "#16161D", border: "1px solid #2A2A38", color: "#E8E8F0" }}
         />
         <button
+          type="button"
+          onClick={() => productNav({ to: "/admin/products/compare" })}
+          className="rounded-md px-4 py-2 text-[13px] font-semibold"
+          style={{ border: "1px solid #C8A86B", color: "#C8A86B" }}
+        >
+          Compare analytics
+        </button>
+        <button
           onClick={() => setEditing({})}
           className="rounded-md px-4 py-2 text-[13px] font-semibold"
           style={{ background: "#C8A86B", color: "#1a1a1a" }}
