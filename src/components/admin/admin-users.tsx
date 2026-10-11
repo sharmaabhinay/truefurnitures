@@ -212,6 +212,9 @@ export function AdminUsers() {
         )}
       </ACard>
 
+      <PromoteCustomers onDone={() => qc.invalidateQueries({ queryKey: ["admin-team"] })} />
+
+
       <AModal
         open={addOpen}
         onClose={() => setAddOpen(false)}
