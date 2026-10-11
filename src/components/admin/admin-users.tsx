@@ -10,6 +10,7 @@ import {
 } from "@/lib/admin-users.functions";
 import { ACard, AInput, ASelect, AButton, AField, AModal, AEmpty, dark } from "@/components/admin/ui";
 import { formatDate } from "@/lib/format";
+import { PromoteCustomers } from "@/components/admin/promote-customers";
 import { FiPlus, FiRefreshCw, FiShield, FiTrash2 } from "react-icons/fi";
 
 type Role = "admin" | "staff";
@@ -211,6 +212,9 @@ export function AdminUsers() {
           </div>
         )}
       </ACard>
+
+      <PromoteCustomers onDone={() => qc.invalidateQueries({ queryKey: ["admin-team"] })} />
+
 
       <AModal
         open={addOpen}
