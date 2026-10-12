@@ -34,10 +34,14 @@ const b64url = (input: ArrayBuffer | string) => {
 };
 
 function pemToPkcs8(pem: string): ArrayBuffer {
-  const body = pem
-    .replace(/\\n/g, "\n")
-    .replace(/-----[A-Z ]+-----/g, "")
-    .replace(/\s+/g, "");
+  // Tolerate keys pasted with surrounding quotes, escaped newlines (\n, \\n, \r)
+  // or stray characters: keep only base64 symbols between the PEM markers.
+  let body = pem.trim().replace(/^["']|["']$/g, "").replace(/\\r|\\n/g, "\n");
+  const match = body.match(/-----BEGIN [A-Z ]+-----([\s\S]*?)-----END [A-Z ]+-----/);
+  if (match) body = match[1]!;
+  body = body.replace(/[^A-Za-z0-9+/=]/g, "");
+  body = body.replace(/=+$/, "");
+  body = body.padEnd(Math.ceil(body.length / 4) * 4, "=");
   const bin = atob(body);
   const buf = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
