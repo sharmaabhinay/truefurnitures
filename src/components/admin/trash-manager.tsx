@@ -11,12 +11,12 @@ type Row = Record<string, any> & { id: string; deleted_at?: string | null; delet
 /** Soft-deleted customers and orders — restore or purge permanently. */
 export function TrashManager() {
   const qc = useQueryClient();
-  const [tab, setTab] = useState<"orders" | "customers">("orders");
+  const [tab, setTab] = useState<"orders" | "customers" | "products">("orders");
 
   const { data = [], isLoading } = useQuery({
     queryKey: ["admin-trash", tab],
     queryFn: async () => {
-      const col = tab === "orders" ? COL.orders : COL.profiles;
+      const col = tab === "orders" ? COL.orders : tab === "products" ? COL.sofas : COL.profiles;
       const rows = await fsList<Row>(col);
       return sortRows(rows.filter((r) => !!r.deleted_at), "deleted_at", "desc");
     },
@@ -27,11 +27,12 @@ export function TrashManager() {
     qc.invalidateQueries({ queryKey: ["admin-orders"] });
     qc.invalidateQueries({ queryKey: ["admin-customers"] });
     qc.invalidateQueries({ queryKey: ["admin-overview"] });
+    qc.invalidateQueries({ queryKey: ["admin-products"] });
   };
 
   const restore = async (id: string) => {
     try {
-      await fsUpdate(tab === "orders" ? COL.orders : COL.profiles, id, {
+      await fsUpdate(tab === "orders" ? COL.orders : tab === "products" ? COL.sofas : COL.profiles, id, {
         deleted_at: null,
         deleted_reason: null,
         deleted_by: null,
@@ -46,7 +47,7 @@ export function TrashManager() {
   const purge = async (id: string) => {
     if (!confirm("Delete permanently? This cannot be undone.")) return;
     try {
-      await fsDelete(tab === "orders" ? COL.orders : COL.profiles, id);
+      await fsDelete(tab === "orders" ? COL.orders : tab === "products" ? COL.sofas : COL.profiles, id);
       toast.success("Deleted permanently");
       refresh();
     } catch (e) {
@@ -57,7 +58,7 @@ export function TrashManager() {
   return (
     <div className="space-y-4">
       <div className="flex gap-2">
-        {(["orders", "customers"] as const).map((t) => (
+        {(["orders", "customers", "products"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -88,7 +89,7 @@ export function TrashManager() {
               >
                 <div className="min-w-0">
                   <div className="text-[13px] font-semibold truncate">
-                    {tab === "orders" ? r['order_number'] ?? r.id : r['full_name'] ?? r['email'] ?? r.id}
+                    {tab === "orders" ? r['order_number'] ?? r.id : tab === "products" ? r['name'] ?? r.id : r['full_name'] ?? r['email'] ?? r.id}
                   </div>
                   <div className="text-[11px] mt-0.5" style={{ color: dark.mute }}>
                     Deleted {formatDate(r.deleted_at ?? "")} · Reason: {r.deleted_reason || "—"}
