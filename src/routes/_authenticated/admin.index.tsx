@@ -20,6 +20,7 @@ import { getRemoteVisitors } from "@/lib/visitor-tracker";
 import { BlogManager } from "@/components/admin/blog-manager";
 import { CouponManager } from "@/components/admin/coupon-manager";
 import { CarpenterManager } from "@/components/admin/carpenter-manager";
+import { TrashDropZone, trashDragProps } from "@/components/admin/trash-drop-zone";
 import { ManufacturerManager } from "@/components/admin/manufacturer-manager";
 import { CarpenterRequests } from "@/components/admin/carpenter-requests";
 import { OrderCreateModal } from "@/components/admin/order-create-modal";
@@ -920,6 +921,7 @@ function Orders() {
               return (
                 <tr
                   key={o.id}
+                  {...trashDragProps(o.id, o.order_number)}
                   className="border-b last:border-b-0 cursor-pointer hover:bg-white/[0.02]"
                   style={{ borderColor: "rgba(42,42,56,0.5)" }}
                   onClick={() => navigate({ to: "/admin/orders/$id", params: { id: o.id } })}
@@ -1016,6 +1018,10 @@ function Orders() {
         count={selected.length}
         onCancel={() => setAskDelete(false)}
         onConfirm={softDelete}
+      />
+      <TrashDropZone
+        label="Drop order here to move to trash"
+        onDrop={(id) => { setSelected((s) => (s.includes(id) ? s : [id])); setAskDelete(true); }}
       />
     </div>
   );
@@ -1189,6 +1195,7 @@ function Customers() {
         {paged.slice.map((c: any) => (
           <tr
             key={c.id}
+            {...trashDragProps(c.id, c.full_name ?? c.id)}
             className="border-b last:border-b-0 cursor-pointer hover:bg-white/[0.02]"
             style={{ borderColor: "rgba(42,42,56,0.5)" }}
             onClick={() => navigate({ to: "/admin/customers/$id", params: { id: c.id } })}
@@ -1229,6 +1236,10 @@ function Customers() {
         count={selected.length}
         onCancel={() => setAskDelete(false)}
         onConfirm={softDelete}
+      />
+      <TrashDropZone
+        label="Drop customer here to move to trash"
+        onDrop={(id) => { setSelected((s) => (s.includes(id) ? s : [id])); setAskDelete(true); }}
       />
     </div>
   );
@@ -1589,8 +1600,28 @@ function Products() {
     qc.invalidateQueries({ queryKey: ["admin-products"] });
   };
 
+  const { user: trashUser } = useAuth();
+  const [trashId, setTrashId] = useState<string | null>(null);
+  const trashProduct = async (reason: string) => {
+    if (!trashId) return;
+    try {
+      await fsUpdate(COL.sofas, trashId, {
+        deleted_at: new Date().toISOString(),
+        deleted_reason: reason,
+        deleted_by: trashUser?.uid ?? null,
+        is_published: false,
+      });
+      toast.success("Product moved to trash");
+      setTrashId(null);
+      qc.invalidateQueries({ queryKey: ["admin-products"] });
+      qc.invalidateQueries({ queryKey: ["admin-trash"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Delete failed");
+    }
+  };
+
   const filtered = (data ?? []).filter((p) =>
-    search ? p.name.toLowerCase().includes(search.toLowerCase()) : true,
+    !(p as any).deleted_at && (search ? p.name.toLowerCase().includes(search.toLowerCase()) : true),
   );
 
   return (
@@ -1623,7 +1654,8 @@ function Products() {
         {filtered.map((p) => (
           <div
             key={p.id}
-            className="relative rounded-xl overflow-hidden transition-colors"
+            {...trashDragProps(p.id, p.name)}
+            className="relative rounded-xl overflow-hidden transition-colors cursor-grab"
             style={{ background: "#1E1E28", border: "1px solid #2A2A38" }}
           >
             <div className="h-36 overflow-hidden" style={{ background: "#1a1a22" }}>
