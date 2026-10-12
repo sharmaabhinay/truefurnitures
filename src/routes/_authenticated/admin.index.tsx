@@ -1775,6 +1775,8 @@ function Products() {
       </div>
 
       <CartWatchersModal target={cartFor} onClose={() => setCartFor(null)} />
+      <DeleteReasonModal open={!!trashId} count={1} onCancel={() => setTrashId(null)} onConfirm={trashProduct} />
+      <TrashDropZone label="Drop product here to move to trash" onDrop={(id) => setTrashId(id)} />
 
 
       {editing && (
