@@ -94,6 +94,13 @@ service cloud.firestore {
     }
 
 
+    // Append-only history of Trash actions (who, when, why).
+    match /trash_audit/{id} {
+      allow read: if isStaff();
+      allow create: if isStaff() && request.resource.data.actor_id == request.auth.uid;
+      allow update, delete: if false;
+    }
+
     match /payment_events/{id} {
       allow read: if isStaff();
       allow write: if false; // webhook only
