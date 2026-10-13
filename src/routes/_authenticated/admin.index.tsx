@@ -10,6 +10,7 @@ import { getFirebaseAuth } from "@/lib/firebase";
 import { uploadToCloudinary } from "@/lib/upload";
 import { getFirebaseApp } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth/auth-context";
+import { logTrashAction } from "@/components/admin/trash-manager";
 import { signOut as fbSignOut } from "firebase/auth";
 type Json = unknown;
 import { formatINR, formatDate, ORDER_STATUS_STEPS } from "@/lib/format";
@@ -850,6 +851,7 @@ function Orders() {
     const stamp = { deleted_at: new Date().toISOString(), deleted_reason: reason, deleted_by: user?.uid ?? null };
     try {
       await Promise.all(selected.map((id) => fsUpdate(COL.orders, id, stamp)));
+      void logTrashAction("trashed", "order", selected, reason, user);
       toast.success(`Moved ${selected.length} order(s) to trash`);
       setSelected([]);
       setAskDelete(false);
@@ -1123,6 +1125,7 @@ function Customers() {
     const stamp = { deleted_at: new Date().toISOString(), deleted_reason: reason, deleted_by: user?.uid ?? null };
     try {
       await Promise.all(selected.map((id) => fsUpdate(COL.profiles, id, stamp)));
+      void logTrashAction("trashed", "customer", selected, reason, user);
       toast.success(`Moved ${selected.length} customer(s) to trash`);
       setSelected([]);
       setAskDelete(false);
@@ -1611,6 +1614,7 @@ function Products() {
         deleted_by: trashUser?.uid ?? null,
         is_published: false,
       });
+      void logTrashAction("trashed", "product", [trashId], reason, trashUser);
       toast.success("Product moved to trash");
       setTrashId(null);
       qc.invalidateQueries({ queryKey: ["admin-products"] });
