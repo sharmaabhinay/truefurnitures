@@ -10,3 +10,9 @@
 - [x] 8. Page flicker (hydration mismatch) on Collections / product pages
 - [x] 9. Contact form send button + manufacturer add check
 - [x] 10. Final verification run
+
+# Splash and verified catalogue
+- [ ] Animated logo splash until home content is ready; verify loading and dismissal.
+- [ ] Remove confirmed fake catalogue entries safely.
+- [ ] Research seven supplier sofas with verified prices, variations and licensed exact models; replace only qualifying products.
+- [ ] Ensure product 3D viewing never substitutes an unrelated generic sofa.
