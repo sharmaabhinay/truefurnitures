@@ -17,6 +17,7 @@ import { CartProvider } from "@/lib/cart";
 import { AuthProvider } from "@/lib/auth/auth-context";
 import { Toaster } from "@/components/ui/sonner";
 import { NavigationProgress } from "@/components/navigation-progress";
+import { LaunchSplash } from "@/components/launch-splash";
 
 function NotFoundComponent() {
   return (
@@ -93,8 +94,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "True Furniture's — Fully Customizable Furniture | Indore & Ujjain" },
       { name: "twitter:description", content: "Fully customizable sofas designed in 3D. Choose fabric, colour, size and finish — hand-tailored in Indore & Ujjain." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/7d119877-9591-40df-ad3e-2a1e79310fe5" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/7d119877-9591-40df-ad3e-2a1e79310fe5" },
     ],
       links: [
       {
@@ -165,6 +164,7 @@ function RootComponent() {
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <NavigationProgress />
         <Outlet />
+        <LaunchSplash />
             <VisitorTrackerBoot />
             <WelcomeModal />
         <Toaster position="top-center" richColors />

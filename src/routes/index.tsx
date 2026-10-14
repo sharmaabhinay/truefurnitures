@@ -23,6 +23,8 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Fully customizable sofas designed in 3D. Choose fabric, colour, size and finish — hand-tailored in Indore & Ujjain." },
       { property: "og:title", content: "True Furniture's — Fully Customizable Furniture | Indore & Ujjain" },
       { property: "og:description", content: "Fully customizable sofas designed in 3D. Choose fabric, colour, size and finish — hand-tailored in Indore & Ujjain." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Home,
