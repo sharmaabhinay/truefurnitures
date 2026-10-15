@@ -87,10 +87,18 @@ export const setAdminRole = createServerFn({ method: "POST" })
         await adminDeleteDoc("user_roles", doc.id);
       }
     } else {
+      const { adminGetDoc, adminLookupUser } = await import("@/lib/firebase-admin.server");
+      const [profile, authUser] = await Promise.all([
+        adminGetDoc("profiles", data.targetUserId).catch(() => null),
+        adminLookupUser(data.targetUserId).catch(() => null),
+      ]);
       await adminSetDoc("user_roles", data.targetUserId, {
         user_id: data.targetUserId,
         role: data.role,
         roles: [data.role],
+        email: authUser?.email ?? (profile?.["email"] as string | null) ?? null,
+        name: (profile?.["full_name"] as string | null) ?? null,
+        created_at: new Date().toISOString(),
       });
     }
 
