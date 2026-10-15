@@ -28,8 +28,15 @@ export function LaunchSplash() {
     };
   }, [home, visible]);
 
+  // Site settings come over a slow realtime channel; the page renders with defaults, so don't hold the splash for them.
+  const [brandWaitOver, setBrandWaitOver] = useState(false);
   useEffect(() => {
-    if (!home || !visible || fetchingBrand > 0) return;
+    const timer = setTimeout(() => setBrandWaitOver(true), 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!home || !visible || (fetchingBrand > 0 && !brandWaitOver)) return;
     let cancelled = false;
     const cleanups: Array<() => void> = [];
     const frame = () => new Promise<void>((resolve) => {
@@ -65,7 +72,7 @@ export function LaunchSplash() {
       if (!cancelled) setLeaving(true);
     })();
     return () => { cancelled = true; cleanups.forEach((cleanup) => cleanup()); };
-  }, [fetchingBrand, home, visible]);
+  }, [fetchingBrand, brandWaitOver, home, visible]);
 
   useEffect(() => {
     if (!leaving) return;
