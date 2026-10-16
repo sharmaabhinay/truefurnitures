@@ -3,14 +3,14 @@ import { Armchair, SwatchBook, ClipboardCheck, Hammer, BadgeCheck, House } from 
 import showroom from "@/assets/showroom-indore.jpg";
 import fabric from "@/assets/fabric-boucle.jpg";
 import planning from "@/assets/journey/planning.jpg.asset.json";
-import workshop from "@/assets/journey/workshop.jpg.asset.json";
+import workshop from "@/assets/journey/woodworking.jpg.asset.json";
 import home from "@/assets/journey/home.jpg.asset.json";
 
 const steps = [
   { title: "Meet your next sofa", phase: "Visit & discover", description: "Explore the collection online or visit the showroom in Indore or Ujjain. Find the silhouette and comfort that feel like you.", image: showroom, alt: "Sofas arranged in a showroom", icon: Armchair },
   { title: "Make every detail yours", phase: "Choose & customise", description: "Explore fabrics, colours and available sizes. Check physical samples and your room measurements with the team.", image: fabric, alt: "Close-up of textured upholstery fabric", icon: SwatchBook },
   { title: "Bring the plan together", phase: "Review & confirm", description: "Review your chosen model, specifications, quote and delivery details. Confirm your order when every detail is right.", image: planning.url, alt: "Writing down details in a notebook", icon: ClipboardCheck },
-  { title: "From design to craftsmanship", phase: "Build & upholster", description: "Your confirmed specifications guide the making of your sofa, from the frame to the upholstery and finishing touches.", image: workshop.url, alt: "Craftsperson working with tools in a workshop", icon: Hammer },
+  { title: "From design to craftsmanship", phase: "Build & upholster", description: "Your confirmed specifications guide the making of your sofa, from the frame to the upholstery and finishing touches.", image: workshop.url, alt: "Woodworking drill on a work surface covered in wood shavings", icon: Hammer },
   { title: "The final details matter", phase: "Check & coordinate", description: "The finished piece is checked against your order. Confirm the delivery arrangements and make sure the route into your home is ready.", image: workshop.url, alt: "Workshop tools used for furniture finishing", icon: BadgeCheck },
   { title: "Finally, home", phase: "Deliver & enjoy", description: "Receive your sofa, inspect the finish and settle it into its new space. A piece chosen by you, ready for everyday life.", image: home.url, alt: "A sofa in a bright furnished living room", icon: House },
 ];

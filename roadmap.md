@@ -18,7 +18,7 @@
 - [ ] Ensure product 3D viewing never substitutes an unrelated generic sofa.
 
 # Customer photo browsing and journey
-- [ ] Enable finger swiping between product images.
-- [ ] Add important customer FAQs without inventing policies.
-- [ ] Add an illustrated, scroll-animated visit-to-delivery timeline on home.
-- [ ] Verify gallery interactions, FAQs and timeline on desktop and mobile.
+- [x] Enable finger swiping between product images.
+- [x] Add important customer FAQs without inventing policies.
+- [x] Add an illustrated, scroll-animated visit-to-delivery timeline on home.
+- [x] Verify gallery interactions, FAQs and timeline on desktop and mobile.
