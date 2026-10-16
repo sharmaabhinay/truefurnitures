@@ -16,3 +16,9 @@
 - [ ] Remove confirmed fake catalogue entries safely.
 - [ ] Research seven supplier sofas with verified prices, variations and licensed exact models; replace only qualifying products.
 - [ ] Ensure product 3D viewing never substitutes an unrelated generic sofa.
+
+# Customer photo browsing and journey
+- [ ] Enable finger swiping between product images.
+- [ ] Add important customer FAQs without inventing policies.
+- [ ] Add an illustrated, scroll-animated visit-to-delivery timeline on home.
+- [ ] Verify gallery interactions, FAQs and timeline on desktop and mobile.
