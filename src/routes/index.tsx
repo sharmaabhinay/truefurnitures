@@ -4,6 +4,8 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { HeroCarousel } from "@/components/hero-carousel";
 import { VideoShowcase } from "@/components/video-showcase";
+import { CustomerJourney } from "@/components/customer-journey";
+import { CustomerFaqs } from "@/components/customer-faqs";
 import { formatINR } from "@/lib/format";
 import sofaMalwa from "@/assets/sofa-malwa.jpg";
 import sofaUjjain from "@/assets/sofa-ujjain.jpg";
@@ -83,6 +85,8 @@ function Home() {
       </section>
 
       <VideoShowcase />
+
+      <CustomerJourney />
 
       {/* 3D CTA */}
       {features.design3d && (
@@ -189,6 +193,7 @@ function Home() {
         </div>
       </section>
 
+      <CustomerFaqs />
       <SiteFooter />
     </div>
   );

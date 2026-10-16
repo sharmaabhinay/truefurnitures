@@ -1,0 +1,8 @@
+export const customerFaqs = [
+  { q: "How do I know whether a sofa will fit my home?", a: "Measure the space where the sofa will sit, then check the dimensions on its product page. Also measure doorways, stairs and lift openings along the delivery route. Share these measurements with our team before confirming a custom size." },
+  { q: "Can I choose a different fabric, colour or size?", a: "Browse the options available for your chosen sofa. For changes beyond the listed options, contact our team to confirm feasibility, the final price and the delivery estimate before ordering." },
+  { q: "Will the fabric colour look exactly like it does on my screen?", a: "Screens and room lighting can change how a colour appears. A physical fabric sample is the best reference for colour, texture and finish; ask the showroom team to see your chosen material before confirming it." },
+  { q: "What should I check before paying for a custom sofa?", a: "Review the sofa model, dimensions, fabric, colour, total price, delivery address and payment terms. Ask the team to confirm any special requests and access requirements in your order details." },
+  { q: "Can I change my design after placing an order?", a: "Contact the team as soon as possible. Whether a change is possible depends on whether materials have been ordered or production has started. Confirm any extra cost or revised delivery estimate before agreeing to a change." },
+  { q: "What happens on delivery day?", a: "Keep the delivery route clear and have someone available to receive the sofa. Check the delivered piece against your confirmed order, inspect its condition and raise any concern with the team promptly." },
+];

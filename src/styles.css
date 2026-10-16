@@ -170,6 +170,12 @@
 
 .animate-fade-up { animation: tf-fade-up 0.7s ease-out both; }
 .animate-fade-in-slow { animation: tf-fade-in 1s ease-out both; }
+.tf-journey-step { transition: opacity 0.8s ease, transform 0.8s cubic-bezier(.2,.8,.2,1); }
+.tf-journey-step.tf-journey-pending { opacity: 0; transform: translateY(36px); }
+@media (prefers-reduced-motion: reduce) {
+  .tf-journey-step { transition: none; }
+  .tf-journey-step.tf-journey-pending { opacity: 1; transform: none; }
+}
 .delay-100 { animation-delay: 0.1s; }
 .delay-200 { animation-delay: 0.2s; }
 .delay-300 { animation-delay: 0.3s; }

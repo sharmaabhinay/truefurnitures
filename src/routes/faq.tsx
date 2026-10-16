@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { customerFaqs } from "@/lib/customer-faqs";
 
 const faqs = [
+  ...customerFaqs,
   { q: "How long does a bespoke sofa take to build?", a: "Typically 28–42 days depending on the model, upholstery, and any custom sizing. You'll see a specific estimated delivery date on each product page and in your order dashboard." },
   { q: "Can I really customize every dimension?", a: "Yes — width, depth, height, arm style, leg style, seat firmness, and fabric are all fully customizable. Some structural changes are subject to our quality team's approval, but 95% of requests are accepted." },
   { q: "Do you deliver outside Indore and Ujjain?", a: "White-glove delivery is complimentary within Indore and Ujjain. We do ship pan-India via trusted furniture logistics partners; delivery charges are quoted per order." },
@@ -20,6 +22,8 @@ export const Route = createFileRoute("/faq")({
       { name: "description", content: "Common questions about ordering, customization, delivery, warranty, and care for True Furniture's bespoke sofas." },
       { property: "og:title", content: "FAQ — True Furniture's" },
       { property: "og:description", content: "Everything you need to know before ordering a bespoke sofa." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { property: "og:url", content: "/faq" },
     ],
     links: [{ rel: "canonical", href: "/faq" }],
