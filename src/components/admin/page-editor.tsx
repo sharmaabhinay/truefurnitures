@@ -71,7 +71,7 @@ export function PageEditor() {
     finally { setSaving(false); }
   };
   const previewSlug = productSlug || products[0]?.slug;
-  const source = page === "home" ? "/" : previewSlug ? `/products/${encodeURIComponent(previewSlug)}` : null;
+  const source = page === "home" ? "/?sectionPreview=1" : previewSlug ? `/products/${encodeURIComponent(previewSlug)}?sectionPreview=1` : null;
   const available = [...new Set([...defaults(page).map(s => s.type), "journey", "faqs", "text", "image"])];
   if (!isAdmin) return <p className="text-muted-foreground">Only an Owner can edit storefront pages.</p>;
   if (isPending) return <p>Loading page arrangements…</p>;
