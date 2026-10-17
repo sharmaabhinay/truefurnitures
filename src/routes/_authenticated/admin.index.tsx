@@ -33,6 +33,7 @@ import { SalesAnalytics } from "@/components/admin/sales-analytics";
 import { WelcomePopupSettings } from "@/components/admin/welcome-popup-settings";
 import { PopupInsights } from "@/components/admin/popup-insights";
 import { CartInsights } from "@/components/admin/cart-insights";
+import { PageEditor } from "@/components/admin/page-editor";
 import { AdminUsers } from "@/components/admin/admin-users";
 import { listPopupEvents } from "@/lib/popup-analytics";
 import { sendQuoteStatusEmail } from "@/lib/email.functions";
@@ -55,6 +56,10 @@ export const Route = createFileRoute("/_authenticated/admin/")({
       { title: "Admin Panel — True Furniture's" },
       { name: "description", content: "Manage orders, customers, products, bookings, reviews and more." },
       { name: "robots", content: "noindex" },
+      { property: "og:title", content: "Admin Panel — True Furniture's" },
+      { property: "og:description", content: "Manage the True Furniture storefront and customer orders." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: AdminHome,
@@ -83,6 +88,7 @@ type PanelKey =
   | "campaigns"
   | "subscribers"
   | "adminUsers"
+  | "pageEditor"
   | "settings";
 
 type NavItem = { key: PanelKey; label: string; icon: React.ReactNode };
@@ -138,6 +144,7 @@ const NAV: NavGroup[] = [
     title: "System",
     items: [
       { key: "adminUsers", label: "Admin Users", icon: <FiShield /> },
+      { key: "pageEditor", label: "Page editor", icon: <FiEdit3 /> },
       { key: "settings", label: "Settings", icon: <FiSettings /> },
       { key: "trash", label: "Trash", icon: <FiTrash2 /> },
     ],
@@ -167,6 +174,7 @@ const TITLES: Record<PanelKey, string> = {
   careers: "Careers & Applications",
   campaigns: "Ad Campaigns",
   adminUsers: "Admin Users",
+  pageEditor: "Page editor",
   settings: "Settings",
 };
 
@@ -357,6 +365,7 @@ function AdminHome() {
           {panel === "campaigns" && <CampaignManager />}
           {panel === "subscribers" && <Subscribers />}
           {panel === "adminUsers" && <AdminUsers />}
+          {panel === "pageEditor" && <PageEditor />}
           {panel === "settings" && <Settings />}
         </main>
       </div>

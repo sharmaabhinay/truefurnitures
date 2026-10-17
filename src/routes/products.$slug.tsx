@@ -26,6 +26,7 @@ import { clientPublishedSofa, clientPublishedSofas } from "@/lib/catalog-fallbac
 import { logVisitor } from "@/lib/visitor-tracker";
 import { ProductGallery } from "@/components/product-gallery";
 import { CustomerFaqs } from "@/components/customer-faqs";
+import { PageSections } from "@/components/page-sections";
 
 
 const heroImages: Record<string, string> = {
@@ -325,7 +326,9 @@ function ProductPage() {
         <span className="text-[color:var(--brand-dark)]">{sofa.name}</span>
       </div>
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-8 md:py-12 grid gap-8 md:gap-12 lg:grid-cols-2">
+      <PageSections page="product" sections={{
+        main: (<>
+<section className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-8 md:py-12 grid gap-8 md:gap-12 lg:grid-cols-2">
         {/* Gallery carousel */}
         <ProductGallery
           images={gallery}
@@ -479,9 +482,9 @@ function ProductPage() {
           </div>
         </div>
       </section>
-
-      {/* Features */}
-      {sofa.features && sofa.features.length > 0 && (
+        </>),
+        features: (<>
+{sofa.features && sofa.features.length > 0 && (
         <section className="bg-[color:var(--brand-muted)]/40 py-16 sm:py-20">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-display mb-10 text-balance">Why this piece is worth it.</h2>
@@ -496,9 +499,9 @@ function ProductPage() {
           </div>
         </section>
       )}
-
-      {/* Reviews */}
-      {reviews && reviews.length > 0 && (
+        </>),
+        reviews: (<>
+{reviews && reviews.length > 0 && (
         <section className="py-16 sm:py-20 max-w-6xl mx-auto px-4 sm:px-6 md:px-10">
           <div className="mb-8">
             <span className="tf-chip mb-2">From Real Homes</span>
@@ -524,11 +527,12 @@ function ProductPage() {
           </div>
         </section>
       )}
-
-      <CustomerFaqs />
-
-      {/* Related products */}
-      {related && related.length > 0 && (
+        </>),
+        faqs: (<>
+<CustomerFaqs />
+        </>),
+        related: (<>
+{related && related.length > 0 && (
         <section className="py-16 sm:py-20 max-w-7xl mx-auto px-4 sm:px-6 md:px-10">
           <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
             <div>
@@ -558,6 +562,8 @@ function ProductPage() {
           </div>
         </section>
       )}
+        </>),
+      }} />
 
       <SiteFooter />
     </div>

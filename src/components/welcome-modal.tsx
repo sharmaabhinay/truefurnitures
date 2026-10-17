@@ -20,6 +20,7 @@ export function WelcomeModal() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (window.parent !== window && new URLSearchParams(window.location.search).get("sectionPreview") === "1") return;
     if (!popup.enabled) return;
     // Subscribers never see it again (for this popup version).
     if (localStorage.getItem(SUB_KEY) === String(popup.version)) return;

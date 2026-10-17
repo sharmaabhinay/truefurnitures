@@ -22,3 +22,8 @@
 - [x] Add important customer FAQs without inventing policies.
 - [x] Add an illustrated, scroll-animated visit-to-delivery timeline on home.
 - [x] Verify gallery interactions, FAQs and timeline on desktop and mobile.
+
+# Admin page editor
+- [x] Add drag-and-drop home and product page editor with section controls and preview.
+- [x] Apply saved arrangements and added sections to storefront pages.
+- [x] Test ordering, saving and storefront display with a temporary owner; restore original layouts and remove test account.

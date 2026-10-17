@@ -6,6 +6,7 @@ import { HeroCarousel } from "@/components/hero-carousel";
 import { VideoShowcase } from "@/components/video-showcase";
 import { CustomerJourney } from "@/components/customer-journey";
 import { CustomerFaqs } from "@/components/customer-faqs";
+import { PageSections } from "@/components/page-sections";
 import { formatINR } from "@/lib/format";
 import sofaMalwa from "@/assets/sofa-malwa.jpg";
 import sofaUjjain from "@/assets/sofa-ujjain.jpg";
@@ -51,10 +52,12 @@ function Home() {
     <div className="bg-[color:var(--brand-cream)] text-[color:var(--brand-dark)]">
       <SiteHeader />
 
-      <HeroCarousel />
-
-      {/* FEATURED COLLECTION */}
-      <section className="py-16 sm:py-24 px-6 md:px-10 max-w-7xl mx-auto">
+      <PageSections page="home" sections={{
+        hero: (<>
+<HeroCarousel />
+        </>),
+        featured: (<>
+<section className="py-16 sm:py-24 px-6 md:px-10 max-w-7xl mx-auto">
         <div className="flex flex-wrap justify-between items-end gap-6 mb-10 sm:mb-16">
           <div>
             <span className="tf-chip mb-3">Signature Silhouettes</span>
@@ -83,13 +86,15 @@ function Home() {
           ))}
         </div>
       </section>
-
-      <VideoShowcase />
-
-      <CustomerJourney />
-
-      {/* 3D CTA */}
-      {features.design3d && (
+        </>),
+        video: (<>
+<VideoShowcase />
+        </>),
+        journey: (<>
+<CustomerJourney />
+        </>),
+        design: (<>
+{features.design3d && (
       <section className="bg-[color:var(--brand-dark)] py-16 sm:py-24 text-white overflow-hidden">
         <div className="max-w-6xl mx-auto px-6 md:px-10 grid md:grid-cols-2 gap-12 md:gap-16 items-center">
           <div className="relative">
@@ -121,10 +126,9 @@ function Home() {
         </div>
       </section>
       )}
-
-
-      {/* MATERIALS */}
-      <section className="py-16 sm:py-24 px-6 md:px-10 max-w-7xl mx-auto">
+        </>),
+        materials: (<>
+<section className="py-16 sm:py-24 px-6 md:px-10 max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-display mb-4">Tactile Excellence</h2>
           <p className="text-[color:var(--brand-dark)]/60 uppercase text-[10px] tracking-[0.3em]">Sourced globally, crafted locally</p>
@@ -140,9 +144,9 @@ function Home() {
           ))}
         </div>
       </section>
-
-      {/* SHOWROOMS */}
-      <section className="py-16 sm:py-24 bg-[color:var(--brand-muted)]/30 border-t border-[color:var(--brand-dark)]/5">
+        </>),
+        showrooms: (<>
+<section className="py-16 sm:py-24 bg-[color:var(--brand-muted)]/30 border-t border-[color:var(--brand-dark)]/5">
         <div className="max-w-6xl mx-auto px-6 md:px-10">
           <div className="grid md:grid-cols-2 gap-12 md:gap-16">
             <div className="space-y-8">
@@ -179,9 +183,9 @@ function Home() {
           </div>
         </div>
       </section>
-
-      {/* TESTIMONIAL */}
-      <section className="py-16 sm:py-24 px-6 md:px-10 bg-[color:var(--brand-cream)]">
+        </>),
+        testimonial: (<>
+<section className="py-16 sm:py-24 px-6 md:px-10 bg-[color:var(--brand-cream)]">
         <div className="max-w-3xl mx-auto text-center">
           <div className="flex justify-center gap-1 mb-8">
             <span className="text-[color:var(--brand-accent)] text-xl">★★★★★</span>
@@ -192,8 +196,12 @@ function Home() {
           <p className="font-bold uppercase tracking-widest text-[10px]">Ananya Singh — Indore</p>
         </div>
       </section>
+        </>),
+        faqs: (<>
+<CustomerFaqs />
+        </>),
+      }} />
 
-      <CustomerFaqs />
       <SiteFooter />
     </div>
   );
