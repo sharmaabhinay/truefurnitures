@@ -14,3 +14,5 @@
 - Product photo galleries use the installed Embla carousel with shared selection for touch, keyboard and thumbnails; this keeps gesture handling consistent without a custom swipe engine.
 - Customer preparation FAQs live in one shared data module, reused by home, product pages and the FAQ page; this prevents answers drifting between customer entry points.
 - The home customer journey uses lazy-loaded illustrative photographs and one-shot IntersectionObserver reveals with reduced-motion support; this avoids delaying the splash or repeatedly animating content.
+- Home and product sections render through the shared page-layout registry; keep their arrangements in a dedicated site-settings document so unrelated CMS saves cannot overwrite them. Editor previews use same-origin parent-frame messages and never persist before Save.
+- Use dnd-kit sortable with pointer and keyboard sensors for page-section ordering; keep accessible move buttons as a non-drag alternative.
