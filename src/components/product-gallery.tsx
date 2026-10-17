@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
-import { ChevronLeft, ChevronRight, Box } from "lucide-react";
+import { Box } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 
@@ -67,11 +67,8 @@ export function ProductGallery({ images, activeImage, setActiveImage, sofaName, 
             ))}
           </div>
         </div>
-        {images.length > 1 && <>
-          <Button variant="outline" size="icon" title="Previous image" aria-label="Previous image" onClick={() => choose((selected - 1 + images.length) % images.length)} className="absolute left-3 top-1/2 -translate-y-1/2 rounded-none bg-background/90 backdrop-blur"><ChevronLeft /></Button>
-          <Button variant="outline" size="icon" title="Next image" aria-label="Next image" onClick={() => choose((selected + 1) % images.length)} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-none bg-background/90 backdrop-blur"><ChevronRight /></Button>
-        </>}
-        <span className="absolute bottom-3 left-3 max-w-[70%] px-3 py-2 bg-background/90 text-foreground text-xs backdrop-blur" aria-live="polite" aria-atomic="true">{images[selected]?.label} · {selected + 1} / {images.length}</span>
+        <span className="tf-glass-caption" aria-live="polite" aria-atomic="true">{images[selected]?.label} · {selected + 1} / {images.length}</span>
+
         {show3d && <Button asChild size="sm" className="absolute top-3 right-3 rounded-none"><Link to="/configure/$slug" params={{ slug: sofaSlug }}><Box />View in 3D</Link></Button>}
       </div>
       <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Photo thumbnails">
