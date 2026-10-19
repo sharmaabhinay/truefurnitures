@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { aggregateProductAnalytics, matchesProduct } from "@/lib/product-analytics";
 import { requireFirebaseAuth } from "@/lib/auth/firebase-auth-middleware";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -27,7 +28,7 @@ async function safeQuery(
     try { return (await q(col, filters)) as Row[]; } catch (e) {
       console.error(`[admin] ${col} read failed`, e);
       readCache.delete(key);
-      return [];
+      throw new Error(`Unable to read ${col}. Please refresh and try again.`);
     }
   })();
   readCache.set(key, { at: Date.now(), data });
@@ -186,11 +187,12 @@ export const listProductCartHolders = createServerFn({ method: "GET" })
     const id = data.productId;
     const [sofa, carts, profiles, authUsers] = await Promise.all([
       adminGetDoc("sofas", id).catch(() => null),
-      adminQuery("carts").catch(() => []),
+      safeQuery(adminQuery, "carts"),
       adminQuery("profiles").catch(() => []),
       adminListUsers().catch(() => []),
     ]);
     const slug = sofa ? String((sofa as Row)["slug"] ?? "") : "";
+    const name = String(sofa?.["name"] ?? "");
     const byUid = new Map<string, Row>((profiles as Row[]).map((p) => [p.id, p]));
     const authById = new Map(authUsers.map((u) => [u.uid, u]));
 
@@ -209,7 +211,7 @@ export const listProductCartHolders = createServerFn({ method: "GET" })
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const items: any[] = Array.isArray(c["items"]) ? (c["items"] as any[]) : [];
       const lines = items
-        .filter((it) => it && (it.sofaId === id || (slug && it.slug === slug)))
+        .filter((it) => it && matchesProduct(it, id, slug, name))
         .map((it) => ({
           quantity: Math.max(0, Number(it.quantity) || 0),
           fabric: it.fabric,
@@ -277,9 +279,9 @@ export const getAdminCartInsights = createServerFn({ method: "GET" })
     for (const o of validOrders) {
       const session = String(o["checkout_session"] ?? "");
       if (session && visitorKeys.has(session)) convertedVisitorKeys.add(session);
-      else if (!session) convertedVisitorKeys.add(`order:${String(o["checkout_id"] ?? o["id"] ?? "")}`);
+
     }
-    const conversionBase = Math.max(visitorKeys.size, convertedVisitorKeys.size);
+    const conversionBase = visitorKeys.size;
     const productAdds = new Map<string, number>();
     for (const e of additions) {
       const item = String(e["item"] ?? "Unknown product");
@@ -323,164 +325,16 @@ export const getProductAnalytics = createServerFn({ method: "GET" })
     await staffOnly(context.role, context.userId);
     const { adminQuery, adminGetDoc } = await import("@/lib/firebase-admin.server");
     const id = data.productId;
-    // Only fetch visitor events inside the selected window (much smaller read).
-    const windowStart = new Date();
-    if (data.range === "12m") windowStart.setMonth(windowStart.getMonth() - 11, 1);
-    else windowStart.setDate(windowStart.getDate() - (data.range === "7d" ? 6 : 29));
-    windowStart.setHours(0, 0, 0, 0);
+    // Read the shared collection: a created_at-only filter excludes legacy
+    // time-only records and timestamp-valued records before normalization.
     const [sofa, events, orders, carts] = await Promise.all([
       adminGetDoc("sofas", id),
-      safeQuery(adminQuery, "visitors", [
-        { field: "created_at", op: "GREATER_THAN_OR_EQUAL", value: windowStart.toISOString() },
-      ]),
+      safeQuery(adminQuery, "visitors"),
       safeQuery(adminQuery, "orders"),
       safeQuery(adminQuery, "carts"),
     ]);
-    const product = (sofa as Row | null) ?? null;
-    if (!product) throw new Error("Product not found");
-    const slug = product ? String(product["slug"] ?? "") : "";
-    const name = product ? String(product["name"] ?? "Product") : "Product";
-
-    const monthly = data.range === "12m";
-    const buckets = monthly ? 12 : data.range === "7d" ? 7 : 30;
-    const now = new Date();
-    const start = new Date(now);
-    if (monthly) start.setMonth(start.getMonth() - (buckets - 1), 1);
-    else start.setDate(start.getDate() - (buckets - 1));
-    start.setHours(0, 0, 0, 0);
-    const keyOf = (iso: string) => (monthly ? iso.slice(0, 7) : iso.slice(0, 10));
-    const labels: string[] = [];
-    for (let i = 0; i < buckets; i++) {
-      const d = new Date(start);
-      if (monthly) d.setMonth(start.getMonth() + i);
-      else d.setDate(start.getDate() + i);
-      labels.push(keyOf(d.toISOString()));
-    }
-    const emptySeries = () => Object.fromEntries(labels.map((l) => [l, 0])) as Record<string, number>;
-    const viewsSeries = emptySeries();
-    const cartSeries = emptySeries();
-    const orderSeries = emptySeries();
-
-    const mine = (e: Row) => eventMatchesProduct(e, id, slug, name);
-
-    const productEvents = (events as Row[]).filter(mine);
-    const inRange = (iso: string) => {
-      const time = new Date(iso).getTime();
-      return Number.isFinite(time) && time >= start.getTime() && time <= now.getTime();
-    };
-    const rangedEvents = productEvents.filter((e) => inRange(String(e["time"] ?? e["created_at"] ?? "")));
-    const count = (type: string) => rangedEvents.filter((e) => e["type"] === type).length;
-
-    const devices = new Map<string, number>();
-    const browsers = new Map<string, number>();
-    const cities = new Map<string, number>();
-    const pages = new Map<string, number>();
-    const viewSessions = new Set<string>();
-    const cartSessions = new Set<string>();
-
-    for (const e of rangedEvents) {
-      const time = String(e["time"] ?? e["created_at"] ?? "");
-      const type = String(e["type"] ?? "");
-      const session = String(e["session"] ?? time);
-      const ua = String(e["ua"] ?? "").toLowerCase();
-      if (type === "product_view" || type === "view_3d" || type === "impression") {
-        if (type !== "impression") viewSessions.add(session);
-        const device = /mobi|iphone|android/.test(ua) ? "Mobile" : /ipad|tablet/.test(ua) ? "Tablet" : "Desktop";
-        devices.set(device, (devices.get(device) ?? 0) + 1);
-        const browser = ua.includes("edg/") ? "Edge"
-          : ua.includes("chrome/") ? "Chrome"
-          : ua.includes("firefox/") ? "Firefox"
-          : ua.includes("safari/") ? "Safari" : "Other";
-        browsers.set(browser, (browsers.get(browser) ?? 0) + 1);
-        const city = String(e["city"] ?? "").trim();
-        if (city) cities.set(city, (cities.get(city) ?? 0) + 1);
-        const page = String(e["page"] ?? "").trim();
-        if (page) pages.set(page, (pages.get(page) ?? 0) + 1);
-      }
-      if (type === "add_to_cart") cartSessions.add(session);
-      const bucket = keyOf(time);
-      if (!(bucket in viewsSeries)) continue;
-      if (type === "product_view" || type === "view_3d") viewsSeries[bucket] += 1;
-      if (type === "add_to_cart") cartSeries[bucket] += 1;
-    }
-
-    const productOrders = (orders as Row[]).filter((o) => {
-      if (o["deleted_at"]) return false;
-      const snap = (o["sofa_snapshot"] ?? {}) as Record<string, unknown>;
-      return String(o["sofa_id"] ?? "") === id || (slug && String(snap["slug"] ?? "") === slug);
-    });
-    const paidStatuses = ["cancelled", "refunded"];
-    const validOrders = productOrders.filter((o) => !paidStatuses.includes(String(o["status"] ?? "")));
-    for (const o of validOrders) {
-      const time = String(o["created_at"] ?? "");
-      if (!time || !inRange(time)) continue;
-      const bucket = keyOf(time);
-      if (bucket in orderSeries) orderSeries[bucket] += 1;
-    }
-    const rangedOrders = validOrders.filter((o) => inRange(String(o["created_at"] ?? "")));
-    const revenue = rangedOrders.reduce((n, o) => n + (Number(o["total"] ?? 0) || 0), 0);
-
-    let activeCarts = 0;
-    let cartUnits = 0;
-    for (const c of carts as Row[]) {
-      if (c["deleted_at"]) continue;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const items: any[] = Array.isArray(c["items"]) ? (c["items"] as any[]) : [];
-      const qty = items
-        .filter((it) => it && (it.sofaId === id || (slug && it.slug === slug)))
-        .reduce((n, it) => n + (Math.max(0, Number(it.quantity) || 0)), 0);
-      if (qty > 0) { activeCarts += 1; cartUnits += qty; }
-    }
-
-    const views = count("product_view");
-    const impressions = count("impression");
-    const views3d = count("view_3d");
-    const addToCart = count("add_to_cart");
-    const rate = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 1000) / 10 : 0);
-    const top = (m: Map<string, number>, n = 6) =>
-      Array.from(m.entries()).sort((a, b) => b[1] - a[1]).slice(0, n);
-
-    return {
-      product: { id, name, slug, hero_image: product ? (product["hero_image"] ?? null) : null },
-      range: data.range,
-      totals: {
-        impressions,
-        views,
-        views3d,
-        addToCart,
-        activeCarts,
-        cartUnits,
-        orders: rangedOrders.length,
-        revenue,
-        uniqueViewers: viewSessions.size,
-        cartSessions: cartSessions.size,
-      },
-      conversion: {
-        viewToCart: rate(addToCart, views),
-        cartToOrder: rate(rangedOrders.length, addToCart),
-        viewToOrder: rate(rangedOrders.length, views),
-      },
-      series: labels.map((label) => ({
-        label,
-        views: viewsSeries[label] ?? 0,
-        carts: cartSeries[label] ?? 0,
-        orders: orderSeries[label] ?? 0,
-      })),
-      devices: top(devices),
-      browsers: top(browsers),
-      cities: top(cities),
-      pages: top(pages),
-      recent: rangedEvents
-        .sort((a, b) => String(b["time"] ?? "").localeCompare(String(a["time"] ?? "")))
-        .slice(0, 12)
-        .map((e) => ({
-          type: String(e["type"] ?? ""),
-          time: String(e["time"] ?? e["created_at"] ?? ""),
-          page: String(e["page"] ?? ""),
-          city: String(e["city"] ?? ""),
-          ua: String(e["ua"] ?? ""),
-        })),
-    };
+    if (!sofa) throw new Error("Product not found");
+    return aggregateProductAnalytics(sofa, events, orders, carts, data.range);
   });
 
 /** Staff-only manufacturer list, read with admin credentials. */
@@ -521,18 +375,7 @@ export const saveAdminManufacturer = createServerFn({ method: "POST" })
  * slug or the product name, newer ones carry the document id.
  */
 function eventMatchesProduct(e: Row, id: string, slug: string, name: string) {
-  const ids = [e["sofaId"], e["sofa_id"], e["productId"], e["product_id"]]
-    .map((value) => String(value ?? "").trim())
-    .filter(Boolean);
-  const slugs = [e["slug"], e["sofa_slug"], e["product_slug"]]
-    .map((value) => String(value ?? "").trim().toLowerCase())
-    .filter(Boolean);
-  const names = [e["item"], e["name"], e["product_name"]]
-    .map((value) => String(value ?? "").trim().toLowerCase())
-    .filter(Boolean);
-  return ids.includes(id)
-    || (!!slug && slugs.includes(slug.trim().toLowerCase()))
-    || (!!name && names.includes(name.trim().toLowerCase()));
+  return matchesProduct(e, id, slug, name);
 }
 
 /**
@@ -551,7 +394,7 @@ export const getAdminProductStats = createServerFn({ method: "GET" })
       safeQuery(adminQuery, "carts"),
     ]);
 
-    const liveOrders = (orders as Row[]).filter((o) => !o["deleted_at"]);
+    const liveOrders = (orders as Row[]).filter((o) => !o["deleted_at"] && !["cancelled", "refunded"].includes(String(o["status"] ?? "")));
     const liveCarts = (carts as Row[]).filter((c) => !c["deleted_at"]);
 
     const stats: Record<
@@ -569,7 +412,7 @@ export const getAdminProductStats = createServerFn({ method: "GET" })
 
       const orderCount = liveOrders.filter((o) => {
         const snap = (o["sofa_snapshot"] ?? {}) as Record<string, unknown>;
-        return String(o["sofa_id"] ?? "") === id || (!!slug && String(snap["slug"] ?? "") === slug);
+        return matchesProduct(o, id, slug, name);
       }).length;
 
       let cartUnits = 0;
@@ -578,7 +421,7 @@ export const getAdminProductStats = createServerFn({ method: "GET" })
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const items: any[] = Array.isArray(c["items"]) ? (c["items"] as any[]) : [];
         const qty = items
-          .filter((it) => it && (it.sofaId === id || (!!slug && it.slug === slug)))
+          .filter((it) => it && matchesProduct(it, id, slug, name))
           .reduce((n, it) => n + Math.max(0, Number(it.quantity) || 0), 0);
         if (qty > 0) { cartUnits += qty; cartCustomers += 1; }
       }
