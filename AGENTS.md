@@ -16,3 +16,5 @@
 - The home customer journey uses lazy-loaded illustrative photographs and one-shot IntersectionObserver reveals with reduced-motion support; this avoids delaying the splash or repeatedly animating content.
 - Home and product sections render through the shared page-layout registry; keep their arrangements in a dedicated site-settings document so unrelated CMS saves cannot overwrite them. Editor previews use same-origin parent-frame messages and never persist before Save.
 - Use dnd-kit sortable with pointer and keyboard sensors for page-section ordering; keep accessible move buttons as a non-drag alternative.
+- Product analytics aggregation lives in a browser-safe pure module with UTC buckets and shared product identity matching; required data reads must surface failures rather than produce fabricated zero totals.
+- Product analytics charts use the installed Recharts library and scoped semantic analytics tokens; this provides accessible interactive charts without a custom plotting engine.

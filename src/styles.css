@@ -58,9 +58,29 @@
   --color-brand-muted: var(--brand-muted);
   --font-display: "Playfair Display", ui-serif, Georgia, serif;
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --color-analytics-canvas: var(--analytics-canvas);
+  --color-analytics-surface: var(--analytics-surface);
+  --color-analytics-field: var(--analytics-field);
+  --color-analytics-text: var(--analytics-text);
+  --color-analytics-muted: var(--analytics-muted);
+  --color-analytics-border: var(--analytics-border);
+  --color-analytics-gold: var(--analytics-gold);
+  --color-analytics-blue: var(--analytics-blue);
+  --color-analytics-green: var(--analytics-green);
+  --color-analytics-danger: var(--analytics-danger);
 }
 
 :root {
+  --analytics-canvas: oklch(0.16 0.008 285);
+  --analytics-surface: oklch(0.205 0.009 285);
+  --analytics-field: oklch(0.24 0.01 285);
+  --analytics-text: oklch(0.94 0.004 285);
+  --analytics-muted: oklch(0.7 0.012 285);
+  --analytics-border: oklch(0.3 0.01 285);
+  --analytics-gold: oklch(0.76 0.08 80);
+  --analytics-blue: oklch(0.73 0.12 235);
+  --analytics-green: oklch(0.77 0.12 160);
+  --analytics-danger: oklch(0.72 0.17 25);
   --radius: 0.625rem;
   /* Brand palette (Atelier Minimalist) */
   --brand-dark: #1A1A1A;
@@ -313,3 +333,9 @@ button:disabled { cursor: not-allowed; }
 @media (prefers-reduced-motion: reduce) {
   .tf-glass-caption { animation: none; }
 }
+
+.tf-analytics { font-family: var(--font-sans); letter-spacing: 0; }
+.tf-analytics h1, .tf-analytics h2, .tf-analytics h3 { font-family: var(--font-sans); }
+.tf-analytics .recharts-tooltip-wrapper { outline: none; }
+.tf-analytics .recharts-cartesian-axis-tick text { fill: var(--analytics-muted); }
+.tf-analytics-panel { border: 1px solid var(--analytics-border); border-radius: 8px; background: var(--analytics-surface); }
