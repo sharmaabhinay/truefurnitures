@@ -3,10 +3,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { FiRefreshCw } from "react-icons/fi";
+import { FiRefreshCw, FiArrowUpRight, FiDownload, FiEye, FiShoppingCart, FiBox, FiTrendingUp } from "react-icons/fi";
 import { getProductAnalytics } from "@/lib/admin-data.functions";
-import { formatDate } from "@/lib/format";
-import { AButton } from "@/components/admin/ui";
+import { formatDate, formatINR } from "@/lib/format";
+import { Button } from "@/components/ui/button";
+import { ProductTrend, AudienceChart } from "@/components/admin/product-analytics-charts";
+import type { AnalyticsRange } from "@/lib/product-analytics";
 
 export const Route = createFileRoute("/_authenticated/admin/products/$id/analytics")({
   ssr: false,
@@ -24,194 +26,64 @@ export const Route = createFileRoute("/_authenticated/admin/products/$id/analyti
   component: ProductAnalytics,
 });
 
-const dark = {
-  bg: "#0F0F13",
-  card: "#16161D",
-  border: "#2A2A38",
-  text: "#E8E8F0",
-  mute: "#888899",
-  accent: "#C8A86B",
-};
 
-const RANGES = [
-  { id: "7d", label: "7 days" },
-  { id: "30d", label: "30 days" },
-  { id: "12m", label: "12 months" },
-] as const;
+const RANGES = [{ id: "7d", label: "7 days" }, { id: "30d", label: "30 days" }, { id: "12m", label: "12 months" }] as const;
 
-type Range = (typeof RANGES)[number]["id"];
-
-function Card({ label, value, note }: { label: string; value: string | number; note?: string }) {
-  return (
-    <div className="rounded-xl p-4" style={{ background: dark.card, border: `1px solid ${dark.border}` }}>
-      <div className="text-[11px] uppercase tracking-[0.08em]" style={{ color: dark.mute }}>{label}</div>
-      <div className="mt-1 text-[20px] font-semibold">{value}</div>
-      {note && <div className="mt-1 text-[11px]" style={{ color: dark.mute }}>{note}</div>}
-    </div>
-  );
-}
-
-function Bars({ title, rows }: { title: string; rows: [string, number][] }) {
-  const max = Math.max(1, ...rows.map(([, v]) => v));
-  return (
-    <div className="rounded-xl p-4" style={{ background: dark.card, border: `1px solid ${dark.border}` }}>
-      <div className="mb-3 text-[13px] font-semibold">{title}</div>
-      {rows.length === 0 ? (
-        <div className="text-[12px]" style={{ color: dark.mute }}>No data yet.</div>
-      ) : rows.map(([name, value]) => (
-        <div key={name} className="flex items-center gap-3 py-1.5">
-          <span className="min-w-0 flex-1 truncate text-[12px]">{name}</span>
-          <div className="h-1.5 w-24 overflow-hidden rounded-full" style={{ background: "#22222E" }}>
-            <div className="h-full rounded-full" style={{ width: `${(value / max) * 100}%`, background: dark.accent }} />
-          </div>
-          <span className="w-8 text-right text-[12px]" style={{ color: dark.mute }}>{value}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-type Point = { label: string; views: number; carts: number; orders: number };
-
-function Chart({ series }: { series: Point[] }) {
-  const w = 720;
-  const h = 220;
-  const pad = 28;
-  const max = Math.max(1, ...series.flatMap((p) => [p.views, p.carts, p.orders]));
-  const x = (i: number) => pad + (i * (w - pad * 2)) / Math.max(1, series.length - 1);
-  const y = (v: number) => h - pad - (v / max) * (h - pad * 2);
-  const path = (key: keyof Point) =>
-    series.map((p, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(Number(p[key])).toFixed(1)}`).join(" ");
-  const lines: Array<[keyof Point, string, string]> = [
-    ["views", dark.accent, "Views"],
-    ["carts", "#5AA9E6", "Cart adds"],
-    ["orders", "#6FCF97", "Orders"],
-  ];
-  return (
-    <div className="rounded-xl p-4" style={{ background: dark.card, border: `1px solid ${dark.border}` }}>
-      <div className="mb-3 flex flex-wrap items-center gap-4">
-        <div className="text-[13px] font-semibold">Trend</div>
-        {lines.map(([, color, label]) => (
-          <span key={label} className="flex items-center gap-1.5 text-[11px]" style={{ color: dark.mute }}>
-            <span className="inline-block h-2 w-2 rounded-full" style={{ background: color }} /> {label}
-          </span>
-        ))}
-      </div>
-      <svg viewBox={`0 0 ${w} ${h}`} className="w-full" role="img" aria-label="Product trend chart">
-        <line x1={pad} y1={h - pad} x2={w - pad} y2={h - pad} stroke={dark.border} />
-        <line x1={pad} y1={pad} x2={pad} y2={h - pad} stroke={dark.border} />
-        {lines.map(([key, color]) => (
-          <path key={key} d={path(key)} fill="none" stroke={color} strokeWidth={2} />
-        ))}
-        <text x={pad} y={pad - 10} fill={dark.mute} fontSize="10">{max}</text>
-        <text x={pad} y={h - 8} fill={dark.mute} fontSize="10">{series[0]?.label ?? ""}</text>
-        <text x={w - pad - 50} y={h - 8} fill={dark.mute} fontSize="10">{series[series.length - 1]?.label ?? ""}</text>
-      </svg>
-    </div>
-  );
+function Metric({ label, value, note, icon }: { label: string; value: string | number; note: string; icon: React.ReactNode }) {
+  return <div className="tf-analytics-panel p-5 transition-colors hover:border-analytics-gold/60">
+    <div className="flex items-center justify-between gap-2 text-xs text-analytics-muted"><span>{label}</span><span className="text-analytics-gold">{icon}</span></div>
+    <div className="mt-3 break-words text-2xl font-semibold tabular-nums">{value}</div><p className="mt-2 text-xs text-analytics-muted">{note}</p>
+  </div>;
 }
 
 function ProductAnalytics() {
   const { id } = Route.useParams();
-  const [range, setRange] = useState<Range>("30d");
+  const [range, setRange] = useState<AnalyticsRange>("30d");
   const load = useServerFn(getProductAnalytics);
-  const { data, isLoading, isFetching, refetch, error } = useQuery({
-    queryKey: ["product-analytics", id, range],
-    queryFn: () => load({ data: { productId: id, range } }),
-    staleTime: 0,
-    retry: 2,
-    refetchInterval: 30_000,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
+  const { data, isPending, isFetching, refetch, error } = useQuery({
+    queryKey: ["product-analytics", id, range], queryFn: () => load({ data: { productId: id, range } }),
+    staleTime: 10_000, retry: 1, refetchInterval: 30_000, refetchOnMount: "always", refetchOnWindowFocus: true,
   });
-
-  const t = data?.totals;
-  const c = data?.conversion;
-
-  return (
-    <div className="min-h-screen p-5" style={{ background: dark.bg, color: dark.text }}>
-      <div className="mx-auto max-w-5xl space-y-4">
-        <AdminBackLink label="← Back" fallbackPanel="products" />
-
-        <div className="rounded-xl p-4 flex flex-wrap items-center justify-between gap-3" style={{ background: dark.card, border: `1px solid ${dark.border}` }}>
-          <div>
-            <div className="text-[11px] uppercase tracking-[0.08em]" style={{ color: dark.mute }}>Product analytics</div>
-            <h1 className="text-[20px] font-semibold">{data?.product.name ?? "Product"}</h1>
-          </div>
-          <div className="flex gap-2">
-            {RANGES.map((r) => (
-              <button
-                key={r.id}
-                type="button"
-                onClick={() => setRange(r.id)}
-                className="rounded-lg px-3 py-1.5 text-[12px]"
-                style={{
-                  border: `1px solid ${range === r.id ? dark.accent : dark.border}`,
-                  color: range === r.id ? dark.accent : dark.mute,
-                }}
-              >
-                {r.label}
-              </button>
-            ))}
-            <AButton variant="ghost" onClick={() => void refetch()} disabled={isFetching} title="Refresh analytics">
-              <FiRefreshCw className={isFetching ? "animate-spin" : ""} />
-            </AButton>
-          </div>
+  const exportData = () => {
+    if (!data) return;
+    const csv = "Date,Product views,Cart additions,Checkouts,Revenue INR\n" + data.series.map(p => [p.label, p.views, p.carts, p.orders, p.revenue].join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    const link = document.createElement("a"); link.href = url; link.download = `${data.product.slug || id}-${range}-analytics.csv`; link.click(); URL.revokeObjectURL(url);
+  };
+  return <main className="tf-analytics min-h-screen bg-analytics-canvas p-4 text-analytics-text sm:p-8">
+    <div className="mx-auto max-w-7xl space-y-6">
+      <AdminBackLink label="← Products" fallbackPanel="products" />
+      <header className="flex flex-wrap items-start justify-between gap-5 border-b border-analytics-border pb-6">
+        <div className="flex min-w-0 items-center gap-4">
+          {data?.product.hero_image && <img src={data.product.hero_image} alt={data.product.name} className="h-16 w-16 shrink-0 rounded-md bg-analytics-field object-cover" />}
+          <div className="min-w-0"><p className="mb-1 text-xs text-analytics-gold">Product performance</p><h1 className="break-words text-2xl font-semibold">{data?.product.name ?? "Product analytics"}</h1><p className="mt-2 text-xs text-analytics-muted">{data ? `${formatDate(data.period.from)} – ${formatDate(data.period.to)} · Updated ${new Date(data.updatedAt).toLocaleTimeString("en-IN")}` : "Loading saved activity…"}</p></div>
         </div>
-
-        {error && !data && (
-          <div className="rounded-xl p-4 text-[13px]" style={{ background: dark.card, border: `1px solid ${dark.border}`, color: "#E05050" }}>
-            Analytics could not be loaded{error instanceof Error && error.message ? ` — ${error.message}` : ""}. Try Refresh or sign in again.
-          </div>
-        )}
-        {isLoading && <div className="text-[13px]" style={{ color: dark.mute }}>Loading…</div>}
-
-        {data && (
-          <>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <Card label="Impressions" value={t!.impressions} note="seen in listings" />
-              <Card label="Product views" value={t!.views} note={`${t!.uniqueViewers} unique viewers`} />
-              <Card label="3D views" value={t!.views3d} note="opened the configurator" />
-              <Card label="Added to cart" value={t!.addToCart} note={`${t!.cartSessions} sessions`} />
-              <Card label="Active carts" value={t!.activeCarts} note={`${t!.cartUnits} units waiting`} />
-              <Card label="Orders" value={t!.orders} note="excluding cancelled/refunded" />
-              <Card label="Revenue" value={`₹${t!.revenue.toLocaleString("en-IN")}`} note="from valid orders" />
-              <Card label="View → order" value={`${c!.viewToOrder}%`} note={`view→cart ${c!.viewToCart}% · cart→order ${c!.cartToOrder}%`} />
-            </div>
-
-            <Chart series={data.series as Point[]} />
-
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <Bars title="Devices" rows={data.devices as [string, number][]} />
-              <Bars title="Browsers" rows={data.browsers as [string, number][]} />
-              <Bars title="Cities" rows={data.cities as [string, number][]} />
-              <Bars title="Top pages" rows={data.pages as [string, number][]} />
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <Link to="/admin/products/$id/orders" params={{ id }} className="rounded-lg px-3 py-2 text-[12px]" style={{ border: `1px solid ${dark.border}`, color: dark.accent }}>
-                View orders for this product
-              </Link>
-              <Link to="/admin/products/$id/carts" params={{ id }} className="rounded-lg px-3 py-2 text-[12px]" style={{ border: `1px solid ${dark.border}`, color: dark.accent }}>
-                View customers holding it in cart
-              </Link>
-            </div>
-
-            <div className="rounded-xl p-4" style={{ background: dark.card, border: `1px solid ${dark.border}` }}>
-              <div className="mb-3 text-[13px] font-semibold">Recent activity</div>
-              {data.recent.length === 0 ? (
-                <div className="text-[12px]" style={{ color: dark.mute }}>No activity recorded yet.</div>
-              ) : data.recent.map((r, i) => (
-                <div key={`${r.time}-${i}`} className="flex flex-wrap items-center justify-between gap-2 py-2 text-[12px]" style={{ borderTop: i ? `1px solid ${dark.border}` : undefined }}>
-                  <span>{r.type.replace(/_/g, " ")}</span>
-                  <span style={{ color: dark.mute }}>{r.page || "—"}{r.city ? ` · ${r.city}` : ""}</span>
-                  <span style={{ color: dark.mute }}>{r.time ? formatDate(r.time) : "—"}</span>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex rounded-md border border-analytics-border bg-analytics-field p-1">{RANGES.map(r => <Button key={r.id} size="sm" variant="ghost" aria-pressed={range === r.id} onClick={() => setRange(r.id)} className={range === r.id ? "bg-analytics-surface text-analytics-gold" : "text-analytics-muted"}>{r.label}</Button>)}</div>
+          <Button variant="ghost" size="icon" title="Refresh analytics" aria-label="Refresh analytics" onClick={() => void refetch()} disabled={isFetching} className="border border-analytics-border text-analytics-muted"><FiRefreshCw className={isFetching ? "animate-spin motion-reduce:animate-none" : ""} /></Button>
+          <Button variant="ghost" size="icon" title="Download analytics CSV" aria-label="Download analytics CSV" onClick={exportData} disabled={!data} className="border border-analytics-border text-analytics-muted"><FiDownload /></Button>
+        </div>
+      </header>
+      {error && <div role="alert" className="rounded-md border border-analytics-danger/40 bg-analytics-surface p-4 text-sm text-analytics-danger">{data ? "Refresh failed. Showing the last successful results." : "Analytics are unavailable — this is not a zero-activity result."}<div className="mt-2 text-xs">Please refresh. If this continues, sign out and sign in again.</div></div>}
+      {isPending && !error && <div role="status" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{Array.from({ length: 8 }, (_, i) => <div key={i} className="tf-analytics-panel h-36 animate-pulse motion-reduce:animate-none" />)}<span className="sr-only">Loading analytics</span></div>}
+      {data && <>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Metric label="Product views" value={data.totals.views} note={`${data.totals.uniqueViewers} tracked viewing sessions`} icon={<FiEye />} />
+          <Metric label="Cart additions" value={data.totals.addToCart} note={`${data.totals.cartSessions} tracked cart sessions`} icon={<FiShoppingCart />} />
+          <Metric label="Checkouts" value={data.totals.orders} note="Excludes cancelled / refunded" icon={<FiBox />} />
+          <Metric label="Revenue" value={formatINR(data.totals.revenue)} note="Valid orders in selected period" icon={<FiTrendingUp />} />
+          <Metric label="Listing impressions" value={data.totals.impressions} note="Seen in product listings" icon={<FiEye />} />
+          <Metric label="3D views" value={data.totals.views3d} note="Opened the customiser" icon={<FiBox />} />
+          <Metric label="Active customer carts" value={data.totals.activeCarts} note={`${data.totals.cartUnits} units currently waiting · all time`} icon={<FiShoppingCart />} />
+          <Metric label="View → checkout" value={`${data.conversion.viewToOrder}%`} note="Matching tracked sessions only" icon={<FiTrendingUp />} />
+        </div>
+        <ProductTrend series={data.series} />
+        <section className="border-y border-analytics-border py-5"><h2 className="mb-4 text-sm font-semibold">Session conversion</h2><div className="grid gap-5 sm:grid-cols-3">{[["View → cart", data.conversion.viewToCart, "text-analytics-gold"], ["Cart → checkout", data.conversion.cartToOrder, "text-analytics-blue"], ["View → checkout", data.conversion.viewToOrder, "text-analytics-green"]].map(([label, value, color]) => <div key={String(label)}><p className="text-xs text-analytics-muted">{label}</p><p className={`mt-2 text-2xl font-semibold ${color}`}>{value}%</p></div>)}</div><p className="mt-4 text-xs text-analytics-muted">Attributed to matching session IDs; older orders without session links remain included in checkouts and revenue.</p></section>
+        <div className="grid gap-4 lg:grid-cols-2"><AudienceChart title="Devices · product views" rows={data.devices} /><AudienceChart title="Browsers · product views" rows={data.browsers} color="var(--analytics-gold)" /></div>
+        <div className="grid gap-6 lg:grid-cols-2">{([{ title: "Cities", rows: data.cities }, { title: "Top product pages", rows: data.pages }]).map(group => <section key={group.title} className="min-w-0"><h2 className="mb-3 text-sm font-semibold">{group.title}</h2>{!group.rows.length ? <p className="py-4 text-xs text-analytics-muted">No location data recorded in this period</p> : group.rows.map(([name, count]) => <div key={name} className="flex justify-between gap-4 border-b border-analytics-border py-3 text-xs"><span className="min-w-0 break-all text-analytics-muted">{name}</span><strong>{count}</strong></div>)}</section>)}</div>
+        <div className="flex flex-wrap gap-2"><Button asChild variant="ghost" className="border border-analytics-border text-analytics-gold"><Link to="/admin/products/$id/orders" params={{ id }}>Product orders <FiArrowUpRight /></Link></Button><Button asChild variant="ghost" className="border border-analytics-border text-analytics-gold"><Link to="/admin/products/$id/carts" params={{ id }}>Cart holders <FiArrowUpRight /></Link></Button><Button asChild variant="ghost" className="text-analytics-muted"><Link to="/admin/products/compare">Compare sofas <FiArrowUpRight /></Link></Button></div>
+        <section><h2 className="mb-4 text-sm font-semibold">Recent activity</h2>{!data.recent.length ? <p className="text-xs text-analytics-muted">No recorded activity in this date range.</p> : <div className="overflow-x-auto"><table className="w-full text-left text-xs"><thead className="text-analytics-muted"><tr><th className="pb-3 font-medium">Event</th><th className="pb-3 font-medium">Page / location</th><th className="pb-3 text-right font-medium">Date</th></tr></thead><tbody>{data.recent.map((r, i) => <tr key={`${r.time}-${i}`} className="border-t border-analytics-border transition-colors hover:bg-analytics-field"><td className="whitespace-nowrap py-3 pr-4 capitalize">{r.type.replace(/_/g, " ")}</td><td className="min-w-40 break-all py-3 pr-4 text-analytics-muted">{r.page || "—"}{r.city ? ` · ${r.city}` : ""}</td><td className="whitespace-nowrap py-3 text-right text-analytics-muted">{formatDate(r.time)}</td></tr>)}</tbody></table></div>}</section>
+      </>}
     </div>
-  );
+  </main>;
 }
