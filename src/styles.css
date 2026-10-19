@@ -276,3 +276,40 @@ button:disabled { cursor: not-allowed; }
   .tf-launch-logo, .tf-launch-frame, .tf-launch-line span { animation: none; }
   .tf-launch-splash { transition: none; }
 }
+
+/* Frosted-glass caption over product photos */
+.tf-glass-caption {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: calc(100% - 24px);
+  padding: 0.4rem 0.7rem;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--brand-dark);
+  background: color-mix(in oklab, var(--brand-cream) 62%, transparent);
+  border: 1px solid color-mix(in oklab, var(--brand-accent) 32%, transparent);
+  box-shadow: 0 8px 24px rgba(26, 26, 26, 0.1);
+  backdrop-filter: blur(14px) saturate(140%);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: tf-glass-in 0.45s ease both;
+}
+@keyframes tf-glass-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@supports not (backdrop-filter: blur(4px)) {
+  .tf-glass-caption { background: color-mix(in oklab, var(--brand-cream) 92%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tf-glass-caption { animation: none; }
+}
