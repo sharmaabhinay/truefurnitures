@@ -1,9 +1,9 @@
 # Roadmap — fix issues from test report (Oct 2026)
 
 # Product analytics dashboard
-- [ ] Diagnose missing analytics and prevent failed reads from appearing as zero.
-- [ ] Add professional per-product dashboard with interactive trend and audience graphs.
-- [ ] Verify real signed-in analytics, range controls and graph tooltips.
+- [x] Diagnose missing analytics and prevent failed reads from appearing as zero.
+- [x] Add professional per-product dashboard with interactive trend and audience graphs.
+- [x] Verify real signed-in analytics, range controls and graph tooltips.
 
 - [x] 1. Hide test products ("new item arrived", "testing 2 prduct") and "sample blog test" post
 - [x] 2. Remove test orders (₹5/₹10), test cart, test visitor data (Stockholm)

@@ -62,7 +62,8 @@ export function CartInsights() {
           <span className="inline-flex items-center gap-2"><FiRefreshCw className={isFetching ? "animate-spin" : ""} /> Refresh</span>
         </AButton>
       </div>
-      {error && !data && <ACard><div className="text-[12px]" style={{ color: dark.danger }}>Cart insights could not be loaded{error instanceof Error && error.message ? ` — ${error.message}` : ""}. Try refreshing or sign in again.</div></ACard>}
+      {error && <ACard><div role="alert" className="text-[12px]" style={{ color: dark.danger }}>{data ? "Refresh failed — showing the last successful results." : "Cart insights could not be loaded. This is not a zero-activity result."} Try refreshing or sign in again.</div></ACard>}
+      {(isLoading || data) && <>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Added to cart" value={isLoading ? "—" : (data?.cartVisitors ?? 0)} note={`${data?.addEvents ?? 0} total add actions`} icon={<FiUsers />} />
         <Stat label="Completed checkout" value={isLoading ? "—" : (data?.completedCheckouts ?? 0)} note="since cart tracking began · excl. cancelled / refunded" icon={<FiCheckCircle />} />
@@ -73,6 +74,7 @@ export function CartInsights() {
         <Breakdown title="Most added products" rows={data?.productAdds ?? []} />
         <Breakdown title="Products in completed checkouts" rows={data?.productOrders ?? []} />
       </div>
+      </>}
     </div>
   );
 }
