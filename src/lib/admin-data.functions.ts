@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { aggregateProductAnalytics, matchesProduct } from "@/lib/product-analytics";
+import { aggregateProductAnalytics, analyticsWindow, matchesProduct } from "@/lib/product-analytics";
 import { requireFirebaseAuth } from "@/lib/auth/firebase-auth-middleware";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -277,10 +277,11 @@ export const getAdminCartInsights = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await staffOnly(context.role, context.userId);
     const { adminQuery } = await import("@/lib/firebase-admin.server");
+    const meta: ReadMeta = {};
     const [events, orders, carts] = await Promise.all([
-      safeQuery(adminQuery, "visitors"),
-      safeQuery(adminQuery, "orders"),
-      safeQuery(adminQuery, "carts"),
+      safeQuery(adminQuery, "visitors", [{ field: "type", value: "add_to_cart" }], meta),
+      safeQuery(adminQuery, "orders", [], meta),
+      safeQuery(adminQuery, "carts", [], meta),
     ]);
 
     const additions = (events as Row[]).filter((e) => e["type"] === "add_to_cart");
@@ -339,6 +340,7 @@ export const getAdminCartInsights = createServerFn({ method: "GET" })
       productAdds: Array.from(productAdds.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8),
       productOrders: Array.from(productOrders.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8),
       updatedAt: new Date().toISOString(),
+      staleSince: meta.staleSince ?? null,
     };
   });
 
@@ -355,16 +357,18 @@ export const getProductAnalytics = createServerFn({ method: "GET" })
     await staffOnly(context.role, context.userId);
     const { adminQuery, adminGetDoc } = await import("@/lib/firebase-admin.server");
     const id = data.productId;
-    // Read the shared collection: a created_at-only filter excludes legacy
-    // time-only records and timestamp-valued records before normalization.
+    // Every visitor event carries an ISO `time`, so only the selected window is
+    // read — this keeps each load within the database's read quota.
+    const { start } = analyticsWindow(data.range, new Date());
+    const meta: ReadMeta = {};
     const [sofa, events, orders, carts] = await Promise.all([
-      adminGetDoc("sofas", id),
-      safeQuery(adminQuery, "visitors"),
-      safeQuery(adminQuery, "orders"),
-      safeQuery(adminQuery, "carts"),
+      adminGetDoc("sofas", id).catch((e) => { throw new Error(friendlyReadError("this product", e)); }),
+      safeQuery(adminQuery, "visitors", [{ field: "time", op: "GREATER_THAN_OR_EQUAL", value: start.toISOString() }], meta),
+      safeQuery(adminQuery, "orders", [], meta),
+      safeQuery(adminQuery, "carts", [], meta),
     ]);
-    if (!sofa) throw new Error("Product not found");
-    return aggregateProductAnalytics(sofa, events, orders, carts, data.range);
+    if (!sofa) throw new Error("This product no longer exists.");
+    return { ...aggregateProductAnalytics(sofa, events, orders, carts, data.range), staleSince: meta.staleSince ?? null };
   });
 
 /** Staff-only manufacturer list, read with admin credentials. */
@@ -441,7 +445,6 @@ export const getAdminProductStats = createServerFn({ method: "GET" })
       const countType = (t: string) => mine.filter((e) => String(e["type"] ?? "") === t).length;
 
       const orderCount = liveOrders.filter((o) => {
-        const snap = (o["sofa_snapshot"] ?? {}) as Record<string, unknown>;
         return matchesProduct(o, id, slug, name);
       }).length;
 
