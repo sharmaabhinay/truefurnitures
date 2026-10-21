@@ -27,6 +27,14 @@ export const Route = createFileRoute("/_authenticated/admin/products/$id/analyti
 });
 
 
+function readableError(error: unknown) {
+  const msg = error instanceof Error ? error.message : String(error ?? "");
+  if (/unauthori[sz]ed|invalid session|expired/i.test(msg)) return "Your sign-in has expired. Please sign out and sign in again.";
+  if (/forbidden|403/i.test(msg)) return "This account doesn't have admin access to analytics.";
+  if (msg && msg.length < 220 && !/<|{/.test(msg)) return msg;
+  return "Please try again in a moment.";
+}
+
 const RANGES = [{ id: "7d", label: "7 days" }, { id: "30d", label: "30 days" }, { id: "12m", label: "12 months" }] as const;
 
 function Metric({ label, value, note, icon }: { label: string; value: string | number; note: string; icon: React.ReactNode }) {
@@ -42,7 +50,7 @@ function ProductAnalytics() {
   const load = useServerFn(getProductAnalytics);
   const { data, isPending, isFetching, refetch, error } = useQuery({
     queryKey: ["product-analytics", id, range], queryFn: () => load({ data: { productId: id, range } }),
-    staleTime: 10_000, retry: 1, refetchInterval: 30_000, refetchOnMount: "always", refetchOnWindowFocus: true,
+    staleTime: 60_000, retry: 2, retryDelay: (n) => Math.min(1500 * 2 ** n, 6000), refetchInterval: 120_000, refetchOnMount: "always", refetchOnWindowFocus: true, placeholderData: (prev) => prev,
   });
   const exportData = () => {
     if (!data) return;
@@ -64,7 +72,8 @@ function ProductAnalytics() {
           <Button variant="ghost" size="icon" title="Download analytics CSV" aria-label="Download analytics CSV" onClick={exportData} disabled={!data} className="border border-analytics-border text-analytics-muted"><FiDownload /></Button>
         </div>
       </header>
-      {error && <div role="alert" className="rounded-md border border-analytics-danger/40 bg-analytics-surface p-4 text-sm text-analytics-danger">{data ? "Refresh failed. Showing the last successful results." : "Analytics are unavailable — this is not a zero-activity result."}<div className="mt-2 text-xs">Please refresh. If this continues, sign out and sign in again.</div></div>}
+      {error && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-analytics-danger/40 bg-analytics-surface p-4 text-sm text-analytics-danger"><div className="min-w-0">{data ? "Couldn't refresh — showing the last loaded results." : "Analytics couldn't load right now."}<div className="mt-1 text-xs text-analytics-muted">{readableError(error)}</div></div><Button size="sm" variant="ghost" onClick={() => void refetch()} disabled={isFetching} className="border border-analytics-border text-analytics-text">Try again</Button></div>}
+      {data?.staleSince && !error && <div role="status" className="rounded-md border border-analytics-border bg-analytics-surface p-3 text-xs text-analytics-muted">The database was briefly unavailable, so some figures are from {new Date(data.staleSince).toLocaleTimeString("en-IN")}. They will update automatically.</div>}
       {isPending && !error && <div role="status" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{Array.from({ length: 8 }, (_, i) => <div key={i} className="tf-analytics-panel h-36 animate-pulse motion-reduce:animate-none" />)}<span className="sr-only">Loading analytics</span></div>}
       {data && <>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

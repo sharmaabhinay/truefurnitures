@@ -1586,8 +1586,9 @@ function Products() {
   const { data: productStats, isLoading: statsLoading, error: statsError } = useQuery({
     queryKey: ["admin-product-stats"],
     queryFn: () => loadProductStats(),
-    staleTime: 0,
-    refetchInterval: 60_000,
+    staleTime: 60_000,
+    retry: 2,
+    refetchInterval: 300_000,
   });
 
 

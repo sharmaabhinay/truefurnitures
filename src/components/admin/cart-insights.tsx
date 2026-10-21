@@ -43,9 +43,11 @@ export function CartInsights() {
   const { data, isLoading, isFetching, refetch, error } = useQuery({
     queryKey: ["admin-cart-insights"],
     queryFn: () => load(),
-    staleTime: 0,
+    staleTime: 60_000,
     retry: 2,
-    refetchInterval: 30_000,
+    retryDelay: (n) => Math.min(1500 * 2 ** n, 6000),
+    refetchInterval: 120_000,
+    placeholderData: (prev) => prev,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
   });
@@ -62,7 +64,8 @@ export function CartInsights() {
           <span className="inline-flex items-center gap-2"><FiRefreshCw className={isFetching ? "animate-spin" : ""} /> Refresh</span>
         </AButton>
       </div>
-      {error && <ACard><div role="alert" className="text-[12px]" style={{ color: dark.danger }}>{data ? "Refresh failed — showing the last successful results." : "Cart insights could not be loaded. This is not a zero-activity result."} Try refreshing or sign in again.</div></ACard>}
+      {error && <ACard><div role="alert" className="text-[12px]" style={{ color: dark.danger }}>{data ? "Couldn't refresh — showing the last loaded results." : "Cart insights couldn't load right now."} <span style={{ color: dark.mute }}>{error instanceof Error && error.message.length < 220 && !/[<{]/.test(error.message) ? error.message : "Please try again in a moment."}</span></div></ACard>}
+      {data?.staleSince && !error && <ACard><div role="status" className="text-[12px]" style={{ color: dark.mute }}>The database was briefly unavailable, so some figures are from {new Date(data.staleSince).toLocaleTimeString()}. They will update automatically.</div></ACard>}
       {(isLoading || data) && <>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Added to cart" value={isLoading ? "—" : (data?.cartVisitors ?? 0)} note={`${data?.addEvents ?? 0} total add actions`} icon={<FiUsers />} />
