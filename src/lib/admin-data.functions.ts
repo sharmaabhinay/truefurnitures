@@ -11,25 +11,55 @@ type Row = Record<string, any> & { id: string };
  * are only recorded in the `user_roles` collection, so fall back to that.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-// Short-lived per-worker cache: admin screens poll and several panels read the
-// same collections at once, so identical reads within a few seconds are shared.
+// Per-worker cache: admin screens poll and several panels read the same
+// collections, and every Firestore document read counts against the daily
+// quota. Identical reads within a minute are shared.
 const readCache = new Map<string, { at: number; data: Promise<Row[]> }>();
-const READ_TTL_MS = 10_000;
+// Last successful result per read, served (flagged as stale) when Firestore is
+// temporarily unavailable so admins see real saved data instead of an error.
+const lastGood = new Map<string, { at: number; rows: Row[] }>();
+const READ_TTL_MS = 60_000;
+const STALE_MAX_MS = 6 * 60 * 60_000;
+
+export type ReadMeta = { staleSince?: string };
+
+function friendlyReadError(col: string, e: unknown): string {
+  const msg = String((e as Error)?.message ?? e);
+  if (/RESOURCE_EXHAUSTED|quota|429/i.test(msg)) return `The database's daily read limit was reached while loading ${col}. Data will load again automatically once the limit resets.`;
+  if (/PERMISSION_DENIED|UNAUTHENTICATED|403|401|Firebase auth failed|Invalid character/i.test(msg)) return `The server could not access ${col} — the database credentials need checking.`;
+  if (/UNAVAILABLE|DEADLINE|503|504|fetch failed|timeout/i.test(msg)) return `The database was slow to respond while loading ${col}. Please try again.`;
+  return `Unable to read ${col}. Please try again.`;
+}
 
 async function safeQuery(
   q: (col: string, filters?: any[]) => Promise<any[]>,
   col: string,
   filters: Array<{ field: string; op?: string; value: unknown }> = [],
+  meta?: ReadMeta,
 ): Promise<Row[]> {
   const key = `${col}|${JSON.stringify(filters)}`;
   const hit = readCache.get(key);
   if (hit && Date.now() - hit.at < READ_TTL_MS) return hit.data;
   const data = (async () => {
-    try { return (await q(col, filters)) as Row[]; } catch (e) {
-      console.error(`[admin] ${col} read failed`, e);
-      readCache.delete(key);
-      throw new Error(`Unable to read ${col}. Please refresh and try again.`);
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const rows = (await q(col, filters)) as Row[];
+        lastGood.set(key, { at: Date.now(), rows });
+        return rows;
+      } catch (e) {
+        lastError = e;
+        if (attempt === 0) await new Promise((r) => setTimeout(r, 700));
+      }
     }
+    console.error(`[admin] ${col} read failed`, lastError);
+    readCache.delete(key);
+    const stale = lastGood.get(key);
+    if (stale && Date.now() - stale.at < STALE_MAX_MS) {
+      if (meta) meta.staleSince = new Date(stale.at).toISOString();
+      return stale.rows;
+    }
+    throw new Error(friendlyReadError(col, lastError));
   })();
   readCache.set(key, { at: Date.now(), data });
   return data;
