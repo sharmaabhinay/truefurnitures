@@ -32,11 +32,11 @@ export function getFirebaseAuth(): Auth {
   if (typeof window === "undefined") auth = getAuth(app);
   else {
     try {
-      // Mobile browsers can close IndexedDB while the Google popup is open
-      // ("Database is closing/hidden"); fall back to local storage so the
-      // session is still saved.
+      // Local storage first: mobile browsers close IndexedDB while the Google
+      // popup is open ("Database is closing/hidden"), which silently dropped
+      // the new session. Existing IndexedDB sessions are migrated on load.
       auth = initializeAuth(app, {
-        persistence: [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence],
+        persistence: [browserLocalPersistence, indexedDBLocalPersistence, browserSessionPersistence],
         popupRedirectResolver: browserPopupRedirectResolver,
       });
     } catch {

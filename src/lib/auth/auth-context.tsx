@@ -142,30 +142,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return cred.user;
       },
       signInWithGoogle: async () => {
+        const auth = getFirebaseAuth();
         const provider = new GoogleAuthProvider();
         provider.setCustomParameters({ prompt: "select_account" });
+        // The popup can finish after its promise settles on mobile; give the
+        // session a moment to land before deciding sign-in failed.
+        const waitForUser = async (ms: number) => {
+          const end = Date.now() + ms;
+          while (!auth.currentUser && Date.now() < end) await new Promise((r) => setTimeout(r, 200));
+          return auth.currentUser;
+        };
         try {
-          await signInWithPopup(getFirebaseAuth(), provider);
+          const cred = await signInWithPopup(auth, provider);
+          await auth.authStateReady();
+          if (cred.user) await ensureProfile(cred.user).catch(() => undefined);
+          return;
         } catch (err) {
           const code = (err as { code?: string })?.code ?? "";
           const message = String((err as Error)?.message ?? "");
-          // Mobile browsers sometimes close local storage while the popup is
-          // open. The sign-in often still succeeded; otherwise use a redirect.
-          if (/closing|hidden|indexeddb|InvalidStateError/i.test(message) || code === "auth/internal-error") {
-            await new Promise((r) => setTimeout(r, 800));
-            if (getFirebaseAuth().currentUser) return;
-            await signInWithRedirect(getFirebaseAuth(), provider);
-            return;
+          if (await waitForUser(2_500)) return;
+          if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
+            throw new Error("Google sign-in was closed before it finished. Please try again.");
           }
-          // Preview iframes and strict browsers block popups — fall back to a full-page redirect.
+          // Only fall back to a full-page redirect when the popup could not open at all.
           if (
             code === "auth/popup-blocked" ||
-            code === "auth/popup-closed-by-user" ||
-            code === "auth/cancelled-popup-request" ||
-            code === "auth/operation-not-supported-in-this-environment"
+            code === "auth/operation-not-supported-in-this-environment" ||
+            /closing|hidden|indexeddb|InvalidStateError/i.test(message) ||
+            code === "auth/internal-error"
           ) {
-            await signInWithRedirect(getFirebaseAuth(), provider);
+            await signInWithRedirect(auth, provider);
             return;
+          }
+          if (code === "auth/unauthorized-domain") {
+            throw new Error("Google sign-in isn't enabled for this web address yet. Please use email sign-in for now.");
           }
           throw err;
         }
