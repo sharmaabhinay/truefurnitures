@@ -51,16 +51,36 @@ function Auth() {
     setGoogleLoading(true);
     try {
       await signInWithGoogle();
-      goHome();
+      // Navigation happens in the effect below once the session is confirmed,
+      // so a failed popup never sends the visitor away signed out.
+      const { getFirebaseAuth } = await import("@/lib/firebase");
+      if (!getFirebaseAuth().currentUser) setGoogleLoading(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Google sign-in failed");
       setGoogleLoading(false);
     }
   }
 
+  // Surface errors from a full-page Google redirect that came back unsigned.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const [{ getRedirectResult }, { getFirebaseAuth }] = await Promise.all([
+        import("firebase/auth"),
+        import("@/lib/firebase"),
+      ]);
+      try {
+        await getRedirectResult(getFirebaseAuth());
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Google sign-in failed");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   useEffect(() => {
     if (!authLoading && user) {
-      if (destination) window.location.href = destination;
+      if (destination) navigate({ to: destination as "/" });
       else navigate({ to: "/" });
     }
   }, [authLoading, user, navigate, destination]);
