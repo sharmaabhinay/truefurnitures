@@ -1,5 +1,13 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
-import { getAuth, type Auth } from "firebase/auth";
+import {
+  getAuth,
+  initializeAuth,
+  indexedDBLocalPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
+  browserPopupRedirectResolver,
+  type Auth,
+} from "firebase/auth";
 
 // Firebase Web SDK config is publishable by design.
 export const firebaseConfig = {
@@ -15,9 +23,28 @@ export function getFirebaseApp(): FirebaseApp {
   return getApps().length ? getApp() : initializeApp(firebaseConfig);
 }
 
+let cachedAuth: Auth | null = null;
+
 export function getFirebaseAuth(): Auth {
-  const auth = getAuth(getFirebaseApp());
+  if (cachedAuth) return cachedAuth;
+  const app = getFirebaseApp();
+  let auth: Auth;
+  if (typeof window === "undefined") auth = getAuth(app);
+  else {
+    try {
+      // Mobile browsers can close IndexedDB while the Google popup is open
+      // ("Database is closing/hidden"); fall back to local storage so the
+      // session is still saved.
+      auth = initializeAuth(app, {
+        persistence: [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence],
+        popupRedirectResolver: browserPopupRedirectResolver,
+      });
+    } catch {
+      auth = getAuth(app);
+    }
+  }
   auth.useDeviceLanguage();
+  cachedAuth = auth;
   return auth;
 }
 let readyPromise: Promise<import("firebase/auth").User | null> | null = null;

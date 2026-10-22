@@ -148,6 +148,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await signInWithPopup(getFirebaseAuth(), provider);
         } catch (err) {
           const code = (err as { code?: string })?.code ?? "";
+          const message = String((err as Error)?.message ?? "");
+          // Mobile browsers sometimes close local storage while the popup is
+          // open. The sign-in often still succeeded; otherwise use a redirect.
+          if (/closing|hidden|indexeddb|InvalidStateError/i.test(message) || code === "auth/internal-error") {
+            await new Promise((r) => setTimeout(r, 800));
+            if (getFirebaseAuth().currentUser) return;
+            await signInWithRedirect(getFirebaseAuth(), provider);
+            return;
+          }
           // Preview iframes and strict browsers block popups — fall back to a full-page redirect.
           if (
             code === "auth/popup-blocked" ||
