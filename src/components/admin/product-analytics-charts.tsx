@@ -11,7 +11,7 @@ const dateLabel = (value: string) => new Date(`${value}${value.length === 7 ? "-
 function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ dataKey?: string | number; value?: number | string; name?: string; color?: string }>; label?: string | number }) {
   if (!active || !payload?.length) return null;
   return <div role="status" className="tf-analytics-panel min-w-44 p-3 text-xs shadow-lg">
-    <div className="mb-3 font-semibold">{label}</div>
+    <div className="mb-3 font-semibold">{typeof label === "string" && /^\d{4}-\d{2}(-\d{2})?$/.test(label) ? new Date(`${label}${label.length === 7 ? "-01" : ""}T00:00:00Z`).toLocaleDateString("en-IN", { day: label.length === 7 ? undefined : "numeric", month: "long", year: "numeric", timeZone: "UTC" }) : label}</div>
     {payload.map(p => <div key={p.dataKey} className="my-1.5 flex items-center justify-between gap-6"><span className="text-analytics-muted">{p.name}</span><strong>{p.dataKey === "revenue" ? formatINR(Number(p.value)) : p.value}</strong></div>)}
   </div>;
 }
