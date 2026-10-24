@@ -1,6 +1,21 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+function cloudinaryCreds() {
+  const cloudName = process.env["CLOUDINARY_CLOUD_NAME"];
+  const apiKey = process.env["CLOUDINARY_API_KEY"];
+  const apiSecret = process.env["CLOUDINARY_API_SECRET"];
+  if (!cloudName || !apiKey || !apiSecret) {
+    throw new Error("Cloudinary is not configured on the server");
+  }
+  return { cloudName, apiKey, apiSecret };
+}
+
+async function sha1Hex(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 /** Returns a short-lived Cloudinary upload signature so the browser can upload directly. */
 export const signCloudinaryUpload = createServerFn({ method: "POST" })
   .validator((data) =>
