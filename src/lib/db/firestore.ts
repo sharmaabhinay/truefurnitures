@@ -61,7 +61,10 @@ export const COL = {
   carts: "carts",
   manufacturers: "manufacturers",
   trashAudit: "trash_audit",
-
+  files: "files",
+  fileFolders: "file_folders",
+  adminNotes: "admin_notes",
+  adminTodos: "admin_todos",
 } as const;
 
 export type CollectionName = (typeof COL)[keyof typeof COL];
