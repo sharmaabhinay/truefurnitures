@@ -154,7 +154,7 @@ function FileManagerBody({
           kind: file.type.startsWith("image/") ? "image" : file.type.startsWith("video/") ? "video" : "file",
           size: file.size,
           folder: path,
-          created_by: user?.id ?? null,
+          created_by: user?.uid ?? null,
         });
         doneCount += 1;
       }
@@ -181,7 +181,7 @@ function FileManagerBody({
         kind: res.kind === "image" || res.kind === "video" ? res.kind : "file",
         size: res.size,
         folder: path,
-        created_by: user?.id ?? null,
+        created_by: user?.uid ?? null,
       });
       setLinkUrl("");
       setLinkName("");

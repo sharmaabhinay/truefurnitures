@@ -109,7 +109,7 @@ export function NotesManager() {
           body: noteBody,
           color: noteColor,
           pinned: false,
-          created_by: user?.id ?? null,
+          created_by: user?.uid ?? null,
         });
         toast.success("Note added");
       } else if (noteModal) {
@@ -154,7 +154,7 @@ export function NotesManager() {
         done: false,
         reminder_at: reminderIso,
         notified: false,
-        created_by: user?.id ?? null,
+        created_by: user?.uid ?? null,
       });
       setTodoTitle("");
       setTodoReminder("");
