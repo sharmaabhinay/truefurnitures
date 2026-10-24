@@ -94,6 +94,22 @@ service cloud.firestore {
     }
 
 
+    // Admin file manager library and folder structure — staff only.
+    match /files/{id} {
+      allow read, write: if isStaff();
+    }
+    match /file_folders/{id} {
+      allow read, write: if isStaff();
+    }
+
+    // Admin notes and todos with reminders — staff only.
+    match /admin_notes/{id} {
+      allow read, write: if isStaff();
+    }
+    match /admin_todos/{id} {
+      allow read, write: if isStaff();
+    }
+
     // Append-only history of Trash actions (who, when, why).
     match /trash_audit/{id} {
       allow read: if isStaff();

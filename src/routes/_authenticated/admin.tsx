@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useAuth } from "@/lib/auth/auth-context";
+import { ReminderWatcher } from "@/components/admin/reminder-watcher";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   ssr: false,
