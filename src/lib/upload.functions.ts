@@ -1,5 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireFirebaseAuth } from "@/lib/auth/firebase-auth-middleware";
+import { canUploadToFolder } from "@/lib/upload-access";
+
+async function uploadRole(role: string, uid: string): Promise<string> {
+  if (role === "admin" || role === "staff") return role;
+  const { adminGetDoc } = await import("@/lib/firebase-admin.server");
+  const row = await adminGetDoc("user_roles", uid);
+  return typeof row?.["role"] === "string" ? row["role"] : role;
+}
 
 function cloudinaryCreds() {
   const cloudName = process.env["CLOUDINARY_CLOUD_NAME"];
@@ -18,6 +27,7 @@ async function sha1Hex(text: string): Promise<string> {
 
 /** Returns a short-lived Cloudinary upload signature so the browser can upload directly. */
 export const signCloudinaryUpload = createServerFn({ method: "POST" })
+  .middleware([requireFirebaseAuth])
   .validator((data) =>
     z
       .object({
@@ -26,7 +36,9 @@ export const signCloudinaryUpload = createServerFn({ method: "POST" })
       })
       .parse(data),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const role = data.folder === "orders/references" ? context.role : await uploadRole(context.role, context.userId);
+    if (!canUploadToFolder(role, data.folder)) throw new Error("Only staff can upload library files");
     const { cloudName, apiKey, apiSecret } = cloudinaryCreds();
     const timestamp = Math.floor(Date.now() / 1000);
     const params = `folder=${data.folder}&timestamp=${timestamp}`;
@@ -40,6 +52,7 @@ export const signCloudinaryUpload = createServerFn({ method: "POST" })
  * only needs to be publicly reachable — no browser CORS issues.
  */
 export const uploadFromUrl = createServerFn({ method: "POST" })
+  .middleware([requireFirebaseAuth])
   .validator((data) =>
     z
       .object({
@@ -49,7 +62,9 @@ export const uploadFromUrl = createServerFn({ method: "POST" })
       })
       .parse(data),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const role = await uploadRole(context.role, context.userId);
+    if (role !== "admin" && role !== "staff") throw new Error("Only staff can import files");
     const { cloudName, apiKey, apiSecret } = cloudinaryCreds();
     if (!/^https?:\/\//i.test(data.url)) throw new Error("Only http(s) links can be imported");
     const timestamp = Math.floor(Date.now() / 1000);
