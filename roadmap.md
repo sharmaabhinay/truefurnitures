@@ -3,8 +3,8 @@
 # Admin files and productivity
 - [x] Connect File Manager and Notes & Todos to admin navigation.
 - [x] Connect the product-image library picker.
-- [ ] Enable scheduled reminders across screens for signed-in staff.
-- [ ] Verify file uploads, nested folders, image selection and notes/todos with deployed access rules.
+- [x] Enable scheduled reminders across screens for signed-in staff.
+- [x] Verify computer/link uploads, nested folders, custom names, product-draft image selection and notes/todos with deployed staff-only access rules.
 
 # Product analytics dashboard
 - [x] Diagnose missing analytics and prevent failed reads from appearing as zero.
