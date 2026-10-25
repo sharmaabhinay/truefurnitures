@@ -354,7 +354,7 @@ function FileManagerBody({
                       {picker ? (
                         <button
                           onClick={() => onPick?.(f)}
-                          className="absolute inset-0 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity text-[12px] font-semibold"
+                           className="absolute inset-0 flex items-center justify-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 transition-opacity text-[12px] font-semibold"
                           style={{ background: "rgba(0,0,0,0.55)", color: dark.accent }}
                         >
                           <FiCheck /> Use this file
@@ -510,7 +510,7 @@ export function FilePickerModal({
           <div>
             <div className="text-[15px] font-semibold">{title}</div>
             <div className="text-[11px] mt-0.5" style={{ color: dark.mute }}>
-              Hover a file and choose “Use this file”. You can also upload new files here.
+              Image library
             </div>
           </div>
           <button onClick={onClose} className="text-lg leading-none px-2" style={{ color: dark.mute }} aria-label="Close">
