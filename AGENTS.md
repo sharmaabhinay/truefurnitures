@@ -19,3 +19,5 @@
 - Product analytics aggregation lives in a browser-safe pure module with UTC buckets and shared product identity matching; required data reads must surface failures rather than produce fabricated zero totals.
 - Admin analytics reads narrow visitor events server-side (by `time` window or `type`), share a per-worker cache, retry once and fall back to flagged last-good data, and poll slowly; every Firestore document read counts against the database quota.
 - Product analytics charts use the installed Recharts library and scoped semantic analytics tokens; this provides accessible interactive charts without a custom plotting engine.
+- Admin file selection reuses the File Manager library in product forms; selection changes only the product draft until Save.
+- Mount one staff-gated reminder watcher under the root auth provider; reminders survive page navigation, unlock audio on interaction, and deduplicate each scheduled revision.

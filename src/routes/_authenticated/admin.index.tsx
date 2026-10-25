@@ -35,16 +35,18 @@ import { PopupInsights } from "@/components/admin/popup-insights";
 import { CartInsights } from "@/components/admin/cart-insights";
 import { PageEditor } from "@/components/admin/page-editor";
 import { AdminUsers } from "@/components/admin/admin-users";
+import { FileManager, FilePickerModal } from "@/components/admin/file-manager";
+import { NotesManager } from "@/components/admin/notes-manager";
 import { listPopupEvents } from "@/lib/popup-analytics";
 import { sendQuoteStatusEmail } from "@/lib/email.functions";
 
 import { productStatusLabel } from "@/lib/availability";
-import { AModal, AInput } from "@/components/admin/ui";
+import { AModal, AInput, AButton } from "@/components/admin/ui";
 import {
   FiBarChart2, FiEye, FiPackage, FiUsers, FiTool, FiShoppingBag, FiShoppingCart, FiMessageCircle,
   FiSettings, FiStar, FiTag, FiEdit3, FiMapPin, FiFeather, FiBriefcase, FiTrendingUp,
   FiGlobe, FiMenu, FiRefreshCw, FiExternalLink, FiInbox, FiTrash2, FiPlus, FiDownload,
-  FiAlertCircle, FiLoader, FiClock, FiMail, FiTruck, FiActivity, FiShield,
+  FiAlertCircle, FiLoader, FiClock, FiMail, FiTruck, FiActivity, FiShield, FiFolder, FiCheckSquare,
 } from "react-icons/fi";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
@@ -89,6 +91,8 @@ type PanelKey =
   | "subscribers"
   | "adminUsers"
   | "pageEditor"
+  | "files"
+  | "notes"
   | "settings";
 
 type NavItem = { key: PanelKey; label: string; icon: React.ReactNode };
@@ -145,6 +149,8 @@ const NAV: NavGroup[] = [
     items: [
       { key: "adminUsers", label: "Admin Users", icon: <FiShield /> },
       { key: "pageEditor", label: "Page editor", icon: <FiEdit3 /> },
+      { key: "files", label: "File Manager", icon: <FiFolder /> },
+      { key: "notes", label: "Notes & Todos", icon: <FiCheckSquare /> },
       { key: "settings", label: "Settings", icon: <FiSettings /> },
       { key: "trash", label: "Trash", icon: <FiTrash2 /> },
     ],
@@ -175,6 +181,8 @@ const TITLES: Record<PanelKey, string> = {
   campaigns: "Ad Campaigns",
   adminUsers: "Admin Users",
   pageEditor: "Page editor",
+  files: "File Manager",
+  notes: "Notes & Todos",
   settings: "Settings",
 };
 
@@ -366,6 +374,8 @@ function AdminHome() {
           {panel === "subscribers" && <Subscribers />}
           {panel === "adminUsers" && <AdminUsers />}
           {panel === "pageEditor" && <PageEditor />}
+          {panel === "files" && <FileManager />}
+          {panel === "notes" && <NotesManager />}
           {panel === "settings" && <Settings />}
         </main>
       </div>
@@ -1919,6 +1929,7 @@ function ProductModal({
     return Array.from(new Set(merged));
   });
   const [imageUrl, setImageUrl] = useState("");
+  const [filePickerOpen, setFilePickerOpen] = useState(false);
   const [modelUrl, setModelUrl] = useState(product.model_url ?? "");
   const [modelPath, setModelPath] = useState(options.modelPath ?? "");
   const [modelFileName, setModelFileName] = useState(options.modelFileName ?? "");
@@ -2225,6 +2236,14 @@ function ProductModal({
 
           {tab === 1 && (
             <>
+              <AButton variant="ghost" onClick={() => setFilePickerOpen(true)}>
+                <span className="inline-flex items-center gap-2"><FiFolder /> Choose from File Manager</span>
+              </AButton>
+              <FilePickerModal
+                open={filePickerOpen}
+                onClose={() => setFilePickerOpen(false)}
+                onPick={(file) => setImages((current) => Array.from(new Set([...current, file.url])))}
+              />
               <Field label="Add Image URL">
                 <div className="flex gap-2">
                   <DarkInput

@@ -3,13 +3,14 @@ import { toast } from "sonner";
 import { FiBell } from "react-icons/fi";
 import { COL, fsUpdate, fsWatch } from "@/lib/db/firestore";
 import type { AdminTodo } from "@/components/admin/notes-manager";
+import { useAuth } from "@/lib/auth/auth-context";
+import { isReminderDue, reminderKey } from "@/lib/admin-reminders";
 
 /** Short two-tone chime generated with WebAudio — no sound file needed. */
-function playReminderSound() {
+function playReminderSound(ctx: AudioContext | null) {
   try {
-    const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!Ctx) return;
-    const ctx = new Ctx();
+    if (!ctx) return;
+    void ctx.resume().catch(() => undefined);
     const playTone = (freq: number, start: number, duration: number) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -29,7 +30,6 @@ function playReminderSound() {
     playTone(660, 1.1, 0.25);
     playTone(880, 1.35, 0.25);
     playTone(1100, 1.6, 0.4);
-    window.setTimeout(() => ctx.close().catch(() => undefined), 3000);
   } catch {
     // Audio blocked until the user interacts with the page — the toast still shows.
   }
@@ -41,26 +41,45 @@ function playReminderSound() {
  * screen no matter which panel is open.
  */
 export function ReminderWatcher() {
+  const { isStaff, user } = useAuth();
   const todosRef = useRef<AdminTodo[]>([]);
   const firingRef = useRef<Set<string>>(new Set());
+  const audioRef = useRef<AudioContext | null>(null);
 
   useEffect(() => {
+    if (!isStaff || !user) return;
+    const unlockAudio = () => {
+      const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!Ctx) return;
+      audioRef.current ??= new Ctx();
+      void audioRef.current.resume().catch(() => undefined);
+    };
+    window.addEventListener("pointerdown", unlockAudio);
+    window.addEventListener("keydown", unlockAudio);
     const off = fsWatch<AdminTodo>(COL.adminTodos, (rows) => {
       todosRef.current = rows;
+    }, () => {
+      toast.error("Reminders could not be loaded. Please refresh to reconnect.");
     });
-    return off;
-  }, []);
+    return () => {
+      off();
+      todosRef.current = [];
+      firingRef.current.clear();
+      window.removeEventListener("pointerdown", unlockAudio);
+      window.removeEventListener("keydown", unlockAudio);
+      void audioRef.current?.close().catch(() => undefined);
+      audioRef.current = null;
+    };
+  }, [isStaff, user?.uid]);
 
   useEffect(() => {
+    if (!isStaff || !user) return;
     const check = () => {
       const now = Date.now();
       for (const t of todosRef.current) {
-        if (t.done || t.notified || !t.reminder_at) continue;
-        const due = new Date(t.reminder_at).getTime();
-        if (Number.isNaN(due) || due > now) continue;
-        if (firingRef.current.has(t.id)) continue;
-        firingRef.current.add(t.id);
-        playReminderSound();
+        if (!isReminderDue(t, now, firingRef.current) || !t.reminder_at) continue;
+        firingRef.current.add(reminderKey(t));
+        playReminderSound(audioRef.current);
         toast(`Reminder: ${t.title}`, {
           icon: <FiBell />,
           duration: 30_000,
@@ -68,14 +87,20 @@ export function ReminderWatcher() {
         });
         // Mark as notified so it fires once, not on every check.
         fsUpdate(COL.adminTodos, t.id, { notified: true }).catch(() => {
-          firingRef.current.delete(t.id);
+          toast.error("Reminder shown, but its delivery status could not be saved.");
         });
       }
     };
-    const id = window.setInterval(check, 5000);
+    const id = window.setInterval(check, 1000);
+    window.addEventListener("focus", check);
+    document.addEventListener("visibilitychange", check);
     check();
-    return () => window.clearInterval(id);
-  }, []);
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener("focus", check);
+      document.removeEventListener("visibilitychange", check);
+    };
+  }, [isStaff, user?.uid]);
 
   return null;
 }

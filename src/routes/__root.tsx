@@ -18,6 +18,7 @@ import { AuthProvider } from "@/lib/auth/auth-context";
 import { Toaster } from "@/components/ui/sonner";
 import { NavigationProgress } from "@/components/navigation-progress";
 import { LaunchSplash } from "@/components/launch-splash";
+import { ReminderWatcher } from "@/components/admin/reminder-watcher";
 
 function NotFoundComponent() {
   return (
@@ -163,6 +164,7 @@ function RootComponent() {
        <CartProvider>
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <NavigationProgress />
+        <ReminderWatcher />
         <Outlet />
         <LaunchSplash />
             <VisitorTrackerBoot />

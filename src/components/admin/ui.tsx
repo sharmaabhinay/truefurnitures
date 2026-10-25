@@ -138,7 +138,7 @@ export function AModal({
 }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/70 p-3 sm:p-6" onClick={onClose}>
+    <div className="fixed inset-0 z-[1200] flex items-start justify-center overflow-y-auto bg-black/70 p-3 sm:p-6" onClick={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
         className={`w-full rounded-2xl my-4 ${wide ? "max-w-4xl" : "max-w-2xl"}`}
