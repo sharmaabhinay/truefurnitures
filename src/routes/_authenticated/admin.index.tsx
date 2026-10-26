@@ -37,6 +37,8 @@ import { PageEditor } from "@/components/admin/page-editor";
 import { AdminUsers } from "@/components/admin/admin-users";
 import { FileManager, FilePickerModal } from "@/components/admin/file-manager";
 import { NotesManager } from "@/components/admin/notes-manager";
+import { PreviewThumbnail } from "@/components/admin/image-preview";
+import { ShortcutSettings } from "@/components/admin/shortcut-settings";
 import { listPopupEvents } from "@/lib/popup-analytics";
 import { sendQuoteStatusEmail } from "@/lib/email.functions";
 
@@ -2118,6 +2120,7 @@ function ProductModal({
 
   return (
     <div
+      data-admin-modal
       className="fixed inset-0 z-[999] flex items-center justify-center p-4"
       style={{ background: "rgba(0,0,0,0.6)" }}
       onClick={onClose}
@@ -2285,7 +2288,7 @@ function ProductModal({
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {images.map((img, i) => (
                     <div key={`${img}-${i}`} className="relative group rounded-xl overflow-hidden aspect-[4/3]" style={{ background: "#16161D" }}>
-                      <img src={img} alt={`Product ${i + 1}`} className="w-full h-full object-cover" />
+                      <PreviewThumbnail src={img} name={`Product ${i + 1}`} className="w-full h-full object-cover" />
                       {i === 0 && <span className="absolute top-2 left-2 rounded px-2 py-0.5 text-[10px] font-bold" style={{ background: "#C8A86B", color: "#1a1a1a" }}>MAIN</span>}
                       <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {i > 0 && <button onClick={() => setImages((cur) => [img, ...cur.filter((_, j) => j !== i)])} className="rounded px-2 py-1 text-[10px]" style={{ background: "#C8A86B", color: "#1a1a1a" }}>Main</button>}
@@ -2767,7 +2770,7 @@ function Reviews() {
               <div className="flex flex-wrap gap-2">
                 {draft.images.map((src, i) => (
                   <div key={`${src}-${i}`} className="relative">
-                    <img src={src} alt={`Review ${i + 1}`} className="h-16 w-16 rounded-md object-cover" />
+                    <PreviewThumbnail src={src} name={`Review ${i + 1}`} className="h-16 w-16 rounded-md object-cover" />
                     <button
                       onClick={() => setDraft({ ...draft, images: draft.images.filter((_, j) => j !== i) })}
                       className="absolute -top-1 -right-1 h-5 w-5 rounded-full text-[11px]"
@@ -2800,7 +2803,7 @@ function Reviews() {
               {Array.isArray(r.images) && r.images.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
                   {r.images.map((src: string, i: number) => (
-                    <img key={`${src}-${i}`} src={src} alt={`Review photo ${i + 1}`} className="h-16 w-16 rounded-md object-cover" />
+                    <div key={`${src}-${i}`}><PreviewThumbnail src={src} name={`Review photo ${i + 1}`} className="h-16 w-16 rounded-md object-cover" /></div>
                   ))}
                 </div>
               )}
@@ -2928,7 +2931,7 @@ function Showrooms() {
 /* ================= SETTINGS ================= */
 
 function Settings() {
-  const TABS = ["Brand & Store", "Site CMS", "API Config", "Danger Zone"] as const;
+  const TABS = ["Brand & Store", "Site CMS", "Keyboard shortcuts", "API Config", "Danger Zone"] as const;
   const [tab, setTab] = useState<(typeof TABS)[number]>("Brand & Store");
   const qc = useQueryClient();
 
@@ -3034,6 +3037,8 @@ function Settings() {
           );
         })}
       </div>
+
+      {tab === "Keyboard shortcuts" && <ShortcutSettings />}
 
       {tab === "Site CMS" && (
         <Card>

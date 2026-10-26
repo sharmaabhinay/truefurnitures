@@ -19,6 +19,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { NavigationProgress } from "@/components/navigation-progress";
 import { LaunchSplash } from "@/components/launch-splash";
 import { ReminderWatcher } from "@/components/admin/reminder-watcher";
+import { AdminKeyboardShortcuts } from "@/components/admin/keyboard-shortcuts";
 
 function NotFoundComponent() {
   return (
@@ -165,6 +166,7 @@ function RootComponent() {
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <NavigationProgress />
         <ReminderWatcher />
+        <AdminKeyboardShortcuts />
         <Outlet />
         <LaunchSplash />
             <VisitorTrackerBoot />
