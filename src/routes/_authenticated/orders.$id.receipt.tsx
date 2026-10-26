@@ -2,13 +2,18 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { COL, fsGet } from "@/lib/db/firestore";
 import { formatINR, formatDate, STATUS_META } from "@/lib/format";
+import { OrderInvoiceButton } from "@/components/order-invoice-button";
 
 export const Route = createFileRoute("/_authenticated/orders/$id/receipt")({
   ssr: false,
   head: () => ({
     meta: [
       { title: "Order Receipt — True Furniture's" },
-      { name: "description", content: "Your bespoke sofa order receipt and tax invoice." },
+      { name: "description", content: "Your bespoke sofa order receipt and downloadable order invoice." },
+      { property: "og:title", content: "Order Receipt — True Furniture's" },
+      { property: "og:description", content: "Order details, recorded payments and your downloadable invoice." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -53,7 +58,7 @@ function ReceiptPage() {
   const { data: profile } = useQuery({
     queryKey: ["receipt-profile", order?.user_id],
     enabled: !!order?.user_id,
-    queryFn: async () => fsGet<{ full_name?: string | null }>(COL.profiles, order!.user_id),
+    queryFn: async () => order?.user_id ? fsGet<{ full_name?: string | null }>(COL.profiles, order.user_id) : null,
   });
 
   if (isLoading) {
@@ -71,8 +76,6 @@ function ReceiptPage() {
   const meta = STATUS_META[order.status] ?? { label: order.status, tone: "neutral" as const };
   const paidBadge = order.paid_at ? "PAID" : order.status === "cancelled" ? "CANCELLED" : "UNPAID";
   const addons = order.addons_snapshot ?? [];
-  const gst = Math.round(Number(order.subtotal || 0) * 0.18 * 100) / 100;
-  const preTax = Math.max(0, Number(order.subtotal || 0) - gst);
 
   return (
     <div className="min-h-screen bg-neutral-100 print:bg-white text-neutral-900 py-8 print:py-0">
@@ -90,14 +93,7 @@ function ReceiptPage() {
       <div className="no-print max-w-3xl mx-auto px-4 mb-6 flex flex-wrap items-center justify-between gap-3">
         <Link to="/dashboard" className="text-xs font-bold uppercase tracking-widest text-neutral-600 hover:text-neutral-900">← Back to dashboard</Link>
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="inline-flex items-center gap-2 px-5 py-3 bg-[color:var(--brand-dark)] text-white text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors"
-          >
-            <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-            Download PDF
-          </button>
+          <OrderInvoiceButton order={order} customerName={profile?.full_name ?? ""} />
         </div>
       </div>
 
@@ -107,10 +103,9 @@ function ReceiptPage() {
           <div>
             <p className="font-display text-3xl tracking-tight">True Furniture's</p>
             <p className="text-xs text-neutral-500 mt-1">Bespoke sofas · Indore & Ujjain</p>
-            <p className="text-xs text-neutral-500">GSTIN: 23AAAAA0000A1Z5 · +91 77738 96496</p>
           </div>
           <div className="text-right">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Tax Invoice / Receipt</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Order Invoice / Receipt</p>
             <p className="font-mono text-lg mt-1">{order.order_number}</p>
             <p className="text-xs text-neutral-500">Issued {formatDate(order.paid_at ?? order.created_at)}</p>
             <span
@@ -177,9 +172,7 @@ function ReceiptPage() {
 
         <section className="py-6 border-b border-neutral-200">
           <dl className="space-y-2 text-sm max-w-sm ml-auto">
-            <Row k="Subtotal (incl. GST)" v={formatINR(Number(order.subtotal))} />
-            <Row k="Taxable value" v={formatINR(preTax)} muted />
-            <Row k="GST @ 18% (incl.)" v={formatINR(gst)} muted />
+            <Row k="Subtotal" v={formatINR(Number(order.subtotal))} />
             {Number(order.discount) > 0 && (
               <Row k={`Discount${order.discount_code ? ` (${order.discount_code})` : ""}`} v={`− ${formatINR(Number(order.discount))}`} />
             )}

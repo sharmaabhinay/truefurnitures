@@ -9,6 +9,7 @@ import { uploadToCloudinary } from "@/lib/upload";
 import { uploadFromUrl } from "@/lib/upload.functions";
 import { useAuth } from "@/lib/auth/auth-context";
 import { AButton, AInput, AModal, ASelect, dark } from "@/components/admin/ui";
+import { ImagePreview } from "@/components/admin/image-preview";
 
 export type ManagedFile = {
   id: string;
@@ -73,6 +74,7 @@ function FileManagerBody({
   const [moveFolder, setMoveFolder] = useState("");
   const [uploadPct, setUploadPct] = useState<number | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
   useEffect(() => {
     let ready = 0;
@@ -100,6 +102,7 @@ function FileManagerBody({
     const filtered = accept === "images" ? inFolder.filter((f) => kindOf(f) === "image") : inFolder;
     return filtered.sort((a, b) => String(b.created_at ?? "").localeCompare(String(a.created_at ?? "")));
   }, [files, path, accept]);
+  const previewFiles = visibleFiles.filter((f) => kindOf(f) === "image");
 
   const createFolder = async () => {
     const name = sanitizeFolderName(newFolderName);
@@ -345,20 +348,21 @@ function FileManagerBody({
                   >
                     <div className="relative aspect-[4/3] flex items-center justify-center" style={{ background: "#101018" }}>
                       {kind === "image" ? (
-                        <img src={f.url} alt={f.name} className="w-full h-full object-cover" loading="lazy" />
+                        <AButton variant="ghost" className="!p-0 !border-0 w-full h-full" aria-label={`Preview ${f.name}`} onClick={() => setPreviewIndex(previewFiles.findIndex((image) => image.id === f.id))}>
+                          <img src={f.url} alt={f.name} className="w-full h-full object-cover" loading="lazy" />
+                        </AButton>
                       ) : kind === "video" ? (
                         <FiFilm className="text-3xl" style={{ color: dark.mute }} />
                       ) : (
                         <FiFile className="text-3xl" style={{ color: dark.mute }} />
                       )}
                       {picker ? (
-                        <button
+                          <AButton variant="ghost"
                           onClick={() => onPick?.(f)}
-                           className="absolute inset-0 flex items-center justify-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 transition-opacity text-[12px] font-semibold"
-                          style={{ background: "rgba(0,0,0,0.55)", color: dark.accent }}
+                           className="absolute bottom-2 right-2 flex items-center justify-center gap-2 text-[12px] font-semibold"
                         >
                           <FiCheck /> Use this file
-                        </button>
+                          </AButton>
                       ) : (
                         <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button aria-label="Copy link" title="Copy link" onClick={() => copyUrl(f)} className={iconBtn} style={{ color: dark.text, background: "rgba(0,0,0,0.5)" }}><FiCopy /></button>
@@ -388,6 +392,13 @@ function FileManagerBody({
       )}
 
       {/* New folder */}
+      <ImagePreview
+        images={previewFiles.map((f) => ({ url: f.url, name: f.name }))}
+        index={previewIndex}
+        onIndexChange={setPreviewIndex}
+        onClose={() => setPreviewIndex(null)}
+        onPick={picker ? (image) => { const file = previewFiles.find((f) => f.url === image.url); if (file) { setPreviewIndex(null); onPick?.(file); } } : undefined}
+      />
       <AModal
         open={newFolderOpen}
         onClose={() => setNewFolderOpen(false)}
@@ -500,7 +511,7 @@ export function FilePickerModal({
 }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[1100] flex items-start justify-center overflow-y-auto bg-black/70 p-3 sm:p-6" onClick={onClose}>
+    <div data-admin-modal className="fixed inset-0 z-[1100] flex items-start justify-center overflow-y-auto bg-black/70 p-3 sm:p-6" onClick={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-4xl rounded-2xl my-4"

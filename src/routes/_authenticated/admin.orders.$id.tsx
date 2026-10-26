@@ -11,10 +11,17 @@ import { listAdminManufacturers } from "@/lib/admin-data.functions";
 import { sendOrderStatusEmail } from "@/lib/email.functions";
 import { useCarpenters } from "@/components/admin/carpenter-manager";
 import { toast } from "sonner";
+import { OrderInvoiceButton } from "@/components/order-invoice-button";
 
 export const Route = createFileRoute("/_authenticated/admin/orders/$id")({
   ssr: false,
-  head: () => ({ meta: [{ title: "Order — Admin · True Furniture's" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [
+    { title: "Order — Admin · True Furniture's" }, { name: "robots", content: "noindex" },
+    { name: "description", content: "Manage a True Furniture order, delivery and invoice." },
+    { property: "og:title", content: "Order Management — True Furniture's" },
+    { property: "og:description", content: "Order details, delivery progress and downloadable invoices." },
+    { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
+  ] }),
   component: OrderDetail,
 });
 
@@ -58,13 +65,13 @@ function OrderDetail() {
   const { data: profile } = useQuery({
     queryKey: ["admin-order-profile", order?.user_id],
     enabled: !!order?.user_id,
-    queryFn: () => fsGet<any>(COL.profiles, order!.user_id),
+    queryFn: () => order?.user_id ? fsGet<any>(COL.profiles, order.user_id) : null,
   });
 
   const { data: auth } = useQuery({
     queryKey: ["admin-order-auth", order?.user_id],
     enabled: !!order?.user_id,
-    queryFn: () => getAuth({ data: { userId: order!.user_id } }),
+    queryFn: () => order?.user_id ? getAuth({ data: { userId: order.user_id } }) : null,
     retry: false,
   });
 
@@ -163,6 +170,7 @@ function OrderDetail() {
     <div style={{ background: dark.bg, color: dark.text, minHeight: "100vh" }} className="pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <AdminBackLink label="← Back" fallbackPanel="orders" muted className="text-xs uppercase tracking-widest" />
+        <div className="mt-4"><OrderInvoiceButton order={order} customerName={profile?.full_name ?? order.customer_name ?? ""} shortcut /></div>
 
         <header className="mt-4 flex flex-wrap gap-4 items-start justify-between pb-6 border-b" style={{ borderColor: dark.border }}>
           <div>
