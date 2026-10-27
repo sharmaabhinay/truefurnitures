@@ -25,6 +25,7 @@ export function validateShortcuts(rows: Shortcut[]): string | null {
   for (const row of rows) {
     if (!ADMIN_ACTIONS.some(([action]) => action === row.action)) return "Choose a valid action.";
     const key = normalizeKeys(row.keys);
+    if (!row.enabled && !key) continue;
     if (!/^(?:(?:(?:ctrl|alt|shift|meta)\+)*[a-z0-9])(?: (?:(?:ctrl|alt|shift|meta)\+)*[a-z0-9]){0,2}$/.test(key)) return "Use letters or numbers, optionally with ctrl+, alt+, shift+ or meta+. Separate up to three steps with spaces.";
     if (row.enabled && seen.has(key)) return `Duplicate shortcut: ${key.toUpperCase()}.`;
     if (row.enabled) seen.add(key);

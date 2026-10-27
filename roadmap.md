@@ -1,9 +1,9 @@
 # Roadmap — fix issues from test report (Oct 2026)
 
 # Admin files and productivity
-- [ ] Finish click-to-open full image previews in File Manager and admin image thumbnails.
-- [ ] Add one-click PDF order invoice download with a QR code.
-- [ ] Add global staff keyboard shortcuts and editable shortcut settings; verify keys and downloads.
+- [x] Finish click-to-open full image previews in File Manager and admin image thumbnails; verify desktop/mobile, product forms and library picker without selection changes.
+- [x] Add one-click PDF order invoice download with a QR code; verify real recorded amounts and rendered invoice text.
+- [x] Add global staff keyboard shortcuts and editable shortcut settings; verify default keys, custom shortcuts and O then I downloads.
 - [x] Connect File Manager and Notes & Todos to admin navigation.
 - [x] Connect the product-image library picker.
 - [x] Enable scheduled reminders across screens for signed-in staff.

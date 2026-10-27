@@ -23,4 +23,4 @@
 - Mount one staff-gated reminder watcher under the root auth provider; reminders survive page navigation, unlock audio on interaction, and deduplicate each scheduled revision.
 - Mount one staff-gated keyboard listener under the root auth provider; use validated per-account browser preferences and delay ambiguous sequences so single-key navigation does not swallow invoice shortcuts.
 - Admin image previews share a portal-based accessible dialog above admin forms; opening an image never selects it or changes a product draft.
-- Generate order invoices client-side from recorded amounts with locally served Unicode fonts and a reference-only QR; pre-generate before download to preserve mobile user activation and never fabricate GST details.
+- Generate order invoices client-side from recorded amounts with locally served combined Latin/Devanagari fonts embedded without subsetting and a reference-only QR; pre-generate before download to preserve mobile user activation and never fabricate GST details. Full embedding preserves merged glyph IDs in PDF viewers.

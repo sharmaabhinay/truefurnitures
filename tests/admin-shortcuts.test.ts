@@ -13,3 +13,13 @@ it("allows customised keys but rejects duplicates", () => {
   expect(validateShortcuts([{ id: "1", action: "orders", keys: "alt+o", enabled: true }])).toBeNull();
   expect(validateShortcuts([...DEFAULT_SHORTCUTS, { id: "new", action: "files", keys: "O", enabled: true }])).toContain("Duplicate");
 });
+it("provides a valid distinct shortcut for every admin action", () => {
+  expect(validateShortcuts(DEFAULT_SHORTCUTS)).toBeNull();
+  for (const row of DEFAULT_SHORTCUTS) {
+    expect(matchShortcut(DEFAULT_SHORTCUTS, row.keys, true).exact?.action).toBe(row.action);
+  }
+});
+it("allows an unfinished shortcut to be disabled without blocking save", () => {
+  expect(validateShortcuts([{ id: "draft", action: "orders", keys: "", enabled: false }])).toBeNull();
+  expect(validateShortcuts([{ id: "draft", action: "orders", keys: "", enabled: true }])).not.toBeNull();
+});

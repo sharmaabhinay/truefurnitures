@@ -22,7 +22,9 @@ export async function buildOrderInvoice(order: InvoiceOrder, customerName: strin
   const fonts = await Promise.all(["regular", "bold"].map(async (name) => {
     const response = await fetch(`/fonts/invoice-${name}.ttf`);
     if (!response.ok) throw new Error("Invoice font could not be loaded.");
-    return pdf.embedFont(await response.arrayBuffer(), { subset: true });
+    // Preserve merged Latin/Devanagari glyph IDs; subsetting this combined font
+    // can produce valid text extraction but blank glyphs in PDF viewers.
+    return pdf.embedFont(await response.arrayBuffer(), { subset: false });
   }));
   const regular = fonts[0]; const bold = fonts[1];
   if (!regular || !bold) throw new Error("Invoice fonts unavailable.");

@@ -22,7 +22,7 @@ export function AdminKeyboardShortcuts() {
     const onKey = (event: KeyboardEvent) => {
       const target = event.target;
       if (event.defaultPrevented || event.repeat || event.isComposing ||
-        (target instanceof Element && target.closest('input,textarea,select,[contenteditable=""],[contenteditable="true"],[role="textbox"]')) ||
+        (target instanceof Element && (target.closest('input,textarea,select,[role="textbox"]') || (target instanceof HTMLElement && target.isContentEditable))) ||
         document.querySelector('[role="dialog"],[role="alertdialog"],[data-admin-modal]')) { reset(); return; }
       if (event.key === "Escape") { reset(); return; }
       const stroke = keyStroke(event);
