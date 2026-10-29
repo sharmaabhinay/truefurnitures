@@ -12,6 +12,7 @@ import { sendOrderStatusEmail } from "@/lib/email.functions";
 import { useCarpenters } from "@/components/admin/carpenter-manager";
 import { toast } from "sonner";
 import { OrderInvoiceButton } from "@/components/order-invoice-button";
+import { SendInvoiceButton } from "@/components/admin/send-invoice";
 
 export const Route = createFileRoute("/_authenticated/admin/orders/$id")({
   ssr: false,
@@ -170,7 +171,7 @@ function OrderDetail() {
     <div style={{ background: dark.bg, color: dark.text, minHeight: "100vh" }} className="pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <AdminBackLink label="← Back" fallbackPanel="orders" muted className="text-xs uppercase tracking-widest" />
-        <div className="mt-4"><OrderInvoiceButton order={order} customerName={profile?.full_name ?? order.customer_name ?? ""} shortcut /></div>
+        <div className="mt-4 flex flex-wrap gap-2"><OrderInvoiceButton order={order} customerName={profile?.full_name ?? order.customer_name ?? ""} shortcut /><SendInvoiceButton order={order} customerName={profile?.full_name ?? order.customer_name ?? ""} email={auth?.email ?? profile?.email ?? null} phone={order.phone ?? profile?.phone ?? null} /></div>
 
         <header className="mt-4 flex flex-wrap gap-4 items-start justify-between pb-6 border-b" style={{ borderColor: dark.border }}>
           <div>
