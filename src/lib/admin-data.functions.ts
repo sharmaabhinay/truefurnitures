@@ -65,7 +65,7 @@ async function safeQuery(
   return data;
 }
 
-async function staffOnly(role: string | undefined, uid: string) {
+export async function staffOnly(role: string | undefined, uid: string) {
   if (role === "admin" || role === "staff") return;
   const { adminGetDoc, adminQuery } = await import("@/lib/firebase-admin.server");
   const doc = await adminGetDoc("user_roles", uid).catch(() => null);

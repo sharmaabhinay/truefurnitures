@@ -1,4 +1,4 @@
-const SITE_URL = "https://project--457d33ec-429c-4ee3-b069-5856f6428284.lovable.app";
+export const SITE_URL = "https://project--457d33ec-429c-4ee3-b069-5856f6428284.lovable.app";
 
 export type Brand = {
   brand_name: string;
@@ -42,7 +42,7 @@ export async function getBrand(): Promise<Brand> {
   }
 }
 
-export async function sendResend(to: string, subject: string, html: string, brand: Brand) {
+export async function sendResend(to: string, subject: string, html: string, brand: Brand, attachments?: Array<{ filename: string; content: string }>) {
   const key = process.env.RESEND_API_KEY;
   if (!key) {
     console.error("[email] RESEND_API_KEY not set");
@@ -56,6 +56,7 @@ export async function sendResend(to: string, subject: string, html: string, bran
       to: [to],
       subject,
       html,
+      ...(attachments?.length ? { attachments } : {}),
     }),
   });
   if (!res.ok) {
