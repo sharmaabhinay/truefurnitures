@@ -14,7 +14,7 @@ type Result = { sent: boolean; error?: string };
 /** Sends an order's invoice to its customer by email (PDF attached) and/or SMS (receipt link). Staff only. */
 export const sendInvoiceToCustomer = createServerFn({ method: "POST" })
   .middleware([requireFirebaseAuth])
-  .inputValidator((d: { orderId: string; email: boolean; sms: boolean; pdfBase64?: string; filename?: string }) => {
+  .validator((d: { orderId: string; email: boolean; sms: boolean; pdfBase64?: string; filename?: string }) => {
     if (!d?.orderId || typeof d.orderId !== "string") throw new Error("orderId required");
     if (d.pdfBase64 && d.pdfBase64.length > 8_000_000) throw new Error("Invoice too large");
     return d;
@@ -22,15 +22,15 @@ export const sendInvoiceToCustomer = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { staffOnly } = await import("@/lib/admin-data.functions");
     await staffOnly(context.role, context.userId);
-    const { adminGetDoc, adminGetUser } = await import("@/lib/firebase-admin.server") as Record<string, any>;
+    const { adminGetDoc, adminLookupUser } = await import("@/lib/firebase-admin.server");
     const { getBrand, sendResend, sendSms, SITE_URL } = await import("@/lib/email-templates");
     const order = await adminGetDoc("orders", data.orderId);
     if (!order) throw new Error("Order not found");
     const brand = await getBrand();
     const profile = order["user_id"] ? await adminGetDoc("profiles", String(order["user_id"])).catch(() => null) : null;
     let email = (profile?.["email"] as string | undefined) ?? (order["email"] as string | undefined) ?? null;
-    if (!email && order["user_id"] && typeof adminGetUser === "function") {
-      email = (await adminGetUser(String(order["user_id"])).catch(() => null))?.email ?? null;
+    if (!email && order["user_id"]) {
+      email = (await adminLookupUser(String(order["user_id"])).catch(() => null))?.email ?? null;
     }
     const name = (profile?.["full_name"] as string | undefined) ?? (order["customer_name"] as string | undefined) ?? "";
     const orderNumber = (order["order_number"] as string | null) ?? order.id.slice(0, 8).toUpperCase();
