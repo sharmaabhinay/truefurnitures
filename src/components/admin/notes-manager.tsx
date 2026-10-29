@@ -117,6 +117,7 @@ export function NotesManager() {
           title: noteTitle.trim() || "Untitled note",
           body: noteBody,
           color: noteColor,
+          updated_at: new Date().toISOString(),
         });
         toast.success("Note updated");
       }
@@ -290,7 +291,7 @@ export function NotesManager() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="text-[13px] font-semibold truncate" style={{ color: dark.text }}>{n.title}</div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex gap-1 opacity-100 sm:opacity-60 sm:group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => togglePin(n)}
                       aria-label={n.pinned ? "Unpin note" : "Pin note"}
@@ -308,7 +309,8 @@ export function NotesManager() {
                     </button>
                   </div>
                 </div>
-                <div className="text-[12px] whitespace-pre-wrap flex-1" style={{ color: dark.mute }}>{n.body}</div>
+                <button type="button" onClick={() => openEditNote(n)} title="Click to edit" className="text-left text-[12px] whitespace-pre-wrap flex-1 rounded-md hover:bg-white/5 -mx-1 px-1" style={{ color: dark.mute }}>{n.body || "Tap to add details…"}</button>
+                {n.updated_at && <div className="text-[10px]" style={{ color: dark.mute }}>Edited {new Date(n.updated_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</div>}
                 {n.pinned && <div className="text-[10px] font-semibold" style={{ color: dark.accent }}>Pinned</div>}
               </div>
             ))}
