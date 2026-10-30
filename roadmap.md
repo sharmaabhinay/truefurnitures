@@ -1,9 +1,9 @@
 # Roadmap — fix issues from test report (Oct 2026)
 
 # Free customer and admin AI
-- [ ] Confirm a free API service and securely connect its API key.
-- [ ] Add useful customer and admin AI tools within the approved scope.
-- [ ] Verify real responses and explain every AI placement and how to use it.
+- [ ] Connect Groq Free securely — blocked: connection card was declined; no free-provider credentials are configured.
+- [ ] Add four proposed placements after connection: customer sofa finder, product Q&A, admin description drafting and customer-reply drafting.
+- [ ] Verify real responses and explain every AI placement and how to use it — blocked by provider connection.
 
 # Admin files and productivity
 - [x] Finish click-to-open full image previews in File Manager and admin image thumbnails; verify desktop/mobile, product forms and library picker without selection changes.
