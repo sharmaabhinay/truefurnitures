@@ -1,5 +1,10 @@
 # Roadmap — fix issues from test report (Oct 2026)
 
+# Free customer and admin AI
+- [ ] Confirm a free API service and securely connect its API key.
+- [ ] Add useful customer and admin AI tools within the approved scope.
+- [ ] Verify real responses and explain every AI placement and how to use it.
+
 # Admin files and productivity
 - [x] Finish click-to-open full image previews in File Manager and admin image thumbnails; verify desktop/mobile, product forms and library picker without selection changes.
 - [x] Add one-click PDF order invoice download with a QR code; verify real recorded amounts and rendered invoice text.
