@@ -15,6 +15,7 @@ import sofaTerracotta from "@/assets/sofa-terracotta.jpg";
 import { listPublishedSofas } from "@/lib/catalog.functions";
 import { clientPublishedSofas } from "@/lib/catalog-fallback";
 import { logImpression } from "@/lib/visitor-tracker";
+import { AiTool } from "@/components/ai-tool";
 
 
 const sofaImages: Record<string, string> = {
@@ -56,6 +57,8 @@ export const Route = createFileRoute("/collections")({
       { name: "description", content: "Explore our full catalog of fully customizable, hand-tailored sofas. Every silhouette is available for material, colour and size customization." },
       { property: "og:title", content: "Collections — True Furniture's" },
       { property: "og:description", content: "Browse every silhouette in our fully customizable sofa collection." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   loader: async ({ context }) => context.queryClient.ensureQueryData(sofasQuery),
@@ -100,6 +103,7 @@ function Collections() {
         <span className="text-[color:var(--brand-accent)] font-semibold tracking-[0.3em] uppercase text-xs animate-fade-up">Fully Customizable Furniture</span>
         <h1 className="text-5xl md:text-6xl font-display mt-4 max-w-3xl animate-fade-up delay-100">Every Silhouette, <span className="italic">Yours to Shape.</span></h1>
         <p className="text-[color:var(--brand-dark)]/60 mt-6 max-w-xl animate-fade-up delay-200">Every sofa is designed for full customization — fabric, colour, size, legs and add-ons. Click any piece to begin.</p>
+        <AiTool task="finder" label="AI sofa finder" />
       </section>
 
       {/* Filters */}

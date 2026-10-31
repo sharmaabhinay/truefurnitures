@@ -27,6 +27,7 @@ import { logVisitor } from "@/lib/visitor-tracker";
 import { ProductGallery } from "@/components/product-gallery";
 import { CustomerFaqs } from "@/components/customer-faqs";
 import { PageSections } from "@/components/page-sections";
+import { AiTool } from "@/components/ai-tool";
 
 
 const heroImages: Record<string, string> = {
@@ -362,6 +363,7 @@ function ProductPage() {
           </p>
 
           {/* Fabric picker */}
+          <AiTool key={sofa.slug} task="question" label="Ask AI about this sofa" slug={sofa.slug} />
           <div className="mb-8">
             <p className="text-[10px] font-black uppercase tracking-widest mb-3">Choose Fabric</p>
             <div className="flex gap-3">

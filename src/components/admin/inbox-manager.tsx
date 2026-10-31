@@ -8,6 +8,7 @@ import { ACard, AInput, ATextarea, AButton, AEmpty, dark } from "@/components/ad
 import { COL, fsAdd, fsList, fsUpdate, where } from "@/lib/db/firestore";
 import { useAuth } from "@/lib/auth/auth-context";
 import { sendMessageReplyEmail } from "@/lib/email.functions";
+import { AiTool } from "@/components/ai-tool";
 
 type Msg = {
   id: string;
@@ -288,6 +289,7 @@ export function InboxManager() {
               })}
             </div>
             <div className="p-3 border-t relative" style={{ borderColor: dark.border }}>
+              <AiTool key={thread.id} task="reply" label="AI reply draft" onApply={setBody} />
               {slash && (
                 <div
                   className="absolute bottom-full left-3 right-3 mb-2 rounded-xl overflow-hidden z-10"
