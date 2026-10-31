@@ -39,6 +39,7 @@ import { FileManager, FilePickerModal } from "@/components/admin/file-manager";
 import { NotesManager } from "@/components/admin/notes-manager";
 import { PreviewThumbnail } from "@/components/admin/image-preview";
 import { ShortcutSettings } from "@/components/admin/shortcut-settings";
+import { AiTool } from "@/components/ai-tool";
 import { listPopupEvents } from "@/lib/popup-analytics";
 import { sendQuoteStatusEmail } from "@/lib/email.functions";
 
@@ -2305,6 +2306,7 @@ function ProductModal({
 
           {tab === 2 && (
             <>
+              <AiTool task="description" label="AI description draft" facts={JSON.stringify({ name, tagline, specifications: specs, features: features.filter(Boolean) }).slice(0, 6000)} onApply={setFullDescription} />
               <Field label="Short Description (card)">
                 <DarkTextarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Brief description shown on product cards…" />
               </Field>

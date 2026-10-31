@@ -1,8 +1,8 @@
 # Roadmap — fix issues from test report (Oct 2026)
 
 # Free customer and admin AI
-- [ ] Connect Groq Free securely — blocked: connection card was declined; no free-provider credentials are configured.
-- [ ] Add four proposed placements after connection: customer sofa finder, product Q&A, admin description drafting and customer-reply drafting.
+- [ ] Connect Groq Free securely — blocked: user will provide a valid GROQ_API_KEY later; xyz is not a usable credential.
+- [x] Add four key-ready placements: customer sofa finder, product Q&A, admin description drafting and customer-reply drafting.
 - [ ] Verify real responses and explain every AI placement and how to use it — blocked by provider connection.
 
 # Admin files and productivity
