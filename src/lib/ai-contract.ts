@@ -5,6 +5,7 @@ export const aiInput = z.object({
   prompt: z.string().trim().min(3).max(2000),
   slug: z.string().max(150).optional(),
   facts: z.string().max(6000).optional(),
+  sessionId: z.string().uuid().optional(),
 });
 export type AiInput = z.infer<typeof aiInput>;
 export type AiResult = { text: string; error: string | null };
