@@ -12,6 +12,8 @@ import { PaymentMethods } from "@/components/payment-methods";
 import { PhoneVerify, UnverifiedBadge, VerifiedBadge } from "@/components/phone-verify";
 import { useBrand } from "@/lib/brand";
 import { uploadToCloudinary } from "@/lib/upload";
+import { useServerFn } from "@tanstack/react-start";
+import { placeCheckoutOrders } from "@/lib/checkout.functions";
 import { visitorSessionId } from "@/lib/visitor-tracker";
 
 export const Route = createFileRoute("/_authenticated/checkout")({
@@ -76,6 +78,7 @@ function parseOrderAddress(blob: string) {
 function Checkout() {
   const { items, subtotal, discount, total, coupon, clear } = useCart();
   const navigate = useNavigate();
+  const placeOrders = useServerFn(placeCheckoutOrders);
   const { user, profile, loading: authLoading, refreshProfile } = useAuth();
   const brand = useBrand();
   const [form, setForm] = useState<FormState>({
@@ -285,15 +288,14 @@ function Checkout() {
       const nowIso = new Date().toISOString();
       const checkoutId = crypto.randomUUID();
       const checkoutSession = visitorSessionId();
-      const orderIds: string[] = [];
-      for (const i of items) {
+      const orderDrafts = items.map((i) => {
         const lineSubtotal = i.unitPrice * i.quantity;
         // proportionally distribute discount across lines
         const lineDiscount = subtotal > 0 ? Math.round((discount * lineSubtotal) / subtotal) : 0;
         const lineTotal = lineSubtotal - lineDiscount;
         const lineDeposit = Math.round(lineTotal * 0.2);
         const orderNumber = `TF-${String(Date.now() % 100000).padStart(5, "0")}`;
-        const orderId = await fsAdd(COL.orders, {
+        return {
           user_id: uid,
           checkout_id: checkoutId,
           checkout_session: checkoutSession,
@@ -318,16 +320,9 @@ function Checkout() {
           attachment_name: attachmentName,
           expected_delivery_date: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString().slice(0, 10),
           created_at: nowIso,
-        });
-        orderIds.push(orderId);
-        await fsAdd(COL.orderStatusHistory, {
-          order_id: orderId,
-          user_id: uid,
-          status: "pending_deposit",
-          note: "Order placed",
-          created_at: nowIso,
-        });
-      }
+        };
+      });
+      const orderIds = await placeOrders({ data: { code: coupon?.code ?? null, checkoutId, orders: orderDrafts } });
       if (orderIds.length === 0) throw new Error("Could not create order");
 
       clear();

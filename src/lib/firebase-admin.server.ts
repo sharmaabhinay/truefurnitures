@@ -526,3 +526,34 @@ export async function adminSetPassword(uid: string, password: string): Promise<v
   );
   if (!res.ok) throw new Error(`Failed to update password: ${await res.text()}`);
 }
+
+/** Atomic writes with read-version conflict retries (used for coupon redemption). */
+export async function adminTransaction<T>(work: (tx: { get: (col: string, id: string) => Promise<Doc | null>; set: (col: string, id: string, data: Record<string, unknown>) => void }) => Promise<T>): Promise<T> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const begin = await fsFetch(":beginTransaction", { method: "POST", body: "{}" });
+    if (!begin.ok) throw new Error("Could not start order transaction");
+    const { transaction } = await begin.json() as { transaction: string };
+    const writes: Record<string, unknown>[] = [];
+    try {
+      const result = await work({
+        get: async (col, id) => {
+          const r = await fsFetch(`/${col}/${encodeURIComponent(id)}?transaction=${encodeURIComponent(transaction)}`);
+          if (r.status === 404) return null;
+          if (!r.ok) throw new Error("Could not read transaction data");
+          return shape(await r.json());
+        },
+        set: (col, id, data) => {
+          const payload = { ...data, id };
+          writes.push({ update: { name: `${docsBase().replace("https://firestore.googleapis.com/v1/", "")}/${col}/${id}`, fields: Object.fromEntries(Object.entries(payload).map(([k, v]) => [k, toFs(v)])) }, updateMask: { fieldPaths: Object.keys(payload) } });
+        },
+      });
+      const commit = await fsFetch(":commit", { method: "POST", body: JSON.stringify({ transaction, writes }) });
+      if (commit.ok) return result;
+      if (commit.status !== 409) throw new Error("Could not save order. Please try again.");
+    } catch (error) {
+      await fsFetch(":rollback", { method: "POST", body: JSON.stringify({ transaction }) }).catch(() => {});
+      throw error;
+    }
+  }
+  throw new Error("This offer is being used elsewhere. Please retry.");
+}
