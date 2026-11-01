@@ -35,7 +35,7 @@ export function discountOn(c: Pick<CouponRule, "discount_type" | "discount_value
     ? Math.round((eligibleSubtotal * Number(c.discount_value)) / 100)
     : Math.min(eligibleSubtotal, Number(c.discount_value));
   if (c.max_discount_amount && c.max_discount_amount > 0) d = Math.min(d, Number(c.max_discount_amount));
-  return Math.max(0, d);
+  return Math.min(eligibleSubtotal, Math.max(0, d));
 }
 
 export function evaluateCoupon(
@@ -59,4 +59,18 @@ export function evaluateCoupon(
   const eligibleSubtotal = eligible.reduce((n, l) => n + l.lineTotal, 0);
   const restricted = c.applies_to === "products" || c.applies_to === "categories";
   return { ok: true, discount: discountOn(c, eligibleSubtotal), eligibleSofaIds: restricted ? [...new Set(eligible.map((l) => l.sofaId))] : null, eligibleSubtotal };
+}
+
+/** Allocate rounded rupee discounts only to qualifying lines, preserving the exact total. */
+export function allocateCouponDiscount(lines: CouponLine[], discount: number, eligibleIds: string[] | null): number[] {
+  const eligible = lines.map(l => !eligibleIds || eligibleIds.includes(l.sofaId));
+  const subtotal = lines.reduce((n, l, i) => n + (eligible[i] ? l.lineTotal : 0), 0);
+  let remaining = Math.min(discount, subtotal);
+  const last = eligible.lastIndexOf(true);
+  return lines.map((l, i) => {
+    if (!eligible[i] || subtotal <= 0) return 0;
+    const amount = i === last ? remaining : Math.min(remaining, Math.floor(discount * l.lineTotal / subtotal));
+    remaining -= amount;
+    return amount;
+  });
 }
