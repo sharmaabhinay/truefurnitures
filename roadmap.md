@@ -1,5 +1,11 @@
 # Roadmap — fix issues from test report (Oct 2026)
 
+# Coupon checks, AI reporting and consolidated CMS
+- [ ] Wire coupon validation to Apply and repeat checks when orders are created; discount eligible lines only; test rules.
+- [ ] Track real AI attempts, outcomes and active time; add staff-only overall/tool/person dashboard, filters and export.
+- [ ] Move Site CMS and Brand & Store into Page Editor subsections without changing their storage.
+- [ ] Verify the new flows and document any credential-dependent checks.
+
 # Free customer and admin AI
 - [ ] Connect Groq Free securely — blocked: user will provide a valid GROQ_API_KEY later; xyz is not a usable credential.
 - [x] Add four key-ready placements: customer sofa finder, product Q&A, admin description drafting and customer-reply drafting.

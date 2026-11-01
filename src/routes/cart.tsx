@@ -4,7 +4,9 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { useCart } from "@/lib/cart";
 import { formatINR } from "@/lib/format";
-import { COL, fsFindOne, where } from "@/lib/db/firestore";
+import { useServerFn } from "@tanstack/react-start";
+import { validateCoupon } from "@/lib/coupon.functions";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/auth-context";
 import { toast } from "sonner";
 import { CouponCelebration } from "@/components/coupon-celebration";
@@ -27,6 +29,7 @@ export const Route = createFileRoute("/cart")({
 function CartPage() {
   const { items, remove, setQty, subtotal, discount, total, count, coupon, applyCoupon, removeCoupon } = useCart();
   const navigate = useNavigate();
+  const checkCoupon = useServerFn(validateCoupon);
   const { user } = useAuth();
   const deposit = Math.round(total * 0.2);
   const [code, setCode] = useState("");
@@ -38,14 +41,11 @@ function CartPage() {
     if (!c) return;
     setChecking(true);
     try {
-      type CouponDoc = { code: string; discount_type: "percent" | "flat"; discount_value: number; min_order_amount: number; active: boolean; valid_until: string | null };
-      // Rules only expose active coupons to shoppers, so the query must say so.
-      const data = await fsFindOne<CouponDoc>(COL.coupons, where("active", "==", true), where("code", "==", c));
-      if (!data || !data.active) return toast.error("Invalid or inactive coupon");
-      if (data.valid_until && new Date(data.valid_until) < new Date()) return toast.error("This coupon has expired");
-      if (subtotal < Number(data.min_order_amount)) return toast.error(`Minimum order ${formatINR(Number(data.min_order_amount))} required`);
-      applyCoupon({ code: data.code, discount_type: data.discount_type, discount_value: Number(data.discount_value), min_order_amount: Number(data.min_order_amount) });
-      toast.success(`Coupon ${data.code} applied!`);
+      if (!user) { toast.error("Sign in to check whether you can use this offer."); navigate({ to: "/auth", search: { redirect: "/cart" } as never }); return; }
+      const result = await checkCoupon({ data: { code: c, lines: items.map(i => ({ sofaId: i.sofaId, lineTotal: i.unitPrice * i.quantity })) } });
+      if (!result.ok || !result.coupon) return toast.error(!result.ok ? result.error : "Coupon could not be checked");
+      applyCoupon({ ...result.coupon, min_order_amount: Number(result.coupon.min_order_amount ?? 0), eligibleSofaIds: result.eligibleSofaIds, validatedFor: user.uid });
+      toast.success(`Coupon ${result.coupon.code} applied!`);
       setCode("");
       setCelebrate(true);
     } catch (e) {
@@ -150,6 +150,7 @@ function CartPage() {
                     <span>− {formatINR(discount)}</span>
                   </div>
                 )}
+                {coupon?.eligibleSofaIds && <p className="text-xs text-muted-foreground">Offer applies to: {items.filter(i => coupon.eligibleSofaIds?.includes(i.sofaId)).map(i => i.name).join(", ")}</p>}
                 <div className="border-t border-[color:var(--brand-dark)]/10 pt-3 flex justify-between items-baseline">
                   <span className="text-xs font-bold uppercase tracking-widest">Total</span>
                   <span className="font-display text-2xl">{formatINR(total)}</span>
@@ -158,7 +159,7 @@ function CartPage() {
                   <div className="pt-2">
                     <div className="flex gap-2">
                       <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="Coupon code" className="flex-1 px-3 py-2 text-xs border border-[color:var(--brand-dark)]/15 focus:border-[color:var(--brand-dark)] focus:outline-none" />
-                      <button onClick={applyCode} disabled={checking || !code} className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest border border-[color:var(--brand-dark)] hover:bg-[color:var(--brand-dark)] hover:text-white disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed">{checking ? "Checking…" : "Apply"}</button>
+                      <Button onClick={applyCode} disabled={checking || !code} className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest border border-[color:var(--brand-dark)] hover:bg-[color:var(--brand-dark)] hover:text-white disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed">{checking ? "Checking…" : "Apply"}</Button>
                     </div>
                     <p className="text-[10px] text-[color:var(--brand-dark)]/50 mt-2">Try TF5-WELCOME for 5% off orders over ₹20,000.</p>
                   </div>

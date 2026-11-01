@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/auth/auth-context";
 import { COL, fsGet, fsSet } from "@/lib/db/firestore";
+import { discountOn } from "./coupon-rules";
 import { logVisitor } from "@/lib/visitor-tracker";
 
 export type AppliedCoupon = {
@@ -8,6 +9,9 @@ export type AppliedCoupon = {
   discount_type: "percent" | "flat";
   discount_value: number;
   min_order_amount: number;
+  max_discount_amount?: number | null;
+  eligibleSofaIds?: string[] | null;
+  validatedFor?: string;
 };
 
 export type CartItem = {
@@ -87,7 +91,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (coupon) localStorage.setItem(COUPON_KEY, JSON.stringify(coupon));
       else localStorage.removeItem(COUPON_KEY);
     } catch {}
-  }, [items, coupon, hydrated]);
+  }, [items, coupon, hydrated, user?.uid]);
 
   // Pull the signed-in user's cart and merge it with whatever is on this device.
   useEffect(() => {
@@ -98,7 +102,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const remote = await fsGet<{ items?: CartItem[]; coupon?: AppliedCoupon | null }>(COL.carts, user.uid);
         if (cancelled) return;
         if (remote?.items?.length) setItems((cur) => mergeCarts(cur, remote.items ?? []));
-        if (remote?.coupon) setCoupon((cur) => cur ?? remote.coupon!);
+        if (remote?.coupon) setCoupon((cur) => cur ?? remote.coupon ?? null);
       } catch {
         /* offline / rules — keep the local cart */
       } finally {
@@ -120,10 +124,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const value = useMemo<CartContextValue>(() => {
     const subtotal = items.reduce((n, i) => n + i.quantity * i.unitPrice, 0);
     let discount = 0;
-    if (coupon && subtotal >= coupon.min_order_amount) {
-      discount = coupon.discount_type === "percent"
-        ? Math.round((subtotal * coupon.discount_value) / 100)
-        : Math.min(subtotal, coupon.discount_value);
+    if (coupon && coupon.validatedFor === user?.uid && subtotal >= coupon.min_order_amount) {
+      const eligibleSubtotal = items.filter(i => !coupon.eligibleSofaIds || coupon.eligibleSofaIds.includes(i.sofaId)).reduce((n, i) => n + i.unitPrice * i.quantity, 0);
+      discount = discountOn(coupon, eligibleSubtotal);
     }
     return {
       items,
@@ -186,7 +189,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       discount,
       total: Math.max(0, subtotal - discount),
     };
-  }, [items, coupon, hydrated]);
+  }, [items, coupon, hydrated, user?.uid]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
