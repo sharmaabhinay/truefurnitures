@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { COL, fsSet } from "@/lib/db/firestore";
 import { brandQueryKey, fetchBrand, DEFAULT_BRAND, FEATURE_LABELS, type BrandSettings } from "@/lib/brand";
@@ -15,7 +16,7 @@ export function SiteContentEditor({ section, onDirtyChange }: { section: "hero" 
   const qc = useQueryClient();
 
   // Single source of truth: site_settings row drives the storefront, emails, SEO and receipts.
-  const { data: brandRow } = useQuery({ queryKey: brandQueryKey, queryFn: fetchBrand });
+  const { data: brandRow, isPending, error } = useQuery({ queryKey: brandQueryKey, queryFn: fetchBrand });
   const [brand, setBrand] = useState<BrandSettings>(DEFAULT_BRAND);
   const [brandLoaded, setBrandLoaded] = useState(false);
   const [savingBrand, setSavingBrand] = useState(false);
@@ -64,6 +65,8 @@ export function SiteContentEditor({ section, onDirtyChange }: { section: "hero" 
     toast.success("Website details saved");
   };
 
+  if (error) return <p role="alert">Website details could not be loaded.</p>;
+  if (isPending || !brandLoaded) return <p>Loading website details…</p>;
   return <div className="bg-background text-foreground p-4 sm:p-6 space-y-5 rounded-md">
       {section === "hero" && (
         <Card>
@@ -172,18 +175,7 @@ export function SiteContentEditor({ section, onDirtyChange }: { section: "hero" 
             </div>
             <div className="sm:col-span-2 flex items-center justify-between py-1">
               <div className="text-[13px]">Show announcement bar</div>
-              <Button
-                type="button"
-                onClick={() => brandPatch("announcement_on", !brand.announcement_on)}
-                className="relative w-9 h-5 rounded-full transition-colors"
-               
-                aria-label="Toggle announcement bar"
-              >
-                <span
-                  className="absolute top-0.5 size-4 rounded-full bg-primary-foreground transition-all"
-                 
-                />
-              </Button>
+              <Switch checked={brand.announcement_on} onCheckedChange={v => brandPatch("announcement_on", v)} aria-label="Toggle announcement bar" />
             </div>
             <div className="sm:col-span-2 grid gap-2 rounded-lg p-3">
               <div className="text-[11px] uppercase tracking-[0.14em] mb-1">Customer verification</div>
@@ -192,30 +184,14 @@ export function SiteContentEditor({ section, onDirtyChange }: { section: "hero" 
                   Require phone OTP verification
                   <div className="text-[11px]">Customers must verify their mobile before an order is placed.</div>
                 </div>
-                <Button
-                  type="button"
-                  onClick={() => brandPatch("require_phone_verification", !brand.require_phone_verification)}
-                  className="relative w-9 h-5 rounded-full shrink-0 transition-colors"
-                 
-                  aria-label="Toggle phone verification"
-                >
-                  <span className="absolute top-0.5 size-4 rounded-full bg-primary-foreground transition-all" />
-                </Button>
+                <Switch checked={brand.require_phone_verification} onCheckedChange={v => brandPatch("require_phone_verification", v)} aria-label="Toggle phone verification" />
               </div>
               <div className="flex items-center justify-between py-1">
                 <div className="text-[13px]">
                   Require email verification
                   <div className="text-[11px]">Blocks checkout until the customer's email is confirmed.</div>
                 </div>
-                <Button
-                  type="button"
-                  onClick={() => brandPatch("require_email_verification", !brand.require_email_verification)}
-                  className="relative w-9 h-5 rounded-full shrink-0 transition-colors"
-                 
-                  aria-label="Toggle email verification"
-                >
-                  <span className="absolute top-0.5 size-4 rounded-full bg-primary-foreground transition-all" />
-                </Button>
+                <Switch checked={brand.require_email_verification} onCheckedChange={v => brandPatch("require_email_verification", v)} aria-label="Toggle email verification" />
               </div>
             </div>
             <div className="sm:col-span-2 grid gap-2 rounded-lg p-3">
@@ -231,15 +207,7 @@ export function SiteContentEditor({ section, onDirtyChange }: { section: "hero" 
                       {f.label}
                       <div className="text-[11px]">{f.hint}</div>
                     </div>
-                    <Button
-                      type="button"
-                      onClick={() => brandPatch("features", { ...(brand.features ?? DEFAULT_BRAND.features), [f.key]: !on })}
-                      className="relative w-9 h-5 rounded-full shrink-0 transition-colors cursor-pointer"
-                     
-                      aria-label={`Toggle ${f.label}`}
-                    >
-                      <span className="absolute top-0.5 size-4 rounded-full bg-primary-foreground transition-all" />
-                    </Button>
+                    <Switch checked={on} onCheckedChange={v => brandPatch("features", { ...(brand.features ?? DEFAULT_BRAND.features), [f.key]: v })} aria-label={`Toggle ${f.label}`} />
                   </div>
                 );
               })}
