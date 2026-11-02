@@ -7,11 +7,11 @@ export const ADMIN_ACTIONS = [
   ["carpenters", "Carpenters"], ["carpenterRequests", "Carpenter Requests"],
   ["manufacturers", "Manufacturers"], ["designs", "Saved Designs"], ["showrooms", "Showrooms"],
   ["careers", "Careers"], ["campaigns", "Ad Campaigns"], ["subscribers", "Subscribers"],
-  ["adminUsers", "Admin Users"], ["pageEditor", "Page editor"], ["invoice", "Download order invoice"],
+  ["adminUsers", "Admin Users"], ["pageEditor", "Page editor"], ["invoice", "Download order invoice"], ["aiUsage", "AI usage"],
 ] as const;
 export type AdminAction = (typeof ADMIN_ACTIONS)[number][0];
 export type Shortcut = { id: string; action: AdminAction; keys: string; enabled: boolean };
-const keys = ["d", "o", "c", "p", "f", "n", "s", "g a", "g c", "g v", "g q", "g i", "g t", "g r", "g u", "g b", "g h", "g j", "g m", "g d", "g s", "g k", "g w", "g n", "g u a", "g e", "o i"];
+const keys = ["d", "o", "c", "p", "f", "n", "s", "g a", "g c", "g v", "g q", "g i", "g t", "g r", "g u", "g b", "g h", "g j", "g m", "g d", "g s", "g k", "g w", "g n", "g u a", "g e", "o i", "g a i"];
 export const DEFAULT_SHORTCUTS: Shortcut[] = ADMIN_ACTIONS.map(([action], i) => ({ id: action, action, keys: keys[i] ?? "", enabled: true }));
 export const SHORTCUTS_CHANGED = "tf:admin-shortcuts-changed";
 export const INVOICE_SHORTCUT = "tf:download-order-invoice";
