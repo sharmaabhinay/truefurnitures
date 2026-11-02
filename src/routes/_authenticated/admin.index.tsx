@@ -39,6 +39,7 @@ import { FileManager, FilePickerModal } from "@/components/admin/file-manager";
 import { NotesManager } from "@/components/admin/notes-manager";
 import { PreviewThumbnail } from "@/components/admin/image-preview";
 import { ShortcutSettings } from "@/components/admin/shortcut-settings";
+import { AiUsage } from "@/components/admin/ai-usage";
 import { AiTool } from "@/components/ai-tool";
 import { listPopupEvents } from "@/lib/popup-analytics";
 import { sendQuoteStatusEmail } from "@/lib/email.functions";
@@ -73,6 +74,7 @@ export const Route = createFileRoute("/_authenticated/admin/")({
 type PanelKey =
   | "dashboard"
   | "analytics"
+  | "aiUsage"
   | "cartInsights"
   | "visitors"
   | "orders"
@@ -108,6 +110,7 @@ const NAV: NavGroup[] = [
       { key: "dashboard", label: "Dashboard", icon: <FiBarChart2 /> },
       { key: "analytics", label: "Sales Analytics", icon: <FiTrendingUp /> },
       { key: "cartInsights", label: "Cart Insights", icon: <FiShoppingCart /> },
+      { key: "aiUsage", label: "AI usage", icon: <FiActivity /> },
       { key: "visitors", label: "Visitor Analytics", icon: <FiEye /> },
     ],
   },
@@ -164,6 +167,7 @@ const TITLES: Record<PanelKey, string> = {
   dashboard: "Dashboard",
   analytics: "Sales Analytics",
   cartInsights: "Cart Insights",
+  aiUsage: "AI usage",
   visitors: "Visitor Analytics",
   orders: "Orders",
   customers: "Customers",
@@ -357,6 +361,7 @@ function AdminHome() {
           {panel === "dashboard" && <Dashboard onGo={setPanel} />}
           {panel === "analytics" && <SalesAnalytics />}
           {panel === "cartInsights" && <CartInsights />}
+          {panel === "aiUsage" && <AiUsage />}
           {panel === "visitors" && <Visitors />}
           {panel === "orders" && <Orders />}
           {panel === "customers" && <Customers />}
@@ -2933,59 +2938,8 @@ function Showrooms() {
 /* ================= SETTINGS ================= */
 
 function Settings() {
-  const TABS = ["Brand & Store", "Site CMS", "Keyboard shortcuts", "API Config", "Danger Zone"] as const;
-  const [tab, setTab] = useState<(typeof TABS)[number]>("Brand & Store");
-  const qc = useQueryClient();
-
-  // Single source of truth: site_settings row drives the storefront, emails, SEO and receipts.
-  const { data: brandRow } = useQuery({ queryKey: brandQueryKey, queryFn: fetchBrand });
-  const [brand, setBrand] = useState<BrandSettings>(DEFAULT_BRAND);
-  const [brandLoaded, setBrandLoaded] = useState(false);
-  const [savingBrand, setSavingBrand] = useState(false);
-  useEffect(() => {
-    if (brandRow && !brandLoaded) { setBrand(brandRow); setBrandLoaded(true); }
-  }, [brandRow, brandLoaded]);
-  const brandPatch = <K extends keyof BrandSettings>(k: K, v: BrandSettings[K]) => setBrand((p) => ({ ...p, [k]: v }));
-  const saveBrand = async () => {
-    setSavingBrand(true);
-    try {
-      await fsSet(COL.siteSettings, "default", {
-        brand_name: brand.brand_name,
-        tagline: brand.tagline,
-        cities: brand.cities,
-        established: brand.established,
-        phone: brand.phone,
-        whatsapp: brand.whatsapp.replace(/\D/g, ""),
-        email: brand.email,
-        address: brand.address,
-        meta_title: brand.meta_title,
-        meta_description: brand.meta_description,
-        deposit_rate: Number(brand.deposit_rate) || 20,
-        free_delivery_above: Number(brand.free_delivery_above) || 0,
-        delivery_note: brand.delivery_note,
-        announcement: brand.announcement,
-        announcement_on: brand.announcement_on,
-        require_phone_verification: brand.require_phone_verification,
-        require_email_verification: brand.require_email_verification,
-        hero_badge: brand.hero_badge,
-        hero_headline: brand.hero_headline,
-        hero_italic: brand.hero_italic,
-        hero_subtext: brand.hero_subtext,
-        hero_cta: brand.hero_cta,
-        hero_image: brand.hero_image,
-        features: brand.features,
-
-      });
-    } catch (e) {
-      setSavingBrand(false);
-      toast.error(e instanceof Error ? e.message : "Save failed");
-      return;
-    }
-    setSavingBrand(false);
-    await qc.invalidateQueries({ queryKey: brandQueryKey });
-    toast.success("Brand details saved — applied across the site, emails and receipts.");
-  };
-
+  const TABS = ["Keyboard shortcuts", "API Config", "Danger Zone"] as const;
+  const [tab, setTab] = useState<(typeof TABS)[number]>("Keyboard shortcuts");
   const [apiUrl, setApiUrl] = useState("");
 
   useEffect(() => {
@@ -3041,203 +2995,6 @@ function Settings() {
       </div>
 
       {tab === "Keyboard shortcuts" && <ShortcutSettings />}
-
-      {tab === "Site CMS" && (
-        <Card>
-          <CardTitle right="Controls the storefront">Site CMS</CardTitle>
-          <div className="grid gap-x-6 md:grid-cols-2">
-            <div className="space-y-4">
-              <div className="text-[11px] uppercase tracking-[0.14em]" style={{ color: "#C8A86B" }}>
-                Hero Section
-              </div>
-              <Field label="Hero Headline">
-                <DarkInput value={brand.hero_headline} onChange={(e) => brandPatch("hero_headline", e.target.value)} />
-              </Field>
-              <Field label="Hero Headline (italic line)">
-                <DarkInput value={brand.hero_italic} onChange={(e) => brandPatch("hero_italic", e.target.value)} />
-              </Field>
-              <Field label="Hero Sub-text">
-                <DarkTextarea rows={3} value={brand.hero_subtext} onChange={(e) => brandPatch("hero_subtext", e.target.value)} />
-              </Field>
-              <Field label="Hero Badge">
-                <DarkInput value={brand.hero_badge} onChange={(e) => brandPatch("hero_badge", e.target.value)} />
-              </Field>
-              <Field label="Primary CTA Label">
-                <DarkInput value={brand.hero_cta} onChange={(e) => brandPatch("hero_cta", e.target.value)} />
-              </Field>
-            </div>
-            <div className="space-y-4">
-              <div className="text-[11px] uppercase tracking-[0.14em]" style={{ color: "#C8A86B" }}>
-                Media & SEO
-              </div>
-              <Field label="Hero Image URL">
-                <DarkInput value={brand.hero_image} onChange={(e) => brandPatch("hero_image", e.target.value)} placeholder="https://…" />
-                {brand.hero_image && (
-                  <img src={brand.hero_image} alt="" className="mt-3 w-full h-32 object-cover rounded-md opacity-70" />
-                )}
-              </Field>
-              <div className="rounded-md p-3 text-[12px]" style={{ background: "rgba(200,168,107,0.08)", border: "1px solid #2A2A38", color: "#888899" }}>
-                SEO meta, announcement bar, WhatsApp number and the delivery note now live in the
-                <strong style={{ color: "#C8A86B" }}> Brand &amp; Store </strong> tab, so one edit updates the site,
-                emails and receipts together.
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={saveBrand}
-            disabled={savingBrand}
-            className="mt-6 rounded-md px-6 py-2.5 text-[13px] font-semibold disabled:opacity-60"
-            style={{ background: "#C8A86B", color: "#1a1a1a" }}
-          >
-            {savingBrand ? "Saving…" : "Save & publish to live site"}
-          </button>
-        </Card>
-      )}
-
-      {tab === "Brand & Store" && (
-        <Card>
-          <CardTitle right="One place — applies everywhere">Brand & Store</CardTitle>
-          <p className="text-[12px] mb-4" style={{ color: "#888899" }}>
-            These details are the single source of truth. Changing them updates the storefront, page titles &amp; social
-            previews, every Resend email, and order receipts automatically.
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Brand Name">
-              <DarkInput value={brand.brand_name} onChange={(e) => brandPatch("brand_name", e.target.value)} />
-            </Field>
-            <Field label="Tagline">
-              <DarkInput value={brand.tagline} onChange={(e) => brandPatch("tagline", e.target.value)} />
-            </Field>
-            <Field label="Cities">
-              <DarkInput value={brand.cities} onChange={(e) => brandPatch("cities", e.target.value)} />
-            </Field>
-            <Field label="Established">
-              <DarkInput value={brand.established} onChange={(e) => brandPatch("established", e.target.value)} />
-            </Field>
-            <Field label="Phone">
-              <DarkInput value={brand.phone} onChange={(e) => brandPatch("phone", e.target.value)} />
-            </Field>
-            <Field label="WhatsApp (digits, with country code)">
-              <DarkInput value={brand.whatsapp} onChange={(e) => brandPatch("whatsapp", e.target.value)} />
-            </Field>
-            <Field label="Email">
-              <DarkInput value={brand.email} onChange={(e) => brandPatch("email", e.target.value)} />
-            </Field>
-            <Field label="Address">
-              <DarkInput value={brand.address} onChange={(e) => brandPatch("address", e.target.value)} />
-            </Field>
-            <Field label="Advance Deposit (%)">
-              <DarkInput type="number" value={brand.deposit_rate} onChange={(e) => brandPatch("deposit_rate", Number(e.target.value))} />
-            </Field>
-            <Field label="Free Delivery Above (₹)">
-              <DarkInput type="number" value={brand.free_delivery_above} onChange={(e) => brandPatch("free_delivery_above", Number(e.target.value))} />
-            </Field>
-            <div className="sm:col-span-2">
-              <Field label="Delivery Note">
-                <DarkInput value={brand.delivery_note} onChange={(e) => brandPatch("delivery_note", e.target.value)} />
-              </Field>
-            </div>
-            <div className="sm:col-span-2">
-              <Field label="Meta Title (SEO)">
-                <DarkInput value={brand.meta_title} onChange={(e) => brandPatch("meta_title", e.target.value)} />
-              </Field>
-            </div>
-            <div className="sm:col-span-2">
-              <Field label="Meta Description (SEO)">
-                <DarkTextarea rows={2} value={brand.meta_description} onChange={(e) => brandPatch("meta_description", e.target.value)} />
-              </Field>
-            </div>
-            <div className="sm:col-span-2 flex items-center justify-between py-1">
-              <div className="text-[13px]">Show announcement bar</div>
-              <button
-                type="button"
-                onClick={() => brandPatch("announcement_on", !brand.announcement_on)}
-                className="relative w-9 h-5 rounded-full transition-colors"
-                style={{ background: brand.announcement_on ? "#4CAF82" : "#2A2A38" }}
-                aria-label="Toggle announcement bar"
-              >
-                <span
-                  className="absolute top-0.5 size-4 rounded-full bg-white transition-all"
-                  style={{ left: brand.announcement_on ? "18px" : "2px" }}
-                />
-              </button>
-            </div>
-            <div className="sm:col-span-2 grid gap-2 rounded-lg p-3" style={{ background: "#16161D", border: "1px solid #2A2A38" }}>
-              <div className="text-[11px] uppercase tracking-[0.14em] mb-1" style={{ color: "#C8A86B" }}>Customer verification</div>
-              <div className="flex items-center justify-between py-1">
-                <div className="text-[13px]">
-                  Require phone OTP verification
-                  <div className="text-[11px]" style={{ color: "#888899" }}>Customers must verify their mobile before an order is placed.</div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => brandPatch("require_phone_verification", !brand.require_phone_verification)}
-                  className="relative w-9 h-5 rounded-full shrink-0 transition-colors"
-                  style={{ background: brand.require_phone_verification ? "#4CAF82" : "#2A2A38" }}
-                  aria-label="Toggle phone verification"
-                >
-                  <span className="absolute top-0.5 size-4 rounded-full bg-white transition-all" style={{ left: brand.require_phone_verification ? "18px" : "2px" }} />
-                </button>
-              </div>
-              <div className="flex items-center justify-between py-1">
-                <div className="text-[13px]">
-                  Require email verification
-                  <div className="text-[11px]" style={{ color: "#888899" }}>Blocks checkout until the customer's email is confirmed.</div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => brandPatch("require_email_verification", !brand.require_email_verification)}
-                  className="relative w-9 h-5 rounded-full shrink-0 transition-colors"
-                  style={{ background: brand.require_email_verification ? "#4CAF82" : "#2A2A38" }}
-                  aria-label="Toggle email verification"
-                >
-                  <span className="absolute top-0.5 size-4 rounded-full bg-white transition-all" style={{ left: brand.require_email_verification ? "18px" : "2px" }} />
-                </button>
-              </div>
-            </div>
-            <div className="sm:col-span-2 grid gap-2 rounded-lg p-3" style={{ background: "#16161D", border: "1px solid #2A2A38" }}>
-              <div className="text-[11px] uppercase tracking-[0.14em] mb-1" style={{ color: "#C8A86B" }}>Storefront sections</div>
-              <div className="text-[11px] mb-1" style={{ color: "#888899" }}>
-                Switch a section off to hide its buttons, nav links and the page itself.
-              </div>
-              {FEATURE_LABELS.map((f) => {
-                const on = brand.features?.[f.key] ?? true;
-                return (
-                  <div key={f.key} className="flex items-center justify-between py-1">
-                    <div className="text-[13px]">
-                      {f.label}
-                      <div className="text-[11px]" style={{ color: "#888899" }}>{f.hint}</div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => brandPatch("features", { ...(brand.features ?? DEFAULT_BRAND.features), [f.key]: !on })}
-                      className="relative w-9 h-5 rounded-full shrink-0 transition-colors cursor-pointer"
-                      style={{ background: on ? "#4CAF82" : "#2A2A38" }}
-                      aria-label={`Toggle ${f.label}`}
-                    >
-                      <span className="absolute top-0.5 size-4 rounded-full bg-white transition-all" style={{ left: on ? "18px" : "2px" }} />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="sm:col-span-2">
-              <Field label="Announcement Text">
-                <DarkInput value={brand.announcement ?? ""} onChange={(e) => brandPatch("announcement", e.target.value)} placeholder='e.g. "🎉 Sale — 20% off recliners"' />
-              </Field>
-            </div>
-          </div>
-          <button
-            onClick={saveBrand}
-            disabled={savingBrand}
-            className="mt-6 rounded-md px-6 py-2.5 text-[13px] font-semibold disabled:opacity-60"
-            style={{ background: "#C8A86B", color: "#1a1a1a" }}
-          >
-            {savingBrand ? "Saving…" : "💾 Save Brand Details"}
-          </button>
-        </Card>
-      )}
 
       {tab === "API Config" && (
         <Card>
