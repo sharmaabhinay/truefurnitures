@@ -11,6 +11,23 @@ import { fetchLayouts, layoutKey } from "@/components/page-sections";
 import { useAuth } from "@/lib/auth/auth-context";
 import { uploadToCloudinary } from "@/lib/upload";
 import { toast } from "sonner";
+import { SiteContentEditor } from "./site-content-editor";
+
+export function PageEditor() {
+  const [tab, setTab] = useState<"home" | "product" | "hero" | "brand">("home");
+  const [dirty, setDirty] = useState(false);
+  const { isAdmin } = useAuth();
+  if (!isAdmin) return <p className="text-muted-foreground">Only an Owner can edit storefront pages.</p>;
+  return <div className="space-y-4">
+    <div className="flex flex-wrap gap-2" role="tablist" aria-label="Website editing">
+      {([['home', 'Home layout'], ['product', 'Product page layout'], ['hero', 'Hero & homepage text'], ['brand', 'Brand & store']] as const).map(([key, label]) => <Button key={key} role="tab" aria-selected={tab === key} variant={tab === key ? "default" : "outline"} onClick={() => {
+        if (key === tab || (dirty && !window.confirm("Discard unsaved changes?"))) return;
+        setDirty(false); setTab(key);
+      }}>{label}</Button>)}
+    </div>
+    {tab === "home" || tab === "product" ? <PageLayoutEditor key={tab} initialPage={tab} onDirtyChange={setDirty} /> : <SiteContentEditor key={tab} section={tab} onDirtyChange={setDirty} />}
+  </div>;
+}
 
 function SectionRow({ section, selected, onSelect, onMove, onToggle, onRemove, first, last }: {
   section: PageSection; selected: boolean; onSelect: () => void; onMove: (direction: number) => void; onToggle: () => void; onRemove: () => void; first: boolean; last: boolean;
@@ -28,13 +45,13 @@ function SectionRow({ section, selected, onSelect, onMove, onToggle, onRemove, f
   </li>;
 }
 
-export function PageEditor() {
+function PageLayoutEditor({ initialPage, onDirtyChange }: { initialPage: PageKind; onDirtyChange: (dirty: boolean) => void }) {
   const { isAdmin } = useAuth();
   const client = useQueryClient();
   const { data, isPending, error, refetch } = useQuery({ queryKey: layoutKey, queryFn: fetchLayouts });
   const { data: products = [] } = useQuery({ queryKey: ["editor-products"], queryFn: () => fsList<{ id: string; slug: string; name: string }>(COL.sofas, where("is_published", "==", true)) });
-  const [page, setPage] = useState<PageKind>("home");
-  const [rows, setRows] = useState<PageSection[]>(defaults("home"));
+  const [page, setPage] = useState<PageKind>(initialPage);
+  const [rows, setRows] = useState<PageSection[]>(defaults(initialPage));
   const [dirty, setDirty] = useState(false), [saving, setSaving] = useState(false), [uploading, setUploading] = useState(false);
   const [selected, setSelected] = useState<string | null>(null), [addType, setAddType] = useState("text");
   const [productSlug, setProductSlug] = useState("");
@@ -42,6 +59,7 @@ export function PageEditor() {
   const rowsRef = useRef(rows); rowsRef.current = rows;
   const pageRef = useRef(page); pageRef.current = page;
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
+  useEffect(() => { onDirtyChange(dirty); }, [dirty, onDirtyChange]);
   useEffect(() => { if (!dirty && !isPending) setRows(normalizeLayout(data?.[page], page)); }, [data, page, dirty, isPending]);
   const sendPreview = () => frame.current?.contentWindow?.postMessage({ kind: "tf-page-preview", page: pageRef.current, sections: rowsRef.current }, window.location.origin);
   useEffect(() => { sendPreview(); }, [rows, page]);

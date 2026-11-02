@@ -16,7 +16,8 @@ export type Coupon = {
   max_order_amount?: number | null;
   valid_from?: string | null;
   valid_until?: string | null;
-  applies_to?: "all" | "products";
+  applies_to?: "all" | "products" | "categories";
+  category_ids?: string[];
   product_ids?: string[];
   include_cities?: string[];
   exclude_cities?: string[];
@@ -43,6 +44,7 @@ const BLANK: Omit<Coupon, "id"> = {
   valid_until: null,
   applies_to: "all",
   product_ids: [],
+  category_ids: [],
   include_cities: [],
   exclude_cities: [],
   new_customers_only: false,
@@ -70,6 +72,7 @@ export function CouponManager() {
     queryKey: ["admin-coupon-sofas"],
     queryFn: async () => fsList<{ id: string; name: string }>(COL.sofas),
   });
+  const { data: categories = [] } = useQuery({ queryKey: ["admin-coupon-categories"], queryFn: () => fsList<{ id: string; name: string }>(COL.categories) });
 
   const rows = useMemo(() => {
     const list = data ?? [];
@@ -136,7 +139,7 @@ export function CouponManager() {
                   <li>
                     Window: {c.valid_from ? formatDate(c.valid_from) : "anytime"} → {c.valid_until ? formatDate(c.valid_until) : "no end"}
                   </li>
-                  <li>Products: {c.applies_to === "products" ? `${c.product_ids?.length ?? 0} selected` : "all products"}</li>
+                  <li>Products: {c.applies_to === "products" ? `${c.product_ids?.length ?? 0} selected` : c.applies_to === "categories" ? `${c.category_ids?.length ?? 0} categories` : "all products"}</li>
                   {!!c.include_cities?.length && <li>Only in: {c.include_cities.join(", ")}</li>}
                   {!!c.exclude_cities?.length && <li>Not in: {c.exclude_cities.join(", ")}</li>}
                   {c.new_customers_only && <li>New customers only</li>}
@@ -161,6 +164,7 @@ export function CouponManager() {
         <CouponEditor
           coupon={editing}
           sofas={sofas ?? []}
+          categories={categories}
           onClose={() => setEditing(null)}
           onSaved={refresh}
         />
@@ -172,11 +176,13 @@ export function CouponManager() {
 function CouponEditor({
   coupon,
   sofas,
+  categories,
   onClose,
   onSaved,
 }: {
   coupon: Coupon;
   sofas: { id: string; name: string }[];
+  categories: { id: string; name: string }[];
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -204,12 +210,13 @@ function CouponEditor({
       valid_until: f.valid_until || null,
       applies_to: f.applies_to ?? "all",
       product_ids: f.applies_to === "products" ? f.product_ids ?? [] : [],
+      category_ids: f.applies_to === "categories" ? f.category_ids ?? [] : [],
       include_cities: f.include_cities ?? [],
       exclude_cities: f.exclude_cities ?? [],
       new_customers_only: !!f.new_customers_only,
       min_orders_count: Number(f.min_orders_count) || 0,
       max_uses: f.max_uses ? Number(f.max_uses) : null,
-      max_uses_per_user: f.max_uses_per_user ? Number(f.max_uses_per_user) : null,
+      max_uses_per_user: f.max_uses_per_user ?? 1,
       stackable: !!f.stackable,
       first_order_free_delivery: !!f.first_order_free_delivery,
       active: !!f.active,
@@ -287,9 +294,10 @@ function CouponEditor({
       <Section title="Where it applies">
         <div className="grid gap-3 sm:grid-cols-2">
           <AField label="Products">
-            <ASelect value={f.applies_to ?? "all"} onChange={(e) => set("applies_to", e.target.value as "all" | "products")}>
+            <ASelect value={f.applies_to ?? "all"} onChange={(e) => set("applies_to", e.target.value as Coupon["applies_to"])}>
               <option value="all">All products</option>
               <option value="products">Only selected products</option>
+              <option value="categories">Only selected categories</option>
             </ASelect>
           </AField>
           <AField label="Usage cap (total)" hint="optional">
@@ -316,6 +324,7 @@ function CouponEditor({
             {sofas.length === 0 && <span className="text-[12px]" style={{ color: dark.mute }}>No products found.</span>}
           </div>
         )}
+        {f.applies_to === "categories" && <div className="grid gap-2 sm:grid-cols-2 mt-3">{categories.map(c => <label key={c.id} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={(f.category_ids ?? []).includes(c.id)} onChange={e => set("category_ids", e.target.checked ? [...(f.category_ids ?? []), c.id] : (f.category_ids ?? []).filter(id => id !== c.id))} />{c.name}</label>)}</div>}
         <div className="grid gap-3 sm:grid-cols-2 mt-3">
           <AField label="Valid only in cities" hint="comma separated, empty = everywhere">
             <AInput value={(f.include_cities ?? []).join(", ")} onChange={(e) => set("include_cities", csv(e.target.value))} placeholder="Indore, Ujjain" />
@@ -331,8 +340,8 @@ function CouponEditor({
           <AField label="Minimum past orders" hint="0 = anyone">
             <AInput type="number" min={0} value={f.min_orders_count ?? 0} onChange={(e) => set("min_orders_count", Number(e.target.value))} />
           </AField>
-          <AField label="Uses per customer">
-            <AInput type="number" min={1} value={f.max_uses_per_user ?? 1} onChange={(e) => set("max_uses_per_user", Number(e.target.value))} />
+          <AField label="Uses per customer" hint="0 = unlimited">
+            <AInput type="number" min={0} value={f.max_uses_per_user ?? 1} onChange={(e) => set("max_uses_per_user", Number(e.target.value))} />
           </AField>
         </div>
         <div className="flex flex-wrap gap-5 mt-4">
