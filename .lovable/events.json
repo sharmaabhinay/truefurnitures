@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "events": {
+    "project.coupon_applied": {
+      "event_schema_version": 1,
+      "description": "A customer's coupon passed validation and was applied to the cart.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "item_count": {
+            "type": "number"
+          }
+        }
+      }
+    }
+  }
+}
