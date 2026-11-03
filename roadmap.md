@@ -1,9 +1,9 @@
 # Roadmap — fix issues from test report (Oct 2026)
 
 # Coupon checks, AI reporting and consolidated CMS
-- [ ] Wire coupon validation to Apply and repeat checks when orders are created; discount eligible lines only; test rules.
-- [ ] Track real AI attempts, outcomes and active time; add staff-only overall/tool/person dashboard, filters and export.
-- [ ] Move Site CMS and Brand & Store into Page Editor subsections without changing their storage.
+- [x] Wire coupon validation to Apply and repeat checks when orders are created; discount eligible lines only; test rules.
+- [x] Track real AI attempts, outcomes and active time; add staff-only overall/tool/person dashboard, filters and export.
+- [x] Move Site CMS and Brand & Store into Page Editor subsections without changing their storage.
 - [ ] Verify the new flows and document any credential-dependent checks.
 
 # Free customer and admin AI
