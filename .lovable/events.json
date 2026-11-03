@@ -23,6 +23,67 @@
           }
         }
       }
+    },
+    "project.coupon_rejected": {
+      "event_schema_version": 1,
+      "description": "A coupon a customer tried to apply was rejected or could not be checked.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "reason"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "not_eligible",
+              "check_failed"
+            ]
+          }
+        }
+      }
+    },
+    "project.purchase_completed": {
+      "event_schema_version": 1,
+      "description": "Checkout placed the customer's orders, with or without a coupon.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "order_count",
+          "used_coupon"
+        ],
+        "properties": {
+          "order_count": {
+            "type": "number"
+          },
+          "total": {
+            "type": "number"
+          },
+          "discount": {
+            "type": "number"
+          },
+          "used_coupon": {
+            "type": "boolean"
+          },
+          "coupon_code": {
+            "type": "string"
+          }
+        }
+      }
     }
   }
 }
