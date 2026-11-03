@@ -43,12 +43,17 @@ function CartPage() {
     try {
       if (!user) { toast.error("Sign in to check whether you can use this offer."); navigate({ to: "/auth", search: { redirect: "/cart" } as never }); return; }
       const result = await checkCoupon({ data: { code: c, lines: items.map(i => ({ sofaId: i.sofaId, lineTotal: i.unitPrice * i.quantity })) } });
-      if (!result.ok || !result.coupon) return toast.error(!result.ok ? result.error : "Coupon could not be checked");
+      if (!result.ok || !result.coupon) {
+        window.__lovableEvents?.track?.("project.coupon_rejected", { code: c, reason: "not_eligible" });
+        return toast.error(!result.ok ? result.error : "Coupon could not be checked");
+      }
+      window.__lovableEvents?.track?.("project.coupon_applied", { code: result.coupon.code, item_count: items.length });
       applyCoupon({ ...result.coupon, min_order_amount: Number(result.coupon.min_order_amount ?? 0), eligibleSofaIds: result.eligibleSofaIds, validatedFor: user.uid });
       toast.success(`Coupon ${result.coupon.code} applied!`);
       setCode("");
       setCelebrate(true);
     } catch (e) {
+      window.__lovableEvents?.track?.("project.coupon_rejected", { code: c, reason: "check_failed" });
       toast.error(e instanceof Error ? e.message : "Could not apply");
     } finally { setChecking(false); }
   };

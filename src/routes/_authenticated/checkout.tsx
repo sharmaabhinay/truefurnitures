@@ -323,6 +323,7 @@ function Checkout() {
         };
       });
       const orderIds = await placeOrders({ data: { code: coupon?.code ?? null, checkoutId, orders: orderDrafts } });
+      window.__lovableEvents?.track?.("project.purchase_completed", { order_count: orderIds.length, total: Number(total) || 0, discount: Number(discount) || 0, used_coupon: Boolean(coupon?.code), coupon_code: coupon?.code ?? "none" });
       if (orderIds.length === 0) throw new Error("Could not create order");
 
       clear();
