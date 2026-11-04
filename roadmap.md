@@ -49,6 +49,8 @@
 - [x] Verify gallery interactions, FAQs and timeline on desktop and mobile.
 
 # Admin page editor
+- [x] Refine tab alignment and selected states for desktop and mobile.
+- [x] Verify the tab control on desktop/mobile and with keyboard navigation in an isolated presentation check; signed-in full editor was not retested.
 - [x] Add drag-and-drop home and product page editor with section controls and preview.
 - [x] Apply saved arrangements and added sections to storefront pages.
 - [x] Test ordering, saving and storefront display with a temporary owner; restore original layouts and remove test account.
