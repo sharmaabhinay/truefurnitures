@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { aiInput, isAdminAi, type AiResult } from "./ai-contract";
 import { requireFirebaseAuth } from "@/lib/auth/firebase-auth-middleware";
 import { isProductLive } from "@/lib/availability";
+import { AI_DISABLED_MESSAGE } from "./ai-features";
 
 export const askCustomerAi = createServerFn({ method: "POST" })
   .inputValidator((value: unknown) => aiInput.parse(value))
@@ -9,6 +10,11 @@ export const askCustomerAi = createServerFn({ method: "POST" })
     if (isAdminAi(data.task)) return { text: "", error: "This AI action requires staff access." };
     const { requireAiSession, recordAiOutcome } = await import("./ai-usage.server");
     const session = await requireAiSession(data.sessionId, data.task);
+    const { isAiFeatureEnabled } = await import("./ai-features.server");
+    if (!await isAiFeatureEnabled(data.task)) {
+      await recordAiOutcome(session.id, "blocked");
+      return { text: "", error: AI_DISABLED_MESSAGE };
+    }
     const key = process.env["GROQ_API_KEY"];
     const finish = async (result: AiResult) => { await recordAiOutcome(session.id, !key || key.trim() === "xyz" ? "blocked" : result.error ? "failures" : "successes"); return result; };
     const { generateAi } = await import("./ai.server");
@@ -41,6 +47,11 @@ export const draftAdminAi = createServerFn({ method: "POST" })
     const { generateAi } = await import("./ai.server");
     const { requireAiSession, recordAiOutcome } = await import("./ai-usage.server");
     const session = await requireAiSession(data.sessionId, data.task, context.userId);
+    const { isAiFeatureEnabled } = await import("./ai-features.server");
+    if (!await isAiFeatureEnabled(data.task)) {
+      await recordAiOutcome(session.id, "blocked");
+      return { text: "", error: AI_DISABLED_MESSAGE };
+    }
     const result = await generateAi(data, key);
     await recordAiOutcome(session.id, !key || key.trim() === "xyz" ? "blocked" : result.error ? "failures" : "successes");
     return result;
