@@ -26,6 +26,7 @@
 - Generate order invoices client-side from recorded amounts with locally served combined Latin/Devanagari fonts embedded without subsetting and a reference-only QR; pre-generate before download to preserve mobile user activation and never fabricate GST details. Full embedding preserves merged glyph IDs in PDF viewers.
 - AI tools use shared validated RPC boundaries and server-only Groq streaming with a project secret; missing credentials disable generation without fabricated answers, public advice reads published facts server-side, and staff drafts never save or send automatically.
 - AI usage is persisted server-side and aggregated by tool/person with measured active session time; blocked requests remain distinct from completed answers.
+- Store individual AI switches in a dedicated site-settings document, patch only the changed tool, and enforce persisted values on session opening and generation; unrelated CMS saves cannot re-enable tools.
 - Page Editor owns layout and brand/content subsections; content saves retain the existing settings document, while layouts remain isolated to prevent accidental overwrites.
 - Keep Page Editor tab navigation in a presentation-only control so its mobile and keyboard behavior can be checked without loading protected store data.
 - Checkout coupon checks run again inside an atomic order transaction and use a per-account checkout receipt for retry idempotency; client discounts never determine recorded totals.

@@ -3,6 +3,7 @@ import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireFirebaseAuth } from "./auth/firebase-auth-middleware";
 import type { AiUsageRow } from "./ai-usage";
+import { AI_DISABLED_MESSAGE } from "./ai-features";
 
 export const openAiSession = createServerFn({ method: "POST" })
   .inputValidator((v: unknown) => z.object({ task: z.enum(["finder", "question", "description", "reply"]), guestId: z.string().uuid() }).parse(v))
@@ -15,6 +16,8 @@ export const openAiSession = createServerFn({ method: "POST" })
       const { staffOnly } = await import("./admin-data.functions");
       await staffOnly(user.role, user.uid);
     }
+    const { isAiFeatureEnabled } = await import("./ai-features.server");
+    if (!await isAiFeatureEnabled(data.task)) throw new Error(AI_DISABLED_MESSAGE);
     const profile = user ? await adminGetDoc("profiles", user.uid) : null;
     const id = crypto.randomUUID();
     const now = new Date().toISOString();

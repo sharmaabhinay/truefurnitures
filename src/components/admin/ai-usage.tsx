@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { getAiUsage } from "@/lib/ai-usage.functions";
 import { AI_TOOLS, summarizeAiUsage } from "@/lib/ai-usage";
 import { downloadCsv } from "@/lib/export";
+import { AiFeatureControls } from "./ai-feature-controls";
 
 export function AiUsage() {
   const read = useServerFn(getAiUsage);
@@ -15,6 +16,7 @@ export function AiUsage() {
   const report = useMemo(() => summarizeAiUsage(query.data ?? []), [query.data]);
   const people = report.people.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
   return <div className="bg-background text-foreground p-4 sm:p-6 space-y-6 rounded-md">
+    <AiFeatureControls />
     <div className="flex flex-wrap justify-between gap-3"><div className="flex gap-2">{([7, 30, 365] as const).map(n => <Button key={n} variant={days === n ? "default" : "outline"} onClick={() => setDays(n)}>{n === 365 ? "12 months" : `${n} days`}</Button>)}</div><div className="flex gap-2"><Button variant="outline" onClick={() => void query.refetch()} disabled={query.isFetching}><RefreshCw />Refresh</Button><Button variant="outline" disabled={!report.people.length} onClick={() => downloadCsv("ai-usage", report.people.map(p => ({ name: p.name, role: p.role, uses: p.attempts, minutes: (p.seconds / 60).toFixed(2), ...p.tools, last_used: p.last })))}><Download />Export</Button></div></div>
     {query.isPending ? <p>Loading AI usage…</p> : query.error ? <p role="alert" className="text-destructive">AI usage could not be loaded. Please refresh.</p> : <>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">{[["Requests", report.total.attempts], ["People", report.total.users], ["Total hours", (report.total.seconds / 3600).toFixed(2)], ["Avg minutes / session", (report.total.seconds / Math.max(1, report.total.sessions) / 60).toFixed(2)], ["Failed / not connected", `${report.total.failures} / ${report.total.blocked}`]].map(([label, value]) => <div key={label} className="border border-border rounded-md p-4"><p className="text-xs text-muted-foreground">{label}</p><p className="text-2xl font-semibold mt-2">{value}</p></div>)}</div>
