@@ -1,5 +1,10 @@
 # Roadmap — fix issues from test report (Oct 2026)
 
+# WhatsApp call to action
+- [ ] Add animated customer WhatsApp enquiry button using the saved business number.
+- [ ] Add staff-only visibility, clicks, session click rate, page/device breakdown, trends and export.
+- [ ] Test the button and reporting; state any live verification blocker.
+
 # Coupon checks, AI reporting and consolidated CMS
 - [x] Wire coupon validation to Apply and repeat checks when orders are created; discount eligible lines only; test rules.
 - [x] Track real AI attempts, outcomes and active time; add staff-only overall/tool/person dashboard, filters and export.

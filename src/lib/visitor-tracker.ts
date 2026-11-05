@@ -12,6 +12,7 @@ export type VisitorEvent = {
     | "add_to_cart"
     | "quote"
     | "newsletter";
+    
   time: string;
   page?: string;
   item?: string;
