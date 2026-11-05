@@ -20,6 +20,7 @@ import { NavigationProgress } from "@/components/navigation-progress";
 import { LaunchSplash } from "@/components/launch-splash";
 import { ReminderWatcher } from "@/components/admin/reminder-watcher";
 import { AdminKeyboardShortcuts } from "@/components/admin/keyboard-shortcuts";
+import { WhatsAppCta } from "@/components/whatsapp-cta";
 
 function NotFoundComponent() {
   return (
@@ -168,6 +169,7 @@ function RootComponent() {
         <ReminderWatcher />
         <AdminKeyboardShortcuts />
         <Outlet />
+        <WhatsAppCta />
         <LaunchSplash />
             <VisitorTrackerBoot />
             <WelcomeModal />

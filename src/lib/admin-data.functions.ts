@@ -372,6 +372,25 @@ export const getProductAnalytics = createServerFn({ method: "GET" })
   });
 
 /** Staff-only manufacturer list, read with admin credentials. */
+export const getCtaAnalytics = createServerFn({ method: "GET" })
+  .middleware([requireFirebaseAuth])
+  .inputValidator((d: unknown) => z.object({ days: z.union([z.literal(7), z.literal(30), z.literal(365)]) }).parse(d))
+  .handler(async ({ context, data }) => {
+    await staffOnly(context.role, context.userId);
+    const { adminQuery } = await import("@/lib/firebase-admin.server");
+    const start = new Date(); start.setUTCHours(0, 0, 0, 0);
+    start.setUTCDate(start.getUTCDate() - data.days + 1);
+    const meta: ReadMeta = {};
+    const rows = await safeQuery(adminQuery, "visitors", [
+      { field: "time", op: "GREATER_THAN_OR_EQUAL", value: start.toISOString() },
+    ], meta);
+    return { events: rows.filter(r => r["type"] === "cta_impression" || r["type"] === "cta_click").map(r => ({
+      type: r["type"] as "cta_impression" | "cta_click", time: String(r["time"]),
+      page: String(r["page"] ?? "Unknown"), session: String(r["session"] ?? ""), ua: String(r["ua"] ?? ""),
+    })), staleSince: meta.staleSince ?? null };
+  });
+
+/** Staff-only manufacturer list, read with admin credentials. */
 export const listAdminManufacturers = createServerFn({ method: "GET" })
   .middleware([requireFirebaseAuth])
   .handler(async ({ context }) => {

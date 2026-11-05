@@ -40,6 +40,7 @@ import { NotesManager } from "@/components/admin/notes-manager";
 import { PreviewThumbnail } from "@/components/admin/image-preview";
 import { ShortcutSettings } from "@/components/admin/shortcut-settings";
 import { AiUsage } from "@/components/admin/ai-usage";
+import { CtaReport } from "@/components/admin/cta-report";
 import { AiTool } from "@/components/ai-tool";
 import { listPopupEvents } from "@/lib/popup-analytics";
 import { sendQuoteStatusEmail } from "@/lib/email.functions";
@@ -75,6 +76,7 @@ type PanelKey =
   | "dashboard"
   | "analytics"
   | "aiUsage"
+  | "ctaReport"
   | "cartInsights"
   | "visitors"
   | "orders"
@@ -111,6 +113,7 @@ const NAV: NavGroup[] = [
       { key: "analytics", label: "Sales Analytics", icon: <FiTrendingUp /> },
       { key: "cartInsights", label: "Cart Insights", icon: <FiShoppingCart /> },
       { key: "aiUsage", label: "AI usage", icon: <FiActivity /> },
+      { key: "ctaReport", label: "WhatsApp CTA", icon: <FiMessageCircle /> },
       { key: "visitors", label: "Visitor Analytics", icon: <FiEye /> },
     ],
   },
@@ -168,6 +171,7 @@ const TITLES: Record<PanelKey, string> = {
   analytics: "Sales Analytics",
   cartInsights: "Cart Insights",
   aiUsage: "AI usage",
+  ctaReport: "WhatsApp CTA report",
   visitors: "Visitor Analytics",
   orders: "Orders",
   customers: "Customers",
@@ -362,6 +366,7 @@ function AdminHome() {
           {panel === "analytics" && <SalesAnalytics />}
           {panel === "cartInsights" && <CartInsights />}
           {panel === "aiUsage" && <AiUsage />}
+          {panel === "ctaReport" && <CtaReport />}
           {panel === "visitors" && <Visitors />}
           {panel === "orders" && <Orders />}
           {panel === "customers" && <Customers />}

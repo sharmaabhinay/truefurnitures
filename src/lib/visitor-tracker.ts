@@ -11,7 +11,9 @@ export type VisitorEvent = {
     | "view_3d"
     | "add_to_cart"
     | "quote"
-    | "newsletter";
+    | "newsletter"
+    | "cta_impression"
+    | "cta_click";
   time: string;
   page?: string;
   item?: string;

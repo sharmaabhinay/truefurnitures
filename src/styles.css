@@ -68,9 +68,16 @@
   --color-analytics-blue: var(--analytics-blue);
   --color-analytics-green: var(--analytics-green);
   --color-analytics-danger: var(--analytics-danger);
+  --color-whatsapp: var(--whatsapp);
+  --color-whatsapp-hover: var(--whatsapp-hover);
+  --color-whatsapp-foreground: var(--whatsapp-foreground);
 }
 
 :root {
+  --whatsapp: oklch(0.43 0.1 155);
+  --whatsapp-hover: oklch(0.37 0.09 155);
+  --whatsapp-foreground: oklch(0.99 0.005 155);
+  --shadow-whatsapp: 0 6px 24px color-mix(in oklab, var(--whatsapp) 24%, transparent);
   --analytics-canvas: oklch(0.16 0.008 285);
   --analytics-surface: oklch(0.205 0.009 285);
   --analytics-field: oklch(0.24 0.01 285);
@@ -339,3 +346,12 @@ button:disabled { cursor: not-allowed; }
 .tf-analytics .recharts-tooltip-wrapper { outline: none; }
 .tf-analytics .recharts-cartesian-axis-tick text { fill: var(--analytics-muted); }
 .tf-analytics-panel { border: 1px solid var(--analytics-border); border-radius: 8px; background: var(--analytics-surface); }
+
+.tf-whatsapp-position { position: fixed; right: 20px; bottom: max(24px, env(safe-area-inset-bottom)); z-index: 35; }
+.tf-whatsapp-button { box-shadow: var(--shadow-whatsapp); letter-spacing: 0; animation: tf-cta-enter .5s ease both; transition: transform .2s ease; }
+.tf-whatsapp-button:hover { transform: translateY(-3px); }
+.tf-whatsapp-button .tf-whatsapp-icon { width: 22px; height: 22px; animation: tf-cta-nudge 7s ease-in-out 2s 3; }
+@keyframes tf-cta-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes tf-cta-nudge { 0%, 8%, 100% { transform: rotate(0); } 2% { transform: rotate(-12deg); } 5% { transform: rotate(12deg); } }
+@media (max-width: 640px) { .tf-whatsapp-position { right: 12px; bottom: max(88px, calc(env(safe-area-inset-bottom) + 76px)); } }
+@media (prefers-reduced-motion: reduce) { .tf-whatsapp-button, .tf-whatsapp-button .tf-whatsapp-icon { animation: none; transition: none; } }
