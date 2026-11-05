@@ -8,7 +8,8 @@
 
 # Free customer and admin AI
 - [x] Add four individual admin AI switches with server-side enforcement and isolated persistence.
-- [ ] Test AI switch rules and verify the controls; signed-in persistence requires an available staff session.
+- [x] Test individual AI blocking, independent writes and staff authorization; 55 regression checks pass; desktop/mobile control layout verified.
+- [ ] Verify live switch saving and readback in the admin screen — blocked: no signed-in Firebase staff session is available.
 - [ ] Connect Groq Free securely — blocked: user will provide a valid GROQ_API_KEY later; xyz is not a usable credential.
 - [x] Add four key-ready placements: customer sofa finder, product Q&A, admin description drafting and customer-reply drafting.
 - [ ] Verify real responses and explain every AI placement and how to use it — blocked by provider connection.
