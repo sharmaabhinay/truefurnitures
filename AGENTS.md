@@ -31,3 +31,4 @@
 - Page Editor owns layout and brand/content subsections; content saves retain the existing settings document, while layouts remain isolated to prevent accidental overwrites.
 - Keep Page Editor tab navigation in a presentation-only control so its mobile and keyboard behavior can be checked without loading protected store data.
 - Checkout coupon checks run again inside an atomic order transaction and use a per-account checkout receipt for retry idempotency; client discounts never determine recorded totals.
+- Mount one customer WhatsApp CTA in the shared root, using the saved brand number and shared visitor storage; staff reports aggregate UTC events and treat clicks only as handoffs, not confirmed messages.
