@@ -7,12 +7,7 @@ import { useBrand } from "@/lib/brand";
 import { logVisitor } from "@/lib/visitor-tracker";
 import { CTA_SETTINGS_KEY, DEFAULT_CTA_SETTINGS, type CtaSettings } from "@/lib/cta-settings";
 import { getCtaSettings } from "@/lib/cta-settings.functions";
-
-function buildUrl(phone: string, message: string, page: string) {
-  const digits = phone.replace(/\D/g, "");
-  if (!/^[1-9]\d{7,14}$/.test(digits)) return null;
-  return `https://wa.me/${digits}?text=${encodeURIComponent(`${message} I'm looking at: ${page}`)}`;
-}
+import { whatsappEnquiryUrl } from "@/lib/cta-analytics";
 
 /** Cycles: type a question in, hold, fade out to icon only, wait, next question. */
 function useTypedQuestion(cfg: CtaSettings, active: boolean) {
@@ -52,7 +47,7 @@ export function WhatsAppCta() {
   const cfg = data ?? DEFAULT_CTA_SETTINGS;
   const anchor = useRef<HTMLAnchorElement>(null);
   const hidden = !data || !cfg.enabled || /^\/(admin|auth|reset-password|configure|api)(\/|$)/.test(pathname);
-  const href = buildUrl(cfg.phone || brand.whatsapp || "", cfg.message, pathname);
+  const href = whatsappEnquiryUrl(cfg.phone || brand.whatsapp || "", pathname, cfg.message);
   const { text, open } = useTypedQuestion(cfg, !hidden && !!href);
 
   useEffect(() => {

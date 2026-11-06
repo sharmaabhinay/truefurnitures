@@ -1,9 +1,9 @@
 import type { VisitorEvent } from "./visitor-tracker";
 
-export function whatsappEnquiryUrl(phone: string, page: string): string | null {
+export function whatsappEnquiryUrl(phone: string, page: string, intro = "Hello! I'd like help choosing a custom sofa."): string | null {
   const digits = phone.replace(/\D/g, "");
   if (!/^[1-9]\d{7,14}$/.test(digits)) return null;
-  const message = `Hello! I'd like help choosing a custom sofa. I'm looking at: ${page}`;
+  const message = `${intro} I'm looking at: ${page}`;
   return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
 }
 
