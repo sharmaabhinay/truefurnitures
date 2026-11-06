@@ -41,6 +41,7 @@ import { PreviewThumbnail } from "@/components/admin/image-preview";
 import { ShortcutSettings } from "@/components/admin/shortcut-settings";
 import { AiUsage } from "@/components/admin/ai-usage";
 import { CtaReport } from "@/components/admin/cta-report";
+import { CtaSettingsPanel } from "@/components/admin/cta-settings";
 import { AiTool } from "@/components/ai-tool";
 import { listPopupEvents } from "@/lib/popup-analytics";
 import { sendQuoteStatusEmail } from "@/lib/email.functions";
@@ -366,7 +367,7 @@ function AdminHome() {
           {panel === "analytics" && <SalesAnalytics />}
           {panel === "cartInsights" && <CartInsights />}
           {panel === "aiUsage" && <AiUsage />}
-          {panel === "ctaReport" && <CtaReport />}
+          {panel === "ctaReport" && <div className="space-y-8"><CtaSettingsPanel /><CtaReport /></div>}
           {panel === "visitors" && <Visitors />}
           {panel === "orders" && <Orders />}
           {panel === "customers" && <Customers />}
