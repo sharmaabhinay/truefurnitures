@@ -26,6 +26,7 @@ import { Route as HireCarpenterRouteImport } from './routes/hire-carpenter'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as RoomAdvisorRouteImport } from './routes/room-advisor'
 import { Route as ShowroomsRouteImport } from './routes/showrooms'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
@@ -46,6 +47,7 @@ import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
+import { Route as ApiPublicRoomAdvisorRouteImport } from './routes/api/public/room-advisor'
 import { Route as AuthenticatedAdminCarpentersIdRouteImport } from './routes/_authenticated/admin.carpenters.$id'
 import { Route as AuthenticatedAdminCustomersIdRouteImport } from './routes/_authenticated/admin.customers.$id'
 import { Route as AuthenticatedAdminManufacturersIdRouteImport } from './routes/_authenticated/admin.manufacturers.$id'
@@ -139,6 +141,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RoomAdvisorRoute = RoomAdvisorRouteImport.update({
+  id: '/room-advisor',
+  path: '/room-advisor',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ShowroomsRoute = ShowroomsRouteImport.update({
@@ -245,6 +252,11 @@ const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
   path: '/api/public/health',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicRoomAdvisorRoute = ApiPublicRoomAdvisorRouteImport.update({
+  id: '/api/public/room-advisor',
+  path: '/api/public/room-advisor',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAdminCarpentersIdRoute =
   AuthenticatedAdminCarpentersIdRouteImport.update({
     id: '/carpenters/$id',
@@ -323,6 +335,7 @@ export interface FileRoutesByFullPath {
   '/mcp': typeof McpRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/room-advisor': typeof RoomAdvisorRoute
   '/showrooms': typeof ShowroomsRoute
   '/terms': typeof TermsRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
@@ -342,6 +355,7 @@ export interface FileRoutesByFullPath {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/room-advisor': typeof ApiPublicRoomAdvisorRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/admin/carpenters/$id': typeof AuthenticatedAdminCarpentersIdRoute
   '/admin/customers/$id': typeof AuthenticatedAdminCustomersIdRoute
@@ -371,6 +385,7 @@ export interface FileRoutesByTo {
   '/mcp': typeof McpRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/room-advisor': typeof RoomAdvisorRoute
   '/showrooms': typeof ShowroomsRoute
   '/terms': typeof TermsRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
@@ -389,6 +404,7 @@ export interface FileRoutesByTo {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/room-advisor': typeof ApiPublicRoomAdvisorRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/admin/carpenters/$id': typeof AuthenticatedAdminCarpentersIdRoute
   '/admin/customers/$id': typeof AuthenticatedAdminCustomersIdRoute
@@ -420,6 +436,7 @@ export interface FileRoutesById {
   '/mcp': typeof McpRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/room-advisor': typeof RoomAdvisorRoute
   '/showrooms': typeof ShowroomsRoute
   '/terms': typeof TermsRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
@@ -439,6 +456,7 @@ export interface FileRoutesById {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/api/public/room-advisor': typeof ApiPublicRoomAdvisorRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/admin/carpenters/$id': typeof AuthenticatedAdminCarpentersIdRoute
   '/_authenticated/admin/customers/$id': typeof AuthenticatedAdminCustomersIdRoute
@@ -470,6 +488,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/privacy'
     | '/reset-password'
+    | '/room-advisor'
     | '/showrooms'
     | '/terms'
     | '/.mcp/list-tools'
@@ -489,6 +508,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/public/health'
+    | '/api/public/room-advisor'
     | '/admin/'
     | '/admin/carpenters/$id'
     | '/admin/customers/$id'
@@ -518,6 +538,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/privacy'
     | '/reset-password'
+    | '/room-advisor'
     | '/showrooms'
     | '/terms'
     | '/.mcp/list-tools'
@@ -536,6 +557,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/public/health'
+    | '/api/public/room-advisor'
     | '/admin'
     | '/admin/carpenters/$id'
     | '/admin/customers/$id'
@@ -566,6 +588,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/privacy'
     | '/reset-password'
+    | '/room-advisor'
     | '/showrooms'
     | '/terms'
     | '/.mcp/list-tools'
@@ -585,6 +608,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/api/public/health'
+    | '/api/public/room-advisor'
     | '/_authenticated/admin/'
     | '/_authenticated/admin/carpenters/$id'
     | '/_authenticated/admin/customers/$id'
@@ -616,6 +640,7 @@ export interface RootRouteChildren {
   McpRoute: typeof McpRoute
   PrivacyRoute: typeof PrivacyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  RoomAdvisorRoute: typeof RoomAdvisorRoute
   ShowroomsRoute: typeof ShowroomsRoute
   TermsRoute: typeof TermsRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
@@ -626,6 +651,7 @@ export interface RootRouteChildren {
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
+  ApiPublicRoomAdvisorRoute: typeof ApiPublicRoomAdvisorRoute
   ApiPublicWebhooksRazorpayRoute: typeof ApiPublicWebhooksRazorpayRoute
 }
 
@@ -748,6 +774,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/room-advisor': {
+      id: '/room-advisor'
+      path: '/room-advisor'
+      fullPath: '/room-advisor'
+      preLoaderRoute: typeof RoomAdvisorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/showrooms': {
@@ -888,6 +921,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/health'
       fullPath: '/api/public/health'
       preLoaderRoute: typeof ApiPublicHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/room-advisor': {
+      id: '/api/public/room-advisor'
+      path: '/api/public/room-advisor'
+      fullPath: '/api/public/room-advisor'
+      preLoaderRoute: typeof ApiPublicRoomAdvisorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/carpenters/$id': {
@@ -1050,6 +1090,7 @@ const rootRouteChildren: RootRouteChildren = {
   McpRoute: McpRoute,
   PrivacyRoute: PrivacyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  RoomAdvisorRoute: RoomAdvisorRoute,
   ShowroomsRoute: ShowroomsRoute,
   TermsRoute: TermsRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
@@ -1061,6 +1102,7 @@ const rootRouteChildren: RootRouteChildren = {
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
+  ApiPublicRoomAdvisorRoute: ApiPublicRoomAdvisorRoute,
   ApiPublicWebhooksRazorpayRoute: ApiPublicWebhooksRazorpayRoute,
 }
 export const routeTree = rootRouteImport

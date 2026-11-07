@@ -15,6 +15,8 @@ export const setAiFeature = createServerFn({ method: "POST" })
     await staffOnly(context.role, context.userId);
     const { adminSetDoc } = await import("./firebase-admin.server");
     await adminSetDoc("site_settings", "ai-features", { [data.task]: data.enabled });
+    // Explicit owner/staff re-enabling resumes only this Gateway tool after access repair.
+    if (data.task === "room" && data.enabled) await adminSetDoc("site_settings", "room-ai-access", { paused: false });
     const { readAiFeatures } = await import("./ai-features.server");
     return readAiFeatures();
   });
