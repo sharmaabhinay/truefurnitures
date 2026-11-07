@@ -9,7 +9,7 @@ export const aiInput = z.object({
 });
 export type AiInput = z.infer<typeof aiInput>;
 export type AiResult = { text: string; error: string | null };
-export function isAdminAi(task: AiInput["task"]) {
+export function isAdminAi(task: AiInput["task"] | "room") {
   return task === "description" || task === "reply";
 }
 export function aiKeyReady(key: string | undefined) {

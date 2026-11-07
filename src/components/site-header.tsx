@@ -80,6 +80,7 @@ export function SiteHeader() {
   const f = brand.features ?? DEFAULT_FEATURES;
   const primaryNav = [
     { to: "/collections", label: "Collections" },
+    { to: "/room-advisor", label: "Room advisor" },
     ...(f.hireCarpenter ? [{ to: "/hire-carpenter", label: "Hire a Carpenter" }] : []),
     { to: "/contact", label: "Contact" },
   ] as { to: string; label: string }[];
@@ -89,6 +90,7 @@ export function SiteHeader() {
       title: "Shop",
       items: [
         { to: "/collections", label: "Collections" },
+        { to: "/room-advisor", label: "Room advisor" },
         ...(f.design3d ? [{ to: "/design", label: "Design Yours" }] : []),
         ...(f.gallery ? [{ to: "/gallery", label: "Gallery" }] : []),
         { to: "/cart", label: "Cart" },

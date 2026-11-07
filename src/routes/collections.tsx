@@ -16,6 +16,8 @@ import { listPublishedSofas } from "@/lib/catalog.functions";
 import { clientPublishedSofas } from "@/lib/catalog-fallback";
 import { logImpression } from "@/lib/visitor-tracker";
 import { AiTool } from "@/components/ai-tool";
+import { Button } from "@/components/ui/button";
+import { Camera } from "lucide-react";
 
 
 const sofaImages: Record<string, string> = {
@@ -104,6 +106,7 @@ function Collections() {
         <h1 className="text-5xl md:text-6xl font-display mt-4 max-w-3xl animate-fade-up delay-100">Every Silhouette, <span className="italic">Yours to Shape.</span></h1>
         <p className="text-[color:var(--brand-dark)]/60 mt-6 max-w-xl animate-fade-up delay-200">Every sofa is designed for full customization — fabric, colour, size, legs and add-ons. Click any piece to begin.</p>
         <AiTool task="finder" label="AI sofa finder" />
+        <Button asChild variant="outline" className="my-3 sm:ml-3"><Link to="/room-advisor"><Camera />Match my room</Link></Button>
       </section>
 
       {/* Filters */}

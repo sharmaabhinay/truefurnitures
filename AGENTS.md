@@ -25,6 +25,7 @@
 - Admin image previews share a portal-based accessible dialog above admin forms; opening an image never selects it or changes a product draft.
 - Generate order invoices client-side from recorded amounts with locally served combined Latin/Devanagari fonts embedded without subsetting and a reference-only QR; pre-generate before download to preserve mobile user activation and never fabricate GST details. Full embedding preserves merged glyph IDs in PDF viewers.
 - AI tools use shared validated RPC boundaries and server-only Groq streaming with a project secret; missing credentials disable generation without fabricated answers, public advice reads published facts server-side, and staff drafts never save or send automatically.
+- The room-photo advisor alone uses server-only AI Gateway Responses with validated ephemeral images, streamed reasoning, strict catalogue-grounded results and its own existing AI switch/usage identity; this keeps other provider integrations unchanged.
 - AI usage is persisted server-side and aggregated by tool/person with measured active session time; blocked requests remain distinct from completed answers.
 - Store individual AI switches in a dedicated site-settings document, patch only the changed tool, and enforce persisted values on session opening and generation; unrelated CMS saves cannot re-enable tools.
 - Run unit tests with the standalone Vitest config, without the Start RPC transform, so server action mocks test handlers instead of generated network stubs.
