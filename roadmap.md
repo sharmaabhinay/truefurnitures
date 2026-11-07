@@ -1,5 +1,10 @@
 # Roadmap — fix issues from test report (Oct 2026)
 
+# Room-photo sofa advisor
+- [ ] Add private, validated room-photo input and streamed AI Gateway catalogue recommendations.
+- [ ] Add independent admin control and usage reporting without changing existing Groq tools.
+- [ ] Test catalogue grounding, uploads, real AI responses, cancellation and mobile presentation.
+
 # WhatsApp call to action
 - [ ] Add animated customer WhatsApp enquiry button using the saved business number.
 - [ ] Add staff-only visibility, clicks, session click rate, page/device breakdown, trends and export.
