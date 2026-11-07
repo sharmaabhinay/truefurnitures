@@ -45,7 +45,7 @@ describe("Individual AI switches", () => {
     expect(mocks.write).not.toHaveBeenCalled();
   });
   it("defaults existing installations to enabled and rejects invalid updates", () => {
-    expect(normalizeAiFeatures(null)).toEqual({ finder: true, question: true, description: true, reply: true });
+    expect(normalizeAiFeatures(null)).toEqual({ finder: true, question: true, description: true, reply: true, room: true });
     expect(aiFeatureUpdate.safeParse({ task: "unknown", enabled: false }).success).toBe(false);
     expect(aiFeatureUpdate.safeParse({ task: "finder", enabled: "false" }).success).toBe(false);
   });

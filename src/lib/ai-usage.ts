@@ -1,4 +1,4 @@
-export const AI_TOOLS = { finder: "Sofa finder", question: "Product Q&A", description: "Description drafts", reply: "Reply drafts" } as const;
+export const AI_TOOLS = { finder: "Sofa finder", question: "Product Q&A", description: "Description drafts", reply: "Reply drafts", room: "Room-photo advisor" } as const;
 export type AiUsageRow = { id: string; task: keyof typeof AI_TOOLS; user_id: string; name: string; role: string; started_at: string; last_seen: string; seconds: number; attempts: number; successes: number; failures: number; blocked: number; closed?: boolean };
 export function summarizeAiUsage(rows: AiUsageRow[]) {
   const total = (list: AiUsageRow[]) => ({ attempts: list.reduce((n, r) => n + r.attempts, 0), successes: list.reduce((n, r) => n + r.successes, 0), failures: list.reduce((n, r) => n + r.failures, 0), blocked: list.reduce((n, r) => n + r.blocked, 0), seconds: list.reduce((n, r) => n + r.seconds, 0), users: new Set(list.map(r => r.user_id)).size, sessions: list.length });

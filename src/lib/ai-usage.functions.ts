@@ -6,7 +6,7 @@ import type { AiUsageRow } from "./ai-usage";
 import { AI_DISABLED_MESSAGE } from "./ai-features";
 
 export const openAiSession = createServerFn({ method: "POST" })
-  .inputValidator((v: unknown) => z.object({ task: z.enum(["finder", "question", "description", "reply"]), guestId: z.string().uuid() }).parse(v))
+  .inputValidator((v: unknown) => z.object({ task: z.enum(["finder", "question", "description", "reply", "room"]), guestId: z.string().uuid() }).parse(v))
   .handler(async ({ data }) => {
     const { verifyIdToken, adminGetDoc, adminSetDoc } = await import("./firebase-admin.server");
     const bearer = getRequest().headers.get("authorization");
