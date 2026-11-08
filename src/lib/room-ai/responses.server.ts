@@ -13,6 +13,7 @@ export function createResponsesCall(
   config: { baseURL: string; apiKey: string; model: string },
   messages: ModelMessage[],
   instructions?: string,
+  signal: AbortSignal = request.signal,
 ) {
   const runIdFetch = createLovableAiGatewayRunIdFetch(getLovableAiGatewayRunId(request));
   let upstream: { status: number; message: string; type: string } | null = null;
@@ -37,7 +38,7 @@ export function createResponsesCall(
     messages,
     output: Output.object({ schema: roomOutput }),
     maxRetries: 0,
-    abortSignal: request.signal,
+    abortSignal: signal,
     providerOptions: {
       openai: {
         store: false,
