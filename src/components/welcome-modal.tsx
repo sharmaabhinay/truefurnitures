@@ -38,7 +38,7 @@ export function WelcomeModal() {
     if (onHome) {
       if (sessionStorage.getItem(SESSION_KEY)) return;
     } else if (suppressed) return;
-    const skipOn = ["/auth", "/checkout", "/payment", "/cart", "/dashboard", "/admin", "/reset-password", "/products/", "/configure/", "/profile", "/messages", "/my-designs", "/orders"];
+    const skipOn = ["/auth", "/checkout", "/payment", "/cart", "/dashboard", "/admin", "/reset-password", "/products/", "/configure/", "/room-advisor", "/profile", "/messages", "/my-designs", "/orders"];
     if (skipOn.some((p) => path.startsWith(p))) return;
     const delay = onHome ? Math.max(2, Math.min(popup.delay_seconds, 5)) : Math.max(8, popup.delay_seconds);
     const t = setTimeout(() => {
