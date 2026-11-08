@@ -79,7 +79,7 @@ export async function handleRoomAdvisor(request: Request) {
           send({ type: "error", message: request.signal.aborted ? "Recommendation stopped." : error instanceof Error ? error.message : "AI could not complete this request." });
         } finally { controller.close(); }
       },
-      cancel: () => iterator.return?.(),
+      async cancel() { await iterator.return?.(); },
     });
     return new Response(body, { headers });
   } catch (error) {
