@@ -343,7 +343,7 @@ function ProductPage() {
           sofaSlug={sofa.slug}
           show3d={features.viewIn3d}
         />
-        {(sofa.video_url || sofa.social_video_url) && <section className="space-y-4"><h2 className="font-display text-xl">See {sofa.name} in motion</h2>{sofa.video_url && <ProductVideo key={sofa.video_url} url={sofa.video_url} title={`${sofa.name} product video`} />}{sofa.social_video_url && <ProductVideo key={sofa.social_video_url} url={sofa.social_video_url} vertical title={`${sofa.name} vertical video`} />}</section>}
+        {(sofa.video_url || sofa.social_video_url) && <section className="space-y-4"><h2 className="font-display text-xl">See {sofa.name} in motion</h2>{sofa.video_url && <ProductVideo key={sofa.video_url} url={sofa.video_url} productId={sofa.id} title={`${sofa.name} product video`} />}{sofa.social_video_url && <ProductVideo key={sofa.social_video_url} url={sofa.social_video_url} productId={sofa.id} vertical title={`${sofa.name} vertical video`} />}</section>}
         </div>
 
         {/* Details */}
