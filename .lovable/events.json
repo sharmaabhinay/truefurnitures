@@ -52,6 +52,105 @@
         }
       }
     },
+    "project.homepage_video_viewed": {
+      "event_schema_version": 1,
+      "description": "The homepage video actually starts playing in the visible viewport, once per mounted video; loops and pause/resume do not add views.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "video_id",
+          "placement"
+        ],
+        "properties": {
+          "video_id": {
+            "type": "string"
+          },
+          "placement": {
+            "type": "string",
+            "enum": [
+              "homepage"
+            ]
+          }
+        }
+      }
+    },
+    "project.product_video_played": {
+      "event_schema_version": 1,
+      "description": "A storefront product video actually starts playing, once per video mount; excludes admin previews and pause/resume repeats.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "product_id",
+          "video_id",
+          "placement"
+        ],
+        "properties": {
+          "product_id": {
+            "type": "string"
+          },
+          "video_id": {
+            "type": "string"
+          },
+          "placement": {
+            "type": "string",
+            "enum": [
+              "product",
+              "vertical"
+            ]
+          }
+        }
+      }
+    },
+    "project.product_video_preview_opened": {
+      "event_schema_version": 1,
+      "description": "A shopper opens a product YouTube or Instagram player. This is a preview request, not confirmed third-party playback.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "product_id",
+          "video_id",
+          "provider",
+          "placement"
+        ],
+        "properties": {
+          "product_id": {
+            "type": "string"
+          },
+          "video_id": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "youtube",
+              "instagram"
+            ]
+          },
+          "placement": {
+            "type": "string",
+            "enum": [
+              "product",
+              "vertical"
+            ]
+          }
+        }
+      }
+    },
     "project.purchase_completed": {
       "event_schema_version": 1,
       "description": "Checkout placed the customer's orders, with or without a coupon.",
