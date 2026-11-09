@@ -9,7 +9,7 @@ export type UploadedFile = { url: string; publicId: string };
 export async function uploadToCloudinary(
   file: File,
   folder: string,
-  resourceType: "image" | "raw" | "auto" = "auto",
+  resourceType: "image" | "raw" | "video" | "auto" = "auto",
   onProgress?: (percent: number) => void,
 ): Promise<UploadedFile> {
   const sig = await signCloudinaryUpload({ data: { folder, resourceType } });

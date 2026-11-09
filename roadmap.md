@@ -1,5 +1,10 @@
 # Roadmap — fix issues from test report (Oct 2026)
 
+# Product and homepage videos
+- [ ] Add product computer/link video input and vertical Instagram/YouTube previews.
+- [ ] Add homepage muted looping video controls in Page Editor.
+- [ ] Verify media validation, playback and mobile layout; record signed-in upload/save limitations.
+
 # Room-photo sofa advisor
 - [x] Add private, validated room-photo input and streamed AI Gateway catalogue recommendations.
 - [x] Add independent admin control and usage reporting without changing existing Groq tools.
