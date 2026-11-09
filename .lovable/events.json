@@ -84,6 +84,46 @@
         }
       }
     },
+    "project.product_video_preview_opened": {
+      "event_schema_version": 1,
+      "description": "A shopper opens a product YouTube or Instagram player. This is a preview request, not confirmed third-party playback.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "product_id",
+          "video_id",
+          "provider",
+          "placement"
+        ],
+        "properties": {
+          "product_id": {
+            "type": "string"
+          },
+          "video_id": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "youtube",
+              "instagram"
+            ]
+          },
+          "placement": {
+            "type": "string",
+            "enum": [
+              "product",
+              "vertical"
+            ]
+          }
+        }
+      }
+    },
     "project.purchase_completed": {
       "event_schema_version": 1,
       "description": "Checkout placed the customer's orders, with or without a coupon.",
