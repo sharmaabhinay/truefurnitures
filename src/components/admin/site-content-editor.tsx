@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { COL, fsSet } from "@/lib/db/firestore";
 import { brandQueryKey, fetchBrand, DEFAULT_BRAND, FEATURE_LABELS, type BrandSettings } from "@/lib/brand";
 import { toast } from "sonner";
+import { VideoInput } from "@/components/admin/video-input";
+import { isDirectVideo } from "@/lib/video-media";
 
 function Card({ children }: { children: React.ReactNode }) { return <section className="space-y-4">{children}</section>; }
 function CardTitle({ children }: { children: React.ReactNode; right?: React.ReactNode }) { return <h2 className="text-xl font-semibold">{children}</h2>; }
@@ -20,11 +22,13 @@ export function SiteContentEditor({ section, onDirtyChange }: { section: "hero" 
   const [brand, setBrand] = useState<BrandSettings>(DEFAULT_BRAND);
   const [brandLoaded, setBrandLoaded] = useState(false);
   const [savingBrand, setSavingBrand] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   useEffect(() => {
     if (brandRow && !brandLoaded) { setBrand(brandRow); setBrandLoaded(true); }
   }, [brandRow, brandLoaded]);
   const brandPatch = <K extends keyof BrandSettings>(k: K, v: BrandSettings[K]) => { onDirtyChange?.(true); setBrand((p) => ({ ...p, [k]: v })); };
   const saveBrand = async () => {
+    if (brand.hero_video?.trim() && !isDirectVideo(brand.hero_video)) { toast.error("Use a direct HTTPS video link for the homepage."); return; }
     setSavingBrand(true);
     try {
       await fsSet(COL.siteSettings, "default", {
@@ -51,6 +55,7 @@ export function SiteContentEditor({ section, onDirtyChange }: { section: "hero" 
         hero_subtext: brand.hero_subtext,
         hero_cta: brand.hero_cta,
         hero_image: brand.hero_image,
+        hero_video: brand.hero_video?.trim() || "",
         features: brand.features,
 
       });
@@ -103,6 +108,9 @@ export function SiteContentEditor({ section, onDirtyChange }: { section: "hero" 
                 )}
               </Field>
               <div className="rounded-md p-3 text-[12px]">
+                <VideoInput value={brand.hero_video ?? ""} onChange={url => brandPatch("hero_video", url)} label="Homepage background video" folder="page-sections/hero-video" onBusyChange={setUploadingVideo} />
+              </div>
+              <div className="rounded-md p-3 text-[12px]">
                 SEO meta, announcement bar, WhatsApp number and the delivery note now live in the
                 <strong> Brand &amp; Store </strong> tab, so one edit updates the site,
                 emails and receipts together.
@@ -111,11 +119,11 @@ export function SiteContentEditor({ section, onDirtyChange }: { section: "hero" 
           </div>
           <Button
             onClick={saveBrand}
-            disabled={savingBrand}
+            disabled={savingBrand || uploadingVideo}
             className="mt-6 rounded-md px-6 py-2.5 text-[13px] font-semibold disabled:opacity-60"
            
           >
-            {savingBrand ? "Saving…" : "Save homepage text"}
+            {savingBrand ? "Saving…" : "Save homepage"}
           </Button>
         </Card>
       )}
@@ -221,7 +229,7 @@ export function SiteContentEditor({ section, onDirtyChange }: { section: "hero" 
           </div>
           <Button
             onClick={saveBrand}
-            disabled={savingBrand}
+            disabled={savingBrand || uploadingVideo}
             className="mt-6 rounded-md px-6 py-2.5 text-[13px] font-semibold disabled:opacity-60"
            
           >

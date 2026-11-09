@@ -101,6 +101,7 @@ export type BrandSettings = {
   hero_subtext: string;
   hero_cta: string;
   hero_image: string;
+  hero_video?: string;
   features: FeatureFlags;
   welcome_popup: WelcomePopup;
 };
@@ -133,6 +134,7 @@ export const DEFAULT_BRAND: BrandSettings = {
     "Bespoke sofas — fabric, colour, size, legs, add-ons. Every stitch, every curve, strictly by your rules.",
   hero_cta: "Start 3D Design",
   hero_image: "",
+  hero_video: "",
   features: DEFAULT_FEATURES,
   welcome_popup: DEFAULT_WELCOME_POPUP,
 };

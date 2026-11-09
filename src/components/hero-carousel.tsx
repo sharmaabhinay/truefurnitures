@@ -4,6 +4,8 @@ import { useBrand } from "@/lib/brand";
 import heroSofa from "@/assets/hero-sofa.jpg";
 import sofaEmerald from "@/assets/sofa-emerald.jpg";
 import sofaIvory from "@/assets/sofa-ivory.jpg";
+import { HeroVideo } from "@/components/hero-video";
+import { isDirectVideo } from "@/lib/video-media";
 
 const slides = [
   {
@@ -40,10 +42,12 @@ const slides = [
 export function HeroCarousel() {
   const [i, setI] = useState(0);
   const brand = useBrand();
+  const video = brand.hero_video && isDirectVideo(brand.hero_video) ? brand.hero_video : "";
   useEffect(() => {
+    if (video) { setI(0); return; }
     const t = setInterval(() => setI((v) => (v + 1) % slides.length), 6500);
     return () => clearInterval(t);
-  }, []);
+  }, [video]);
   const base = slides[i];
   // The first slide is CMS-driven so admin edits show up on the live site.
   const s =
@@ -63,7 +67,7 @@ export function HeroCarousel() {
     <section className="relative min-h-[92vh] flex items-center overflow-hidden bg-[color:var(--brand-cream)]">
       {/* background image */}
       <div key={i} className="absolute inset-0">
-        <img src={s.image} alt="" aria-hidden fetchPriority={i === 0 ? "high" : "auto"} decoding="async" className="w-full h-full object-cover animate-kenburns" />
+        {video ? <HeroVideo key={video} url={video} poster={s.image} /> : <img src={s.image} alt="" aria-hidden fetchPriority={i === 0 ? "high" : "auto"} decoding="async" className="w-full h-full object-cover animate-kenburns" />}
         <div className="absolute inset-0 bg-gradient-to-r from-[color:var(--brand-cream)] via-[color:var(--brand-cream)]/70 md:via-[color:var(--brand-cream)]/50 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-[color:var(--brand-cream)]/60 via-transparent to-transparent md:hidden" />
       </div>
@@ -96,7 +100,7 @@ export function HeroCarousel() {
       </div>
 
       {/* dots */}
-      <div className="absolute bottom-6 sm:bottom-10 left-6 md:left-20 z-10 flex gap-2">
+      {!video && <div className="absolute bottom-6 sm:bottom-10 left-6 md:left-20 z-10 flex gap-2">
         {slides.map((_, idx) => (
           <button
             key={idx}
@@ -105,7 +109,7 @@ export function HeroCarousel() {
             className={`h-1 transition-all ${i === idx ? "w-10 bg-[color:var(--brand-dark)]" : "w-5 bg-[color:var(--brand-dark)]/25"}`}
           />
         ))}
-      </div>
+      </div>}
     </section>
   );
 }
