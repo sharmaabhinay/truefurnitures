@@ -52,6 +52,33 @@
         }
       }
     },
+    "project.homepage_video_viewed": {
+      "event_schema_version": 1,
+      "description": "The homepage video actually starts playing in the visible viewport, once per mounted video; loops and pause/resume do not add views.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "video_id",
+          "placement"
+        ],
+        "properties": {
+          "video_id": {
+            "type": "string"
+          },
+          "placement": {
+            "type": "string",
+            "enum": [
+              "homepage"
+            ]
+          }
+        }
+      }
+    },
     "project.product_video_played": {
       "event_schema_version": 1,
       "description": "A storefront product video actually starts playing, once per video mount; excludes admin previews and pause/resume repeats.",
