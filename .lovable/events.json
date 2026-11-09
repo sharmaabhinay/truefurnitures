@@ -52,6 +52,38 @@
         }
       }
     },
+    "project.product_video_played": {
+      "event_schema_version": 1,
+      "description": "A storefront product video actually starts playing, once per video mount; excludes admin previews and pause/resume repeats.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "product_id",
+          "video_id",
+          "placement"
+        ],
+        "properties": {
+          "product_id": {
+            "type": "string"
+          },
+          "video_id": {
+            "type": "string"
+          },
+          "placement": {
+            "type": "string",
+            "enum": [
+              "product",
+              "vertical"
+            ]
+          }
+        }
+      }
+    },
     "project.purchase_completed": {
       "event_schema_version": 1,
       "description": "Checkout placed the customer's orders, with or without a coupon.",
