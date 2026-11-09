@@ -8,6 +8,8 @@ import { downloadCsv } from "@/lib/export";
 import { Pager, usePaged, ACheck } from "@/components/admin/pager";
 import { getFirebaseAuth } from "@/lib/firebase";
 import { uploadToCloudinary } from "@/lib/upload";
+import { VideoInput } from "@/components/admin/video-input";
+import { isDirectVideo, parseVideoSource } from "@/lib/video-media";
 import { getFirebaseApp } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth/auth-context";
 import { logTrashAction } from "@/components/admin/trash-manager";
@@ -1449,6 +1451,7 @@ type SofaRow = {
   gallery: string[] | null;
   model_url: string | null;
   video_url: string | null;
+  social_video_url?: string | null;
   seo_title: string | null;
   seo_description: string | null;
   is_published: boolean;
@@ -1978,6 +1981,8 @@ function ProductModal({
   );
   const [leadTime, setLeadTime] = useState<string>(String(product.lead_time_days ?? 30));
   const [videoUrl, setVideoUrl] = useState(product.video_url ?? "");
+  const [socialVideoUrl, setSocialVideoUrl] = useState(product.social_video_url ?? "");
+  const [videoUploading, setVideoUploading] = useState(false);
   const [seoTitle, setSeoTitle] = useState(product.seo_title ?? "");
   const [seoDescription, setSeoDescription] = useState(product.seo_description ?? "");
   const [isPublished, setIsPublished] = useState(product.is_published ?? true);
@@ -2062,6 +2067,8 @@ function ProductModal({
   };
 
   const save = async () => {
+    if (videoUrl.trim() && !isDirectVideo(videoUrl)) { toast.error("Use a direct HTTPS product video link."); return; }
+    if (socialVideoUrl.trim() && !parseVideoSource(socialVideoUrl)) { toast.error("Use a valid YouTube or Instagram video link."); return; }
     if (!name.trim() || !basePrice) {
       toast.error("Name and base price are required");
       return;
@@ -2091,7 +2098,8 @@ function ProductModal({
       hero_image: heroImage || null,
       gallery,
       model_url: modelUrl || null,
-      video_url: videoUrl || null,
+      video_url: videoUrl.trim() || null,
+      social_video_url: socialVideoUrl.trim() || null,
       seo_title: seoTitle || null,
       seo_description: seoDescription || null,
       lead_time_days: Number(leadTime) || 30,
@@ -2203,9 +2211,6 @@ function ProductModal({
                 <Field label="Warranty">
                   <DarkInput value={warranty} onChange={(e) => setWarranty(e.target.value)} placeholder="Warranty text" />
                 </Field>
-                <Field label="Video URL">
-                  <DarkInput value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="Muted product video URL" />
-                </Field>
               </div>
               <Field label="Tagline">
                 <DarkInput value={tagline} onChange={(e) => setTagline(e.target.value)} placeholder="Optional short strapline" />
@@ -2251,6 +2256,8 @@ function ProductModal({
 
           {tab === 1 && (
             <>
+              <VideoInput value={videoUrl} onChange={setVideoUrl} label="Product video" folder={`product-media/${productFolder}/videos`} onBusyChange={setVideoUploading} />
+              <VideoInput value={socialVideoUrl} onChange={setSocialVideoUrl} label="Vertical social video" folder={`product-media/${productFolder}/videos`} social />
               <AButton variant="ghost" onClick={() => setFilePickerOpen(true)}>
                 <span className="inline-flex items-center gap-2"><FiFolder /> Choose from File Manager</span>
               </AButton>
@@ -2474,7 +2481,7 @@ function ProductModal({
           </button>
           <button
             onClick={save}
-            disabled={saving || Boolean(uploading)}
+            disabled={saving || Boolean(uploading) || videoUploading}
             className="flex-1 rounded-md py-2.5 text-[13px] font-semibold disabled:opacity-60"
             style={{ background: "#C8A86B", color: "#1a1a1a" }}
           >

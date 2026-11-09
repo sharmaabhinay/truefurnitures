@@ -25,6 +25,7 @@ import { getPublishedSofa, listPublishedSofas } from "@/lib/catalog.functions";
 import { clientPublishedSofa, clientPublishedSofas } from "@/lib/catalog-fallback";
 import { logVisitor } from "@/lib/visitor-tracker";
 import { ProductGallery } from "@/components/product-gallery";
+import { ProductVideo } from "@/components/product-video";
 import { CustomerFaqs } from "@/components/customer-faqs";
 import { PageSections } from "@/components/page-sections";
 import { AiTool } from "@/components/ai-tool";
@@ -56,6 +57,8 @@ type Sofa = {
   hero_image: string | null;
   gallery: string[] | null;
   model_url: string | null;
+  video_url?: string | null;
+  social_video_url?: string | null;
   full_description: string | null;
   description: string | null;
   features: string[] | null;
@@ -135,7 +138,7 @@ export const Route = createFileRoute("/products/$slug")({
   },
   head: ({ params, loaderData }) => {
     if (!loaderData) {
-      return { meta: [{ title: "Not found — True Furniture's" }, { name: "robots", content: "noindex" }] };
+      return { meta: [{ title: "Sofa unavailable — True Furniture's" }, { name: "description", content: "This sofa is currently unavailable. Explore the True Furniture catalogue." }, { property: "og:title", content: "Sofa unavailable — True Furniture's" }, { property: "og:description", content: "Explore the True Furniture sofa catalogue." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] };
     }
     const title = loaderData.seo_title ?? `${loaderData.name} — True Furniture's`;
     const desc = loaderData.seo_description ?? loaderData.tagline ?? "Fully customizable sofa hand-tailored in Indore & Ujjain.";
@@ -331,6 +334,7 @@ function ProductPage() {
         main: (<>
 <section className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-8 md:py-12 grid gap-8 md:gap-12 lg:grid-cols-2">
         {/* Gallery carousel */}
+        <div className="min-w-0 space-y-6">
         <ProductGallery
           images={gallery}
           activeImage={activeImage}
@@ -339,6 +343,8 @@ function ProductPage() {
           sofaSlug={sofa.slug}
           show3d={features.viewIn3d}
         />
+        {(sofa.video_url || sofa.social_video_url) && <section className="space-y-4"><h2 className="font-display text-xl">See {sofa.name} in motion</h2>{sofa.video_url && <ProductVideo key={sofa.video_url} url={sofa.video_url} title={`${sofa.name} product video`} />}{sofa.social_video_url && <ProductVideo key={sofa.social_video_url} url={sofa.social_video_url} vertical title={`${sofa.name} vertical video`} />}</section>}
+        </div>
 
         {/* Details */}
         <div className="animate-fade-up delay-100">
