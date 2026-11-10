@@ -28,7 +28,7 @@ export function SiteContentEditor({ section, onDirtyChange }: { section: "hero" 
   }, [brandRow, brandLoaded]);
   const brandPatch = <K extends keyof BrandSettings>(k: K, v: BrandSettings[K]) => { onDirtyChange?.(true); setBrand((p) => ({ ...p, [k]: v })); };
   const saveBrand = async () => {
-    if (brand.hero_video?.trim() && !isDirectVideo(brand.hero_video)) { toast.error("Use a direct HTTPS video link for the homepage."); return; }
+    if ([brand.hero_video, brand.hero_video_tablet, brand.hero_video_mobile].some(v => v?.trim() && !isDirectVideo(v))) { toast.error("Use a direct HTTPS video link for the homepage."); return; }
     setSavingBrand(true);
     try {
       await fsSet(COL.siteSettings, "default", {
@@ -56,6 +56,8 @@ export function SiteContentEditor({ section, onDirtyChange }: { section: "hero" 
         hero_cta: brand.hero_cta,
         hero_image: brand.hero_image,
         hero_video: brand.hero_video?.trim() || "",
+        hero_video_tablet: brand.hero_video_tablet?.trim() || "",
+        hero_video_mobile: brand.hero_video_mobile?.trim() || "",
         features: brand.features,
 
       });
@@ -108,7 +110,12 @@ export function SiteContentEditor({ section, onDirtyChange }: { section: "hero" 
                 )}
               </Field>
               <div className="rounded-md p-3 text-[12px]">
-                <VideoInput value={brand.hero_video ?? ""} onChange={url => brandPatch("hero_video", url)} label="Homepage background video" folder="page-sections/hero-video" onBusyChange={setUploadingVideo} />
+                <p className="mb-3">Upload a separate homepage video for each screen. Tablet and mobile fall back to the next larger video when left empty.</p>
+                <div className="space-y-4">
+                  <VideoInput value={brand.hero_video ?? ""} onChange={url => brandPatch("hero_video", url)} label="Desktop video (landscape, 16:9)" folder="page-sections/hero-video" onBusyChange={setUploadingVideo} />
+                  <VideoInput value={brand.hero_video_tablet ?? ""} onChange={url => brandPatch("hero_video_tablet", url)} label="Tablet video (4:3 or 3:4)" folder="page-sections/hero-video" onBusyChange={setUploadingVideo} />
+                  <VideoInput value={brand.hero_video_mobile ?? ""} onChange={url => brandPatch("hero_video_mobile", url)} label="Mobile video (portrait, 9:16)" folder="page-sections/hero-video" onBusyChange={setUploadingVideo} />
+                </div>
               </div>
               <div className="rounded-md p-3 text-[12px]">
                 SEO meta, announcement bar, WhatsApp number and the delivery note now live in the
