@@ -42,7 +42,19 @@ const slides = [
 export function HeroCarousel() {
   const [i, setI] = useState(0);
   const brand = useBrand();
-  const video = brand.hero_video && isDirectVideo(brand.hero_video) ? brand.hero_video : "";
+  const [screen, setScreen] = useState<"desktop" | "tablet" | "mobile">("desktop");
+  useEffect(() => {
+    const mobile = window.matchMedia("(max-width: 767px)");
+    const tablet = window.matchMedia("(max-width: 1023px)");
+    const update = () => setScreen(mobile.matches ? "mobile" : tablet.matches ? "tablet" : "desktop");
+    update();
+    mobile.addEventListener("change", update); tablet.addEventListener("change", update);
+    return () => { mobile.removeEventListener("change", update); tablet.removeEventListener("change", update); };
+  }, []);
+  const ok = (v?: string) => (v && isDirectVideo(v) ? v : "");
+  const video = screen === "mobile"
+    ? ok(brand.hero_video_mobile) || ok(brand.hero_video_tablet) || ok(brand.hero_video)
+    : screen === "tablet" ? ok(brand.hero_video_tablet) || ok(brand.hero_video) : ok(brand.hero_video);
   useEffect(() => {
     if (video) { setI(0); return; }
     const t = setInterval(() => setI((v) => (v + 1) % slides.length), 6500);

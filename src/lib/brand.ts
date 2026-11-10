@@ -102,6 +102,8 @@ export type BrandSettings = {
   hero_cta: string;
   hero_image: string;
   hero_video?: string;
+  hero_video_tablet?: string;
+  hero_video_mobile?: string;
   features: FeatureFlags;
   welcome_popup: WelcomePopup;
 };
@@ -135,6 +137,8 @@ export const DEFAULT_BRAND: BrandSettings = {
   hero_cta: "Start 3D Design",
   hero_image: "",
   hero_video: "",
+  hero_video_tablet: "",
+  hero_video_mobile: "",
   features: DEFAULT_FEATURES,
   welcome_popup: DEFAULT_WELCOME_POPUP,
 };
