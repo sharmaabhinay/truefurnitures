@@ -34,3 +34,4 @@
 - Checkout coupon checks run again inside an atomic order transaction and use a per-account checkout receipt for retry idempotency; client discounts never determine recorded totals.
 - Mount one customer WhatsApp CTA in the shared root, using the saved brand number and shared visitor storage; staff reports aggregate UTC events and treat clicks only as handoffs, not confirmed messages.
 - Product and homepage videos reuse signed Cloudinary uploads; validate HTTPS media and canonical social embeds, defer third-party players until requested, and keep homepage playback muted with reduced-motion and image fallbacks to avoid slowing entry.
+- Licensed illustrative sofa footage uses CDN asset pointers on hero slide four, loads only when selected, and retains source attribution separately; CMS screen-specific videos remain on slide one without disabling carousel navigation.
