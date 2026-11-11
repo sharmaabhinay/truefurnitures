@@ -6,6 +6,10 @@ import sofaEmerald from "@/assets/sofa-emerald.jpg";
 import sofaIvory from "@/assets/sofa-ivory.jpg";
 import { HeroVideo } from "@/components/hero-video";
 import { isDirectVideo } from "@/lib/video-media";
+import { Button } from "@/components/ui/button";
+import showcaseVideo from "@/assets/sofa-living-room.mp4.asset.json";
+import showcasePoster from "@/assets/sofa-living-room.jpg.asset.json";
+import { heroSlideVideo } from "@/lib/hero-slide-video";
 
 const slides = [
   {
@@ -37,6 +41,15 @@ const slides = [
     to: "/products/$slug" as const,
     params: { slug: "ivory-curve" },
   },
+  {
+    image: showcasePoster.url,
+    eyebrow: "Living Room Inspiration",
+    title: "Room to",
+    italic: "Make It Yours.",
+    body: "Explore sofa styles, fabrics and colours for your space.",
+    cta: "Start 3D Design",
+    to: "/design" as const,
+  },
 ];
 
 export function HeroCarousel() {
@@ -52,14 +65,14 @@ export function HeroCarousel() {
     return () => { mobile.removeEventListener("change", update); tablet.removeEventListener("change", update); };
   }, []);
   const ok = (v?: string) => (v && isDirectVideo(v) ? v : "");
-  const video = screen === "mobile"
+  const configuredVideo = screen === "mobile"
     ? ok(brand.hero_video_mobile) || ok(brand.hero_video_tablet) || ok(brand.hero_video)
     : screen === "tablet" ? ok(brand.hero_video_tablet) || ok(brand.hero_video) : ok(brand.hero_video);
   useEffect(() => {
-    if (video) { setI(0); return; }
-    const t = setInterval(() => setI((v) => (v + 1) % slides.length), 6500);
-    return () => clearInterval(t);
-  }, [video]);
+    const t = setTimeout(() => setI((v) => (v + 1) % slides.length), i === 3 ? 14000 : 6500);
+    return () => clearTimeout(t);
+  }, [i]);
+  const video = heroSlideVideo(i, configuredVideo, showcaseVideo.url);
   const base = slides[i];
   // The first slide is CMS-driven so admin edits show up on the live site.
   const s =
@@ -112,16 +125,19 @@ export function HeroCarousel() {
       </div>
 
       {/* dots */}
-      {!video && <div className="absolute bottom-6 sm:bottom-10 left-6 md:left-20 z-10 flex gap-2">
+      <div className="absolute bottom-6 sm:bottom-10 left-6 md:left-20 z-10 flex gap-2">
         {slides.map((_, idx) => (
-          <button
+          <Button
+            type="button"
+            variant="ghost"
             key={idx}
             aria-label={`Slide ${idx + 1}`}
+            aria-current={i === idx ? "true" : undefined}
             onClick={() => setI(idx)}
-            className={`h-1 transition-all ${i === idx ? "w-10 bg-[color:var(--brand-dark)]" : "w-5 bg-[color:var(--brand-dark)]/25"}`}
+            className={`h-1 min-h-0 rounded-none p-0 transition-all ${i === idx ? "w-10 bg-[color:var(--brand-dark)]" : "w-5 bg-[color:var(--brand-dark)]/25"}`}
           />
         ))}
-      </div>}
+      </div>
     </section>
   );
 }
