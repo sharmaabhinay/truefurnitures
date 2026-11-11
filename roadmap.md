@@ -1,6 +1,7 @@
 # Roadmap — fix issues from test report (Oct 2026)
 
 # Product and homepage videos
+- [ ] Continue signed-in desktop/tablet/mobile video computer upload, link save/readback and storefront checks; restore settings and remove test assets/account.
 - [x] Add product computer/link video input and vertical Instagram/YouTube previews.
 - [x] Add homepage muted looping video controls in Page Editor.
 - [x] Verify six media/upload-access checks, isolated muted playback/pause/resume, deferred social player and phone layout with no page errors; preview build passes.

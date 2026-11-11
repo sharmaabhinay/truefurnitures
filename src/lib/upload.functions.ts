@@ -32,7 +32,7 @@ export const signCloudinaryUpload = createServerFn({ method: "POST" })
     z
       .object({
         folder: z.string().min(1).max(120),
-        resourceType: z.enum(["image", "raw", "auto"]).default("auto"),
+        resourceType: z.enum(["image", "raw", "video", "auto"]).default("auto"),
       })
       .parse(data),
   )
