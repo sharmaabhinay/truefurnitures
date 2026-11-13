@@ -59,6 +59,7 @@
 - [x] 10. Final verification run
 
 # Splash and verified catalogue
+- [x] Shorten entry to first-screen readiness or a 1.8-second cap after hydration; remove spinning logo border. Three timing tests pass; phone/desktop checks with five-second image/font delays dismissed the splash in 2.8–3.1 seconds including initial startup, with no page errors or overflow and no repeat on navigation.
 - [x] Animated logo splash until home content is ready; verify loading and dismissal.
 - [ ] Remove confirmed fake catalogue entries safely.
 - [ ] Research seven supplier sofas with verified prices, variations and licensed exact models; replace only qualifying products.

@@ -9,7 +9,7 @@
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
 
-- Keep the home splash in the shared root as a one-time document-entry overlay, released by page, font and eager-image readiness; this avoids delaying later navigation or lazy media.
+- Keep the home splash in the shared root as a one-time document-entry overlay, released by first-screen paint, font and priority-image readiness with an independent 1.8-second cap; never wait for store settings or window.load, so background resources cannot block entry.
 - Product 3D viewers must use the product's supplied model and show an unavailable/error state instead of substituting generic geometry; this prevents a misleading product preview.
 - Product photo galleries use the installed Embla carousel with shared selection for touch, keyboard and thumbnails; this keeps gesture handling consistent without a custom swipe engine.
 - Customer preparation FAQs live in one shared data module, reused by home, product pages and the FAQ page; this prevents answers drifting between customer entry points.
