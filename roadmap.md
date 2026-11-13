@@ -1,7 +1,7 @@
 # Roadmap — fix issues from test report (Oct 2026)
 
 # Product and homepage videos
-- [ ] Source a licensed real-sofa video, upload it for the fourth hero slide, and verify desktop/mobile playback.
+- [x] Source licensed Full HD real-sofa footage for the fourth hero slide. Desktop/mobile playback, muted audio, pause/resume, slide navigation and reduced-motion pause verified in the local preview; two placement regression tests pass, no page errors or horizontal overflow. Video is illustrative, not a catalogue-product claim.
 - [x] Fix signed upload validation rejecting video; seven regression tests pass. Signed-in desktop/tablet/mobile computer uploads, Save/reload readback, direct link edits and correct muted storefront playback verified. Original video settings restored; temporary admin and four test uploads removed.
 - [x] Add product computer/link video input and vertical Instagram/YouTube previews.
 - [x] Add homepage muted looping video controls in Page Editor.
