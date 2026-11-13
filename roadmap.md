@@ -59,6 +59,7 @@
 - [x] 10. Final verification run
 
 # Splash and verified catalogue
+- [ ] Shorten entry to first-screen readiness or a 1.8-second cap, remove spinning logo border, and verify slow-resource and mobile entry.
 - [x] Animated logo splash until home content is ready; verify loading and dismissal.
 - [ ] Remove confirmed fake catalogue entries safely.
 - [ ] Research seven supplier sofas with verified prices, variations and licensed exact models; replace only qualifying products.
