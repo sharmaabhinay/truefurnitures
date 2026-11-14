@@ -80,6 +80,21 @@ export async function staffOnly(role: string | undefined, uid: string) {
   if (!ok) throw new Response("Forbidden", { status: 403 });
 }
 
+export const getVideoAnalytics = createServerFn({ method: "GET" })
+  .middleware([requireFirebaseAuth])
+  .inputValidator((d: unknown) => z.object({ days: z.union([z.literal(7), z.literal(30), z.literal(90)]) }).parse(d))
+  .handler(async ({ context, data }) => {
+    await staffOnly(context.role, context.userId);
+    const { adminQuery } = await import("./firebase-admin.server");
+    const start = new Date(); start.setUTCHours(0, 0, 0, 0); start.setUTCDate(start.getUTCDate() - data.days + 1);
+    const meta: ReadMeta = {};
+    const rows = await safeQuery(adminQuery, "visitors", [{ field: "time", op: "GREATER_THAN_OR_EQUAL", value: start.toISOString() }], meta);
+    const products = await safeQuery(adminQuery, "sofas", [], meta);
+    return { events: rows.filter(r => r["type"] === "video_play" || r["type"] === "video_embed").map(r => ({
+      type: String(r["type"]), time: String(r["time"]), videoId: String(r["item"]), page: String(r["page"] ?? ""), session: String(r["session"] ?? ""),
+    })), products: products.filter(p => !p["deleted_at"]).map(p => ({ id: p.id, name: String(p["name"]), video: String(p["video_url"] ?? ""), social: String(p["social_video_url"] ?? "") })), staleSince: meta.staleSince ?? null };
+  });
+
 /**
  * Customer list built on the server so it never depends on the browser
  * Firestore SDK (slow cold start) and always includes freshly registered
