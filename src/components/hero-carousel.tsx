@@ -5,7 +5,10 @@ import heroSofa from "@/assets/hero-sofa.jpg";
 import sofaEmerald from "@/assets/sofa-emerald.jpg";
 import sofaIvory from "@/assets/sofa-ivory.jpg";
 import { HeroVideo } from "@/components/hero-video";
-import { isDirectVideo } from "@/lib/video-media";
+import { parseVideoSource } from "@/lib/video-media";
+import { ProductVideo } from "@/components/product-video";
+import { useVideoSettings } from "@/lib/use-video-settings";
+import { selectHeroVideo, videoEnabled } from "@/lib/video-settings";
 import { Button } from "@/components/ui/button";
 import showcaseVideo from "@/assets/sofa-living-room.mp4.asset.json";
 import showcasePoster from "@/assets/sofa-living-room.jpg.asset.json";
@@ -55,6 +58,7 @@ const slides = [
 export function HeroCarousel() {
   const [i, setI] = useState(0);
   const brand = useBrand();
+  const videoSettings = useVideoSettings();
   const [screen, setScreen] = useState<"desktop" | "tablet" | "mobile">("desktop");
   useEffect(() => {
     const mobile = window.matchMedia("(max-width: 767px)");
@@ -64,15 +68,14 @@ export function HeroCarousel() {
     mobile.addEventListener("change", update); tablet.addEventListener("change", update);
     return () => { mobile.removeEventListener("change", update); tablet.removeEventListener("change", update); };
   }, []);
-  const ok = (v?: string) => (v && isDirectVideo(v) ? v : "");
-  const configuredVideo = screen === "mobile"
-    ? ok(brand.hero_video_mobile) || ok(brand.hero_video_tablet) || ok(brand.hero_video)
-    : screen === "tablet" ? ok(brand.hero_video_tablet) || ok(brand.hero_video) : ok(brand.hero_video);
+  const settings = videoSettings.data ?? { disabled: [] };
+  const configuredVideo = selectHeroVideo(settings, screen, brand);
   useEffect(() => {
     const t = setTimeout(() => setI((v) => (v + 1) % slides.length), i === 3 ? 14000 : 6500);
     return () => clearTimeout(t);
   }, [i]);
-  const video = heroSlideVideo(i, configuredVideo, showcaseVideo.url);
+  const selectedVideo = heroSlideVideo(i, configuredVideo, showcaseVideo.url);
+  const video = !videoSettings.error && videoEnabled(settings, selectedVideo) ? selectedVideo : "";
   const base = slides[i];
   // The first slide is CMS-driven so admin edits show up on the live site.
   const s =
@@ -92,7 +95,7 @@ export function HeroCarousel() {
     <section className="relative min-h-[92vh] flex items-center overflow-hidden bg-[color:var(--brand-cream)]">
       {/* background image */}
       <div key={i} className="absolute inset-0">
-        {video ? <HeroVideo key={video} url={video} poster={s.image} /> : <img src={s.image} alt="" aria-hidden fetchPriority={i === 0 ? "high" : "auto"} decoding="async" className="w-full h-full object-cover animate-kenburns" />}
+        {video ? (parseVideoSource(video)?.kind === "file" ? <HeroVideo key={video} url={video} poster={s.image} /> : <ProductVideo key={video} url={video} title="Homepage sofa video" productId="homepage" />) : <img src={s.image} alt="" aria-hidden fetchPriority={i === 0 ? "high" : "auto"} decoding="async" className="w-full h-full object-cover animate-kenburns" />}
         <div className="absolute inset-0 bg-gradient-to-r from-[color:var(--brand-cream)] via-[color:var(--brand-cream)]/70 md:via-[color:var(--brand-cream)]/50 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-[color:var(--brand-cream)]/60 via-transparent to-transparent md:hidden" />
       </div>

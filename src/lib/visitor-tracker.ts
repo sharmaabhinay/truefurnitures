@@ -13,7 +13,9 @@ export type VisitorEvent = {
     | "quote"
     | "newsletter"
     | "cta_impression"
-    | "cta_click";
+    | "cta_click"
+    | "video_play"
+    | "video_embed";
   time: string;
   page?: string;
   item?: string;

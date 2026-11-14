@@ -8,7 +8,7 @@ export function parseVideoSource(value: string): VideoSource | null {
     if (["youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be"].includes(host)) {
       const id = host === "youtu.be" ? url.pathname.split("/")[1] : url.pathname.match(/^\/(?:shorts|embed)\/([^/]+)/)?.[1] ?? (url.pathname === "/watch" ? url.searchParams.get("v") : null);
       if (!id || !/^[\w-]{11}$/.test(id)) return null;
-      return { kind: "youtube", url: `https://www.youtube.com/watch?v=${id}`, embedUrl: `https://www.youtube-nocookie.com/embed/${id}?playsinline=1&rel=0` };
+      return { kind: "youtube", url: `https://www.youtube.com/watch?v=${id}`, embedUrl: `https://www.youtube-nocookie.com/embed/${id}?playsinline=1&rel=0&autoplay=1&mute=1&loop=1&playlist=${id}&controls=0&enablejsapi=1` };
     }
     if (["instagram.com", "www.instagram.com"].includes(host)) {
       const match = url.pathname.match(/^\/(reel|reels|p)\/([\w-]+)\/?$/);
