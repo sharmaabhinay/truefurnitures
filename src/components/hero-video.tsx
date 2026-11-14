@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { videoId } from "@/lib/video-settings";
+import { logVisitor } from "@/lib/visitor-tracker";
 
 export function HeroVideo({ url, poster }: { url: string; poster: string }) {
   const ref = useRef<HTMLVideoElement>(null);
@@ -25,5 +27,6 @@ export function HeroVideo({ url, poster }: { url: string; poster: string }) {
     let hash = 2166136261;
     for (const char of url) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619);
     window.__lovableEvents?.track?.("project.homepage_video_viewed", { video_id: (hash >>> 0).toString(16), placement: "homepage" });
+    logVisitor({ type: "video_play", item: videoId(url), page: "/" });
   }} className="h-full w-full object-cover" />;
 }
