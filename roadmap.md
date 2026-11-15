@@ -1,5 +1,8 @@
 # Roadmap — fix issues from test report (Oct 2026)
 
+# Product editor layout
+- [ ] Finish phone tab layout and keyboard checks; confirm Save remains visible. Full signed-in verification requires a Firebase staff session.
+
 # Product and homepage videos
 - [ ] Add dedicated Videos admin controls for hero screen uploads and per-video visibility.
 - [ ] Start visible videos silently in a loop, with honest Instagram playback limitations.

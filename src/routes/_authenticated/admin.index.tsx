@@ -51,6 +51,7 @@ import { sendQuoteStatusEmail } from "@/lib/email.functions";
 import { productStatusLabel } from "@/lib/availability";
 import { AModal, AInput, AButton } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
+import { ProductEditorTabs } from "@/components/admin/product-editor-tabs";
 import {
   FiBarChart2, FiEye, FiPackage, FiUsers, FiTool, FiShoppingBag, FiShoppingCart, FiMessageCircle,
   FiSettings, FiStar, FiTag, FiEdit3, FiMapPin, FiFeather, FiBriefcase, FiTrendingUp,
@@ -1483,7 +1484,6 @@ type ProductOptions = {
   modelFileName?: string;
 };
 
-const PRODUCT_TABS = ["Basic", "Images", "Specs & Desc", "Variants", "3D Model"];
 const PRODUCT_BADGES = ["", "New", "Bestseller", "Premium", "Limited", "Made to Order"];
 const DEFAULT_COLOURS: ColourOption[] = [
   { label: "Sand", hex: "#D9C9A8" },
@@ -2162,23 +2162,7 @@ function ProductModal({
           <button onClick={onClose} className="text-xl" style={{ color: "#888899" }}>×</button>
         </div>
 
-        <div role="tablist" aria-label="Product sections" className="flex min-h-12 shrink-0 items-stretch overflow-x-auto border-b border-analytics-border px-2 sm:px-3 admin-scroll">
-          {PRODUCT_TABS.map((label, index) => (
-            <Button
-              key={label}
-              type="button"
-              variant="ghost"
-              role="tab"
-              id={`product-tab-${index}`}
-              aria-selected={tab === index}
-              aria-controls="product-editor-panel"
-              onClick={() => setTab(index)}
-              className={`h-12 shrink-0 rounded-none px-4 sm:px-5 text-[12px] font-semibold border-b-2 hover:bg-analytics-field hover:text-analytics-text ${tab === index ? "border-analytics-gold text-analytics-gold" : "border-transparent text-analytics-muted"}`}
-            >
-              {label}
-            </Button>
-          ))}
-        </div>
+        <ProductEditorTabs selected={tab} onSelect={setTab} />
 
         <div id="product-editor-panel" role="tabpanel" aria-labelledby={`product-tab-${tab}`} className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 sm:p-6 space-y-5 admin-scroll">
           {tab === 0 && (
