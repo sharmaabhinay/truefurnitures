@@ -58,7 +58,7 @@ export function VideoManager() {
           { key: "heroDesktop", label: "Desktop · 16:9", Icon: Monitor, fallback: brand.hero_video },
           { key: "heroTablet", label: "Tablet · 4:3", Icon: Tablet, fallback: brand.hero_video_tablet },
           { key: "heroMobile", label: "Mobile · 9:16", Icon: Smartphone, fallback: brand.hero_video_mobile },
-        ] as const).map(({ key, label, Icon, fallback }) => <div key={key} className="min-w-0 space-y-3"><Icon className="size-5 text-primary" /><VideoInput value={current[key] ?? fallback ?? ""} onChange={url => setDraft({ ...current, [key]: url })} label={label} folder="page-sections/hero-video" allowSocial onBusyChange={value => setUploads(p => ({ ...p, [key]: value }))} /></div>)}</div>
+        ] as const).map(({ key, label, Icon, fallback }) => <div key={key} className="min-w-0 space-y-3"><Icon className="size-5 text-primary" /><VideoInput value={current[key] ?? fallback ?? ""} onChange={url => setDraft({ ...current, [key]: url })} label={label} folder="page-sections/hero-video" onBusyChange={value => setUploads(p => ({ ...p, [key]: value }))} /></div>)}</div>
         <Button disabled={busy || Object.values(uploads).some(Boolean)} onClick={() => void persist(current)}><Save className="size-4" />{busy ? "Saving…" : "Save hero videos"}</Button>
       </>}
     </section>
