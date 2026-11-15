@@ -50,6 +50,7 @@ import { sendQuoteStatusEmail } from "@/lib/email.functions";
 
 import { productStatusLabel } from "@/lib/availability";
 import { AModal, AInput, AButton } from "@/components/admin/ui";
+import { Button } from "@/components/ui/button";
 import {
   FiBarChart2, FiEye, FiPackage, FiUsers, FiTool, FiShoppingBag, FiShoppingCart, FiMessageCircle,
   FiSettings, FiStar, FiTag, FiEdit3, FiMapPin, FiFeather, FiBriefcase, FiTrendingUp,
@@ -2146,11 +2147,14 @@ function ProductModal({
       onClick={onClose}
     >
       <div
-        className="rounded-2xl w-full max-w-4xl max-h-[92vh] overflow-hidden flex flex-col admin-scroll"
+        role="dialog"
+        aria-modal="true"
+        aria-label={isEdit ? "Edit Product" : "Add New Product"}
+        className="rounded-2xl w-full max-w-4xl max-h-[92dvh] min-h-0 overflow-hidden flex flex-col admin-scroll"
         style={{ background: "#1E1E28", border: "1px solid #2A2A38" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between gap-4 px-5 sm:px-6 py-4 border-b" style={{ borderColor: "#2A2A38" }}>
+        <div className="flex shrink-0 items-center justify-between gap-4 px-5 sm:px-6 py-4 border-b" style={{ borderColor: "#2A2A38" }}>
           <div>
             <div className="text-[17px] font-semibold">{isEdit ? "Edit Product" : "Add New Product"}</div>
             <div className="text-[11px] mt-0.5" style={{ color: "#888899" }}>Full CMS product setup · images · variants · 3D model</div>
@@ -2158,20 +2162,25 @@ function ProductModal({
           <button onClick={onClose} className="text-xl" style={{ color: "#888899" }}>×</button>
         </div>
 
-        <div className="flex overflow-x-auto border-b admin-scroll" style={{ borderColor: "#2A2A38" }}>
+        <div role="tablist" aria-label="Product sections" className="flex min-h-12 shrink-0 items-stretch overflow-x-auto border-b border-analytics-border px-2 sm:px-3 admin-scroll">
           {PRODUCT_TABS.map((label, index) => (
-            <button
+            <Button
               key={label}
+              type="button"
+              variant="ghost"
+              role="tab"
+              id={`product-tab-${index}`}
+              aria-selected={tab === index}
+              aria-controls="product-editor-panel"
               onClick={() => setTab(index)}
-              className="px-4 sm:px-5 py-3 text-[12px] font-semibold whitespace-nowrap border-b-2 transition-colors"
-              style={{ color: tab === index ? "#C8A86B" : "#888899", borderColor: tab === index ? "#C8A86B" : "transparent" }}
+              className={`h-12 shrink-0 rounded-none px-4 sm:px-5 text-[12px] font-semibold border-b-2 hover:bg-analytics-field hover:text-analytics-text ${tab === index ? "border-analytics-gold text-analytics-gold" : "border-transparent text-analytics-muted"}`}
             >
               {label}
-            </button>
+            </Button>
           ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5 admin-scroll">
+        <div id="product-editor-panel" role="tabpanel" aria-labelledby={`product-tab-${tab}`} className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 sm:p-6 space-y-5 admin-scroll">
           {tab === 0 && (
             <>
               <div className="grid sm:grid-cols-2 gap-4">
@@ -2471,7 +2480,7 @@ function ProductModal({
           )}
         </div>
 
-        <div className="flex gap-3 px-5 sm:px-6 py-4 border-t" style={{ borderColor: "#2A2A38" }}>
+        <div className="flex shrink-0 gap-3 px-5 sm:px-6 py-4 border-t" style={{ borderColor: "#2A2A38" }}>
           <button
             onClick={onClose}
             className="rounded-md px-5 py-2.5 text-[13px]"
