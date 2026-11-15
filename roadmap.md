@@ -1,7 +1,8 @@
 # Roadmap — fix issues from test report (Oct 2026)
 
 # Product editor layout
-- [ ] Finish phone tab layout and keyboard checks; confirm Save remains visible. Full signed-in verification requires a Firebase staff session.
+- [x] Finish phone tab layout and keyboard checks; all five tabs reachable at 320px, 360px and desktop, with arrow/Home/End navigation and Save visible; isolated browser checks pass without page errors, and preview build passes.
+- [ ] Verify the actual Edit Product window while signed in — blocked: the browser redirects to sign-in and no Firebase staff session or test credentials are available.
 
 # Product and homepage videos
 - [ ] Add dedicated Videos admin controls for hero screen uploads and per-video visibility.
