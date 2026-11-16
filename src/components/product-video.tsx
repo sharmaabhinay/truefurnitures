@@ -8,12 +8,14 @@ import { parseVideoSource } from "@/lib/video-media";
 export function ProductVideo({ url, vertical = false, title = "Product video", productId }: { url: string; vertical?: boolean; title?: string; productId?: string }) {
   const [opened, setOpened] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [ratio, setRatio] = useState<string | null>(null);
   const counted = useRef<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const settings = useVideoSettings();
   const enabled = !settings.error && videoEnabled(settings.data ?? { disabled: [] }, url);
   useEffect(() => {
+    setRatio(null);
     if (!enabled) { videoRef.current?.pause(); setOpened(false); return; }
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
     let visible = false;
@@ -33,9 +35,13 @@ export function ProductVideo({ url, vertical = false, title = "Product video", p
   if (!enabled) return null;
   if (!source) return <p role="alert" className="text-sm text-muted-foreground">Video unavailable.</p>;
   return <div className={`space-y-2 ${vertical ? "w-full max-w-[340px]" : "w-full"}`}>
-    <div ref={containerRef} className={`relative overflow-hidden rounded-md bg-muted ${vertical ? "aspect-[9/16]" : "aspect-video"}`}>
+    <div ref={containerRef} className="relative overflow-hidden rounded-md bg-muted" style={{ aspectRatio: ratio ?? (vertical ? "9 / 16" : "16 / 9") }}>
       {failed ? <p role="alert" className="absolute inset-0 grid place-items-center p-6 text-center text-muted-foreground">This video could not be played.</p>
-        : source.kind === "file" ? <video ref={videoRef} key={source.url} src={source.url} loop muted playsInline preload="metadata" aria-label={title} onError={() => setFailed(true)} onPlaying={() => {
+        : source.kind === "file" ? <video ref={videoRef} key={source.url} src={source.url} loop muted playsInline preload="metadata" aria-label={title} onError={() => setFailed(true)} onLoadedMetadata={(event) => {
+          // Fit the frame to the clip so nothing is cropped and no empty band is left around it.
+          const clip = event.currentTarget;
+          if (clip.videoWidth && clip.videoHeight) setRatio(`${clip.videoWidth} / ${clip.videoHeight}`);
+        }} onPlaying={() => {
           if (!productId || counted.current === source.url) return;
           counted.current = source.url;
           let hash = 2166136261;
