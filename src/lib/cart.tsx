@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { useAuth } from "@/lib/auth/auth-context";
 import { COL, fsGet, fsSet } from "@/lib/db/firestore";
 import { discountOn } from "./coupon-rules";
+import { findLine, withQty, type CartLineMatch } from "./cart-lines";
 import { logVisitor } from "@/lib/visitor-tracker";
 
 export type AppliedCoupon = {
@@ -37,6 +38,10 @@ type CartContextValue = {
   add: (item: Omit<CartItem, "id" | "quantity"> & { quantity?: number }) => void;
   remove: (id: string) => void;
   setQty: (id: string, qty: number) => void;
+  /** The cart line holding this exact configuration, if the cart already has one. */
+  lineFor: (match: CartLineMatch) => CartItem | undefined;
+  /** +/- one unit on a line; the line is dropped when it would fall below 1. */
+  changeQty: (id: string, delta: number) => void;
   clear: () => void;
   count: number;
   subtotal: number;
@@ -141,14 +146,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         });
 
         setItems((cur) => {
-          const existing = cur.find(
-            (i) =>
-              i.sofaId === input.sofaId &&
-              i.fabric === input.fabric &&
-              i.size === input.size &&
-              i.color === input.color &&
-              JSON.stringify(i.addons ?? []) === JSON.stringify(input.addons ?? []),
-          );
+          const existing = findLine(cur, input);
           if (existing) {
             return cur.map((i) =>
               i.id === existing.id ? { ...i, quantity: i.quantity + (input.quantity ?? 1) } : i,
@@ -180,6 +178,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
         setItems((cur) =>
           cur.map((i) => (i.id === id ? { ...i, quantity: Math.max(1, qty) } : i)),
         ),
+      lineFor: (match) => findLine(items, match),
+      changeQty: (id, delta) => {
+        const line = items.find((i) => i.id === id);
+        // A plus click is a real cart addition, so it counts like one.
+        if (line && delta > 0) {
+          logVisitor({
+            type: "add_to_cart",
+            page: window.location.pathname,
+            item: line.name,
+            sofaId: line.sofaId,
+            slug: line.slug,
+            qty: delta,
+          });
+        }
+        setItems((cur) => withQty(cur, id, delta));
+      },
       clear: () => { setItems([]); setCoupon(null); },
       count: items.reduce((n, i) => n + i.quantity, 0),
       subtotal,
@@ -205,6 +219,8 @@ const EMPTY_CART: CartContextValue = {
   add: noop,
   remove: noop,
   setQty: noop,
+  lineFor: () => undefined,
+  changeQty: noop,
   clear: noop,
   count: 0,
   subtotal: 0,

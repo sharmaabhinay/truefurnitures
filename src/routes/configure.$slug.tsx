@@ -9,6 +9,7 @@ import { COL, fsAdd, fsFindOne, where } from "@/lib/db/firestore";
 import { useAuth } from "@/lib/auth/auth-context";
 import { formatINR, estimatedDelivery } from "@/lib/format";
 import { useCart } from "@/lib/cart";
+import { CartQuantityControl } from "@/components/cart-quantity";
 import { toast } from "sonner";
 import { isProductLive } from "@/lib/availability";
 import { logVisitor } from "@/lib/visitor-tracker";
@@ -216,7 +217,6 @@ function ConfigureStudio() {
   const { user } = useAuth();
 
   const [mounted, setMounted] = useState(false);
-  const [added, setAdded] = useState(false);
   useEffect(() => setMounted(true), []);
   // Track that this product was opened in the 3D configurator.
   useEffect(() => {
@@ -282,6 +282,14 @@ function ConfigureStudio() {
   if (!sofa) return <ConfigureLoading />;
 
   const addonList = ADDONS.filter((a) => addons[a.key]).map((a) => a.label);
+  // Already in the cart with this exact build? Then the button becomes a +/- stepper.
+  const cartLine = cart.lineFor({
+    sofaId: sofa.id,
+    fabric,
+    size: sizeDef.label,
+    color: colorDef.label,
+    addons: addonList,
+  });
 
   const openSaveModal = () => {
     if (!user) {
@@ -479,36 +487,31 @@ function ConfigureStudio() {
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <button
-              disabled={added}
-              onClick={() => {
-                cart.add({
-                  sofaId: sofa.id,
-                  slug: sofa.slug,
-                  name: sofa.name,
-                  image: sofa.hero_image ?? "",
-                  unitPrice: price,
-                  fabric,
-                  size: sizeDef.label,
-                  color: colorDef.label,
-                  colorHex: colorDef.hex,
-                  addons: addonList,
-                });
-                setAdded(true);
-                toast.success(`${sofa.name} (${sizeDef.label}, ${colorDef.label}) added to cart`);
-                setTimeout(() => navigate({ to: "/cart" }), 750);
-              }}
-              className={`w-full px-6 py-4 text-white text-xs font-bold uppercase tracking-widest transition-colors disabled:opacity-100 ${added ? "bg-[color:var(--brand-accent)] tf-cart-bump" : "bg-[color:var(--brand-dark)] hover:bg-[color:var(--brand-accent)]"}`}
-            >
-              {added ? (
-                <span className="inline-flex items-center gap-2 tf-cart-check">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
-                  Added to Cart
-                </span>
-              ) : (
-                <>Add to Cart · Deposit {formatINR(deposit)}</>
-              )}
-            </button>
+            {cartLine ? (
+              <CartQuantityControl line={cartLine} deposit={deposit} className="w-full" />
+            ) : (
+              <button
+                onClick={() => {
+                  cart.add({
+                    sofaId: sofa.id,
+                    slug: sofa.slug,
+                    name: sofa.name,
+                    image: sofa.hero_image ?? "",
+                    unitPrice: price,
+                    fabric,
+                    size: sizeDef.label,
+                    color: colorDef.label,
+                    colorHex: colorDef.hex,
+                    addons: addonList,
+                  });
+                  toast.success(`${sofa.name} (${sizeDef.label}, ${colorDef.label}) added to cart`);
+                  setTimeout(() => navigate({ to: "/cart" }), 750);
+                }}
+                className="w-full px-6 py-4 bg-[color:var(--brand-dark)] text-white text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors"
+              >
+                Add to Cart · Deposit {formatINR(deposit)}
+              </button>
+            )}
             <button
               onClick={() => {
                 cart.add({
