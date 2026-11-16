@@ -17,16 +17,23 @@ export function HeroVideo({ url, poster }: { url: string; poster: string }) {
     observer.observe(video);
     return () => { observer.disconnect(); video.pause(); };
   }, [url]);
-  if (failed) return <img src={poster} alt="" aria-hidden className="h-full w-full object-cover" />;
-  return <video ref={ref} src={url} poster={poster} muted loop playsInline preload="metadata" aria-label="Homepage sofa video" onError={() => setFailed(true)} onPlaying={() => {
-    const video = ref.current;
-    if (!video || counted.current === url || document.visibilityState !== "visible") return;
-    const rect = video.getBoundingClientRect();
-    if (rect.bottom <= 0 || rect.top >= window.innerHeight || rect.right <= 0 || rect.left >= window.innerWidth) return;
-    counted.current = url;
-    let hash = 2166136261;
-    for (const char of url) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619);
-    window.__lovableEvents?.track?.("project.homepage_video_viewed", { video_id: (hash >>> 0).toString(16), placement: "homepage" });
-    logVisitor({ type: "video_play", item: videoId(url), page: "/" });
-  }} className="h-full w-full object-cover" />;
+  if (failed) return <img src={poster} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover" />;
+  // The clip is shown whole; a blurred copy of the scene fills the rest of the frame so
+  // there is no cropping and no empty band around a video of a different shape.
+  return (
+    <div className="absolute inset-0 overflow-hidden">
+      <img src={poster} alt="" aria-hidden className="absolute inset-0 h-full w-full scale-110 object-cover blur-2xl" />
+      <video ref={ref} src={url} poster={poster} muted loop playsInline preload="metadata" aria-label="Homepage sofa video" onError={() => setFailed(true)} onPlaying={() => {
+        const video = ref.current;
+        if (!video || counted.current === url || document.visibilityState !== "visible") return;
+        const rect = video.getBoundingClientRect();
+        if (rect.bottom <= 0 || rect.top >= window.innerHeight || rect.right <= 0 || rect.left >= window.innerWidth) return;
+        counted.current = url;
+        let hash = 2166136261;
+        for (const char of url) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619);
+        window.__lovableEvents?.track?.("project.homepage_video_viewed", { video_id: (hash >>> 0).toString(16), placement: "homepage" });
+        logVisitor({ type: "video_play", item: videoId(url), page: "/" });
+      }} className="relative h-full w-full object-contain" />
+    </div>
+  );
 }
