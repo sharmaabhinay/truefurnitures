@@ -45,12 +45,12 @@ export function ProductVideo({ url, vertical = false, title = "Product video", p
   if (!enabled) return null;
   if (!source) return <p role="alert" className="text-sm text-muted-foreground">Video unavailable.</p>;
   return <div className={`space-y-2 ${vertical ? "w-full max-w-[340px]" : "w-full"}`}>
-    <div ref={containerRef} className="relative overflow-hidden rounded-md bg-muted" style={{ aspectRatio: ratio ?? (vertical ? "9 / 16" : "16 / 9") }}>
+    <div ref={containerRef} className="relative overflow-hidden rounded-md bg-muted" style={{ aspectRatio: dims ? `${dims.w} / ${dims.h}` : (vertical ? "9 / 16" : "16 / 9"), maxWidth: dims && dims.h > dims.w ? "420px" : undefined }}>
       {failed ? <p role="alert" className="absolute inset-0 grid place-items-center p-6 text-center text-muted-foreground">This video could not be played.</p>
         : source.kind === "file" ? <video ref={videoRef} key={source.url} src={source.url} loop muted playsInline preload="metadata" aria-label={title} onError={() => setFailed(true)} onLoadedMetadata={(event) => {
           // Fit the frame to the clip so nothing is cropped and no empty band is left around it.
           const clip = event.currentTarget;
-          if (clip.videoWidth && clip.videoHeight) setRatio(`${clip.videoWidth} / ${clip.videoHeight}`);
+          if (clip.videoWidth && clip.videoHeight) setDims({ w: clip.videoWidth, h: clip.videoHeight });
         }} onPlaying={() => {
           if (!productId || counted.current === source.url) return;
           counted.current = source.url;
