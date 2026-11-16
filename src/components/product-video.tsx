@@ -8,14 +8,24 @@ import { parseVideoSource } from "@/lib/video-media";
 export function ProductVideo({ url, vertical = false, title = "Product video", productId }: { url: string; vertical?: boolean; title?: string; productId?: string }) {
   const [opened, setOpened] = useState(false);
   const [failed, setFailed] = useState(false);
-  const [ratio, setRatio] = useState<string | null>(null);
+  const [dims, setDims] = useState<{ w: number; h: number } | null>(null);
   const counted = useRef<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const settings = useVideoSettings();
   const enabled = !settings.error && videoEnabled(settings.data ?? { disabled: [] }, url);
   useEffect(() => {
-    setRatio(null);
+    setDims(null);
+    // Metadata can finish loading before React attaches its handlers, so read the clip
+    // dimensions here as well and keep listening while the element is mounted.
+    const clip = videoRef.current;
+    if (!clip) return;
+    const apply = () => { if (clip.videoWidth && clip.videoHeight) setDims({ w: clip.videoWidth, h: clip.videoHeight }); };
+    apply();
+    clip.addEventListener("loadedmetadata", apply);
+    return () => clip.removeEventListener("loadedmetadata", apply);
+  }, [url, enabled, failed]);
+  useEffect(() => {
     if (!enabled) { videoRef.current?.pause(); setOpened(false); return; }
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
     let visible = false;
