@@ -1,6 +1,11 @@
 export type VideoSource = { kind: "file" | "youtube" | "instagram"; url: string; embedUrl?: string };
 
 export function parseVideoSource(value: string): VideoSource | null {
+  const raw = value.trim();
+  // Same-origin asset paths (e.g. /__l5e/assets-v1/.../clip.mp4) are served by the app itself.
+  if (raw.startsWith("/") && !raw.startsWith("//") && !raw.startsWith("/\\")) {
+    return /\.(mp4|webm|ogv|ogg)$/i.test(raw.split(/[?#]/)[0]) ? { kind: "file", url: raw } : null;
+  }
   try {
     const url = new URL(value.trim());
     if (url.protocol !== "https:" || url.username || url.password) return null;
