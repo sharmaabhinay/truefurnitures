@@ -1,6 +1,8 @@
 import { Minus, Plus } from "lucide-react";
 import { useCart, type CartItem } from "@/lib/cart";
 import { formatINR } from "@/lib/format";
+import { Button } from "@/components/ui/button";
+import { MAX_LINE_QTY } from "@/lib/cart-lines";
 
 type Props = {
   /** The cart line this control edits. */
@@ -19,16 +21,18 @@ export function CartQuantityControl({ line, deposit, className = "" }: Props) {
 
   return (
     <div
-      className={`flex items-stretch border-2 border-[color:var(--brand-dark)] bg-white ${className}`}
+      className={`flex items-stretch border-2 border-primary bg-background ${className}`}
     >
-      <button
+      <Button
         type="button"
+        variant="ghost"
         aria-label={`Remove one ${line.name} from cart`}
+        title="Remove one"
         onClick={() => changeQty(line.id, -1)}
-        className="grid place-items-center px-5 sm:px-7 text-[color:var(--brand-dark)] transition-colors hover:bg-[color:var(--brand-dark)] hover:text-white"
+        className="h-auto self-stretch rounded-none px-5 sm:px-7 text-primary hover:bg-primary hover:text-primary-foreground"
       >
         <Minus className="size-4" strokeWidth={2.5} />
-      </button>
+      </Button>
 
       <div className="flex-1 min-w-0 flex flex-col items-center justify-center px-2 py-4 text-center">
         <span
@@ -38,20 +42,23 @@ export function CartQuantityControl({ line, deposit, className = "" }: Props) {
           {line.quantity} in cart
         </span>
         {deposit ? (
-          <span className="mt-1.5 text-[9px] uppercase tracking-widest text-[color:var(--brand-dark)]/50 truncate">
+          <span className="mt-1.5 text-[9px] uppercase tracking-widest text-muted-foreground truncate">
             Deposit {formatINR(deposit)}
           </span>
         ) : null}
       </div>
 
-      <button
+      <Button
         type="button"
+        variant="ghost"
         aria-label={`Add one ${line.name} to cart`}
+        title="Add one"
+        disabled={line.quantity >= MAX_LINE_QTY}
         onClick={() => changeQty(line.id, 1)}
-        className="grid place-items-center px-5 sm:px-7 text-[color:var(--brand-dark)] transition-colors hover:bg-[color:var(--brand-dark)] hover:text-white"
+        className="h-auto self-stretch rounded-none px-5 sm:px-7 text-primary hover:bg-primary hover:text-primary-foreground"
       >
         <Plus className="size-4" strokeWidth={2.5} />
-      </button>
+      </Button>
     </div>
   );
 }

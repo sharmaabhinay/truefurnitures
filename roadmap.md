@@ -1,5 +1,8 @@
 # Roadmap — fix issues from test report (Oct 2026)
 
+# Storefront cart quantity controls
+- [x] Verify actual product and customiser cart additions, reopen each page, increment/decrement and restore Add to Cart at zero. Ten unit tests pass; desktop and 360px phone checks pass without page errors or overflow.
+
 # Product editor layout
 - [x] Finish phone tab layout and keyboard checks; all five tabs reachable at 320px, 360px and desktop, with arrow/Home/End navigation and Save visible; isolated browser checks pass without page errors, and preview build passes.
 - [ ] Verify the actual Edit Product window while signed in — blocked: the browser redirects to sign-in and no Firebase staff session or test credentials are available.

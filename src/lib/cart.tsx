@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { useAuth } from "@/lib/auth/auth-context";
 import { COL, fsGet, fsSet } from "@/lib/db/firestore";
 import { discountOn } from "./coupon-rules";
-import { findLine, withQty, type CartLineMatch } from "./cart-lines";
+import { findLine, MAX_LINE_QTY, withQty, type CartLineMatch } from "./cart-lines";
 import { logVisitor } from "@/lib/visitor-tracker";
 
 export type AppliedCoupon = {
@@ -181,6 +181,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       lineFor: (match) => findLine(items, match),
       changeQty: (id, delta) => {
         const line = items.find((i) => i.id === id);
+        if (!line || line.quantity + delta > MAX_LINE_QTY) return;
         // A plus click is a real cart addition, so it counts like one.
         if (line && delta > 0) {
           logVisitor({
