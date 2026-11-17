@@ -12,6 +12,7 @@
 - Keep the home splash in the shared root as a one-time document-entry overlay, released by first-screen paint, font and priority-image readiness with an independent 1.8-second cap; never wait for store settings or window.load, so background resources cannot block entry.
 - Product 3D viewers must use the product's supplied model and show an unavailable/error state instead of substituting generic geometry; this prevents a misleading product preview.
 - Cart additions and storefront quantity controls share pure configuration matching; this prevents editing a different fabric, size, colour or add-on line.
+- Product detail pages list saved cart builds by product identity with configuration labels and separate quantity controls; this surfaces customiser additions without merging distinct builds.
 - Product photo galleries use the installed Embla carousel with shared selection for touch, keyboard and thumbnails; this keeps gesture handling consistent without a custom swipe engine.
 - Customer preparation FAQs live in one shared data module, reused by home, product pages and the FAQ page; this prevents answers drifting between customer entry points.
 - The home customer journey uses lazy-loaded illustrative photographs and one-shot IntersectionObserver reveals with reduced-motion support; this avoids delaying the splash or repeatedly animating content.

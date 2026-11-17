@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_LINE_QTY, findLine, sameLine, withQty } from "@/lib/cart-lines";
+import { MAX_LINE_QTY, findLine, productLines, sameLine, withQty } from "@/lib/cart-lines";
 import type { CartItem } from "@/lib/cart";
 
 function line(over: Partial<CartItem> = {}): CartItem {
@@ -72,5 +72,19 @@ describe("cart quantity steps", () => {
   it("leaves the cart untouched for an unknown line", () => {
     const items = [line()];
     expect(withQty(items, "nope", 1)).toBe(items);
+  });
+});
+
+describe("product-page saved cart builds", () => {
+  it("finds a customiser build even when the product page uses a fabric label and no size", () => {
+    const configured = line({ fabric: "boucle", size: "3-Seater", color: "Sand", addons: ["Hidden storage"] });
+    expect(productLines([configured], "s1")).toEqual([configured]);
+  });
+
+  it("keeps multiple saved builds separate and excludes other sofas", () => {
+    const first = line();
+    const second = line({ id: "l2", fabric: "Velvet", quantity: 3 });
+    expect(productLines([first, second, line({ id: "l3", sofaId: "s2" })], "s1")).toEqual([first, second]);
+    expect(withQty([first, second], "l2", 1).map(item => item.quantity)).toEqual([1, 4]);
   });
 });

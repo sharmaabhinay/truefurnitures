@@ -31,6 +31,11 @@ export function findLine(items: CartItem[], match: CartLineMatch): CartItem | un
   return items.find((item) => sameLine(item, match));
 }
 
+/** Product pages show saved builds without merging or changing their configuration. */
+export function productLines(items: CartItem[], sofaId: string): CartItem[] {
+  return items.filter((item) => item.sofaId === sofaId);
+}
+
 /** Highest quantity a single cart line may hold. */
 export const MAX_LINE_QTY = 99;
 

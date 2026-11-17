@@ -7,6 +7,7 @@ import { COL, fsFindOne, fsList, where, limit, sortRows } from "@/lib/db/firesto
 import { formatINR, estimatedDelivery } from "@/lib/format";
 import { useCart } from "@/lib/cart";
 import { CartQuantityControl } from "@/components/cart-quantity";
+import { productLines } from "@/lib/cart-lines";
 import { useAuth } from "@/lib/auth/auth-context";
 import { toast } from "sonner";
 import sofaMalwa from "@/assets/sofa-malwa.jpg";
@@ -311,8 +312,8 @@ function ProductPage() {
   const sale = sofa.sale_price ? Number(sofa.sale_price) : null;
   const configuredPrice = (sale ?? price) + (activeFabric?.priceAdjust ?? 0);
   const deposit = Math.round(configuredPrice * 0.2);
-  // Already in the cart with this fabric? Then the button becomes a +/- stepper.
-  const cartLine = cart.lineFor({ sofaId: sofa.id, fabric: activeFabric?.label ?? fabric });
+  // Include saved customiser builds, but keep each configuration's quantity separate.
+  const savedCartLines = productLines(cart.items, sofa.id);
   const eta = mounted ? estimatedDelivery(sofa.delivery_days ?? 30) : null;
   const specRows = Array.isArray(options.specs) && options.specs.length > 0
     ? options.specs.filter((s) => s.key?.trim() || s.val?.trim())
@@ -409,8 +410,17 @@ function ProductPage() {
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-3 mb-3">
-            {cartLine ? (
-              <CartQuantityControl line={cartLine} deposit={deposit} className="flex-1" />
+            {savedCartLines.length > 0 ? (
+              <div className="flex-1 min-w-0 space-y-3">
+                {savedCartLines.map((line) => (
+                  <div key={line.id} className="space-y-2">
+                    <p className="text-xs leading-5 text-muted-foreground break-words">
+                      {[line.fabric, line.size, line.color, ...(line.addons ?? [])].filter(Boolean).join(" · ")}
+                    </p>
+                    <CartQuantityControl line={line} deposit={Math.round(line.unitPrice * 0.2)} />
+                  </div>
+                ))}
+              </div>
             ) : (
               <button
                 onClick={() => {

@@ -1,5 +1,8 @@
 # Roadmap — fix issues from test report (Oct 2026)
 
+# Saved cart button comment e91f2776-edd3-488a-a101-007503e40e65
+- [ ] Show quantity controls for saved customiser builds on the product page, keep configurations separate, verify add/reopen/update flow and reply to the thread.
+
 # Product benefits comment 47bc2a93-1291-414d-a83f-ea21353d0c36
 - [x] Improve the marked benefits section with compact phone rows, aligned icons and subtle dividers; all six benefits verified at 320px, 360px, tablet and desktop without overflow or page errors. Reply to the live thread with these results.
 
