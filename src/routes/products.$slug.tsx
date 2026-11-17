@@ -490,17 +490,17 @@ function ProductPage() {
         </>),
         features: (<>
 {sofa.features && sofa.features.length > 0 && (
-        <section className="bg-[color:var(--brand-muted)]/40 py-16 sm:py-20">
+        <section className="bg-muted/40 py-10 sm:py-20" aria-labelledby="product-benefits-title">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-10">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-display mb-10 text-balance">Why this piece is worth it.</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <h2 id="product-benefits-title" className="text-2xl sm:text-3xl md:text-4xl font-display mb-5 sm:mb-10 text-balance">Why this piece is worth it.</h2>
+            <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-0 sm:gap-5">
               {sofa.features.map((f) => (
-                <div key={f} className="bg-white p-6 border border-[color:var(--brand-dark)]/5">
-                  <div className="text-[color:var(--brand-accent)] text-2xl font-display mb-3">✦</div>
-                  <p className="text-sm leading-relaxed">{f}</p>
-                </div>
+                <li key={f} className="flex items-start gap-3 border-b border-border py-4 last:border-b-0 sm:block sm:bg-background sm:p-6 sm:border sm:last:border-b">
+                  <span aria-hidden="true" className="shrink-0 text-accent text-xl leading-6 sm:text-2xl sm:mb-3 sm:block">✦</span>
+                  <p className="min-w-0 text-sm leading-6 break-words">{f}</p>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
         </section>
       )}

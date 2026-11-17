@@ -1,5 +1,8 @@
 # Roadmap — fix issues from test report (Oct 2026)
 
+# Product benefits comment 47bc2a93-1291-414d-a83f-ea21353d0c36
+- [x] Improve the marked benefits section with compact phone rows, aligned icons and subtle dividers; all six benefits verified at 320px, 360px, tablet and desktop without overflow or page errors. Reply to the live thread with these results.
+
 # Storefront cart quantity controls
 - [x] Verify actual product and customiser cart additions, reopen each page, increment/decrement and restore Add to Cart at zero. Ten unit tests pass; desktop and 360px phone checks pass without page errors or overflow.
 
