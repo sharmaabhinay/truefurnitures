@@ -1,5 +1,8 @@
 # Roadmap — fix issues from test report (Oct 2026)
 
+# Cart consistency sweep
+- [x] Read product/customiser additions, Buy Now, cart controls, header, checkout summary/order transaction, local/remote cart persistence, saved/shared-design links and staff cart reports. Fixed Buy Now adding an extra unit and cart decrement refusing zero removal. Both real public flows pass on mobile; 12 unit tests pass. Account cart sync, signed-in checkout and staff readback remain unverified; settled records unchanged.
+
 # Saved cart button comment e91f2776-edd3-488a-a101-007503e40e65
 - [x] Show separate quantity controls for saved customiser builds on the product page. Verified actual add, product-page plus, reload persistence, minus and zero removal on a 360px phone; 12 tests pass. Reply to the thread with the fix and verification limits.
 

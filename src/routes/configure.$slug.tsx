@@ -514,7 +514,7 @@ function ConfigureStudio() {
             )}
             <button
               onClick={() => {
-                cart.add({
+                if (!cartLine) cart.add({
                   sofaId: sofa.id,
                   slug: sofa.slug,
                   name: sofa.name,

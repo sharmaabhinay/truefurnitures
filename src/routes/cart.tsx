@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/auth-context";
 import { toast } from "sonner";
 import { CouponCelebration } from "@/components/coupon-celebration";
+import { MAX_LINE_QTY } from "@/lib/cart-lines";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
@@ -27,7 +28,7 @@ export const Route = createFileRoute("/cart")({
 });
 
 function CartPage() {
-  const { items, remove, setQty, subtotal, discount, total, count, coupon, applyCoupon, removeCoupon } = useCart();
+  const { items, remove, changeQty, subtotal, discount, total, count, coupon, applyCoupon, removeCoupon } = useCart();
   const navigate = useNavigate();
   const checkCoupon = useServerFn(validateCoupon);
   const { user } = useAuth();
@@ -115,9 +116,9 @@ function CartPage() {
                     </div>
                     <div className="mt-auto flex items-end justify-between gap-3 pt-4">
                       <div className="inline-flex items-center border border-[color:var(--brand-dark)]/15">
-                        <button onClick={() => setQty(i.id, i.quantity - 1)} className="px-3 py-1.5 text-base hover:bg-[color:var(--brand-muted)]" aria-label="Decrease">−</button>
+                        <Button variant="ghost" onClick={() => changeQty(i.id, -1)} className="rounded-none px-3" aria-label="Decrease">−</Button>
                         <span className="px-4 py-1.5 text-sm min-w-[2rem] text-center">{i.quantity}</span>
-                        <button onClick={() => setQty(i.id, i.quantity + 1)} className="px-3 py-1.5 text-base hover:bg-[color:var(--brand-muted)]" aria-label="Increase">+</button>
+                        <Button variant="ghost" disabled={i.quantity >= MAX_LINE_QTY} onClick={() => changeQty(i.id, 1)} className="rounded-none px-3" aria-label="Increase">+</Button>
                       </div>
                       <div className="text-right">
                         <div className="font-display text-lg">{formatINR(i.unitPrice * i.quantity)}</div>

@@ -442,7 +442,7 @@ function ProductPage() {
             )}
             <button
               onClick={() => {
-                cart.add({
+                if (savedCartLines.length === 0) cart.add({
                   sofaId: sofa.id,
                   slug: sofa.slug,
                   name: sofa.name,
