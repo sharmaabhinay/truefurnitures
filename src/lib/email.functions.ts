@@ -10,7 +10,9 @@ import {
   depositStatusHtml,
   depositStatusSms,
   sendSms,
+  shell,
 } from "@/lib/email-templates";
+import { requireFirebaseAuth } from "@/lib/auth/firebase-auth-middleware";
 
 export const sendWelcomeEmail = createServerFn({ method: "POST" })
   .validator((d: { email: string; name?: string | null }) => d)
@@ -176,4 +178,40 @@ export const sendQuoteStatusEmail = createServerFn({ method: "POST" })
       }),
       brand,
     );
+  });
+
+/** Emails the customer a workshop progress photo the team just posted on their order. Staff only. */
+export const sendOrderProgressEmail = createServerFn({ method: "POST" })
+  .middleware([requireFirebaseAuth])
+  .validator((d: { orderId: string; imageUrl: string; caption?: string | null }) => {
+    if (!/^https:\/\//.test(d.imageUrl)) throw new Error("Invalid photo link");
+    return { orderId: String(d.orderId), imageUrl: d.imageUrl, caption: (d.caption ?? "").slice(0, 500) };
+  })
+  .handler(async ({ data, context }) => {
+    const { adminGetDoc } = await import("@/lib/firebase-admin.server");
+    let role = context.role;
+    if (role !== "admin" && role !== "staff") {
+      const row = await adminGetDoc("user_roles", context.userId);
+      role = typeof row?.["role"] === "string" ? (row["role"] as string) : role;
+    }
+    if (role !== "admin" && role !== "staff") throw new Error("Staff only");
+    const order = await adminGetDoc("orders", data.orderId);
+    if (!order) return { sent: false as const, error: "order_not_found" };
+    const profile = order["user_id"] ? await adminGetDoc("profiles", String(order["user_id"])) : null;
+    const email = typeof profile?.["email"] === "string" ? (profile["email"] as string) : null;
+    if (!email) return { sent: false as const, error: "no_email" };
+    const brand = await getBrand();
+    const orderNumber = (order["order_number"] as string | null) ?? order.id.slice(0, 8).toUpperCase();
+    const name = (profile?.["full_name"] as string | null) ?? null;
+    const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    const html = shell(
+      brand,
+      "Workshop update",
+      `<p style="margin:0 0 14px">${name ? `Hi ${esc(name.split(" ")[0])},` : "Hello,"}</p>
+       <p style="margin:0 0 14px">Here's a fresh look at your sofa being made in our workshop (order #${esc(orderNumber)}).</p>
+       <img src="${esc(data.imageUrl)}" alt="Your sofa in production" style="display:block;width:100%;max-width:480px;margin:0 0 14px;border:1px solid #eee" />
+       ${data.caption ? `<p style="margin:0 0 18px;white-space:pre-wrap">${esc(data.caption)}</p>` : ""}
+       <p style="margin:0"><a href="https://truefurnitures.lovable.app/dashboard" style="color:#C8A86B">Track your order</a></p>`,
+    );
+    return sendResend(email, `Workshop update — #${orderNumber} · ${brand.brand_name}`, html, brand);
   });

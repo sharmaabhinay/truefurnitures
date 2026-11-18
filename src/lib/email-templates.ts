@@ -67,7 +67,7 @@ export async function sendResend(to: string, subject: string, html: string, bran
   return { sent: true as const };
 }
 
-function shell(brand: Brand, eyebrow: string, inner: string) {
+export function shell(brand: Brand, eyebrow: string, inner: string) {
   return `
   <div style="font-family:Georgia,serif;background:#faf7f2;padding:40px 20px;color:#1a1a1a;">
     <div style="max-width:560px;margin:0 auto;background:#ffffff;padding:48px 40px;border:1px solid #eee;">
