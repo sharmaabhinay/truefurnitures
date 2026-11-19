@@ -13,6 +13,7 @@ export type ChatMessage = {
   product_name?: string | null;
   product_image?: string | null;
   product_price?: number | null;
+  image_url?: string | null;
 };
 
 export const byOldest = (rows: ChatMessage[]) =>

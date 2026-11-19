@@ -17,6 +17,7 @@ import {
 } from "@/lib/format";
 
 type Order = {
+  progress_photos?: { url: string; caption?: string; created_at: string }[];
   id: string;
   order_number: string;
   sofa_snapshot: { name?: string; slug?: string } | null;
@@ -209,6 +210,21 @@ function Dashboard() {
                         );
                       })}
                     </ol>
+                  )}
+
+                  {Array.isArray(o.progress_photos) && o.progress_photos.length > 0 && (
+                    <div className="mt-6">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-dark)]/50 mb-3">From our workshop</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {[...o.progress_photos].reverse().map((p: { url: string; caption?: string; created_at: string }) => (
+                          <a key={p.created_at} href={p.url} target="_blank" rel="noreferrer" className="block">
+                            <img src={p.url} alt={p.caption ?? "Your sofa in production"} loading="lazy" className="w-full aspect-[4/3] object-cover" />
+                            <p className="text-[10px] text-[color:var(--brand-dark)]/50 mt-1">{formatDate(p.created_at)}</p>
+                            {p.caption && <p className="text-xs">{p.caption}</p>}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
                   )}
 
                   {(o.status === "cancellation_requested" || o.status === "refund_requested") && (

@@ -13,6 +13,7 @@ import { useCarpenters } from "@/components/admin/carpenter-manager";
 import { toast } from "sonner";
 import { OrderInvoiceButton } from "@/components/order-invoice-button";
 import { SendInvoiceButton } from "@/components/admin/send-invoice";
+import { OrderProgressPhotos } from "@/components/admin/order-progress-photos";
 
 export const Route = createFileRoute("/_authenticated/admin/orders/$id")({
   ssr: false,
@@ -45,7 +46,7 @@ const NOTIFIABLE = new Set([
 
 function OrderDetail() {
   const { id } = Route.useParams();
-  const { isStaff, loading: authLoading } = useAuth();
+  const { isStaff, isAdmin, user, loading: authLoading } = useAuth();
   const qc = useQueryClient();
   const getAuth = useServerFn(getAuthUserDetails);
   const notifyCustomer = useServerFn(sendOrderStatusEmail);
@@ -319,6 +320,10 @@ function OrderDetail() {
                   );
                 })}
               </ol>
+            </Panel>
+
+            <Panel title="Workshop photos">
+              <OrderProgressPhotos order={order} senderId={user?.uid} senderRole={isAdmin ? "admin" : "staff"} />
             </Panel>
 
             {/* Notes */}

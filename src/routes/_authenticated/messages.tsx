@@ -93,6 +93,11 @@ function Messages() {
                   <div key={m.id} className={`flex animate-fade-up ${mine ? "justify-end" : "justify-start"}`}>
                     <div className={`max-w-[78%] px-4 py-2.5 text-sm ${mine ? "bg-[color:var(--brand-dark)] text-white" : "bg-[color:var(--brand-muted)]"}`}>
                       <p className="whitespace-pre-wrap">{m.body}</p>
+                      {m.image_url && (
+                        <a href={m.image_url} target="_blank" rel="noreferrer" className="block mt-2">
+                          <img src={m.image_url} alt="Workshop update" loading="lazy" className="w-full max-w-xs object-cover" />
+                        </a>
+                      )}
                       {m.product_slug && (
                         <Link
                           to="/products/$slug"
