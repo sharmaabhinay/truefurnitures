@@ -71,7 +71,7 @@ export function LaunchSplash() {
     <div className={`tf-launch-splash ${leaving ? "tf-launch-splash--leaving" : ""}`} role="status" aria-live="polite" aria-label="Loading True Furniture's">
       <div className="tf-launch-identity">
         <div className="tf-launch-mark" aria-hidden="true">
-          <img src="/favicon.png" alt="" width={80} height={80} className="tf-launch-logo" />
+          <span className="tf-launch-logo">TF<span className="tf-launch-logo-suffix">’s</span></span>
         </div>
         <p className="font-display text-3xl sm:text-4xl text-brand-dark">True Furniture’s</p>
         <div className="tf-launch-line" aria-hidden="true"><span /></div>
