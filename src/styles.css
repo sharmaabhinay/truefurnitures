@@ -289,7 +289,7 @@ button:disabled { cursor: not-allowed; }
 .tf-launch-splash--leaving { opacity: 0; visibility: hidden; pointer-events: none; }
 .tf-launch-identity { display: flex; flex-direction: column; align-items: center; gap: 28px; padding: 24px; }
 .tf-launch-mark { position: relative; display: grid; place-items: center; width: 112px; height: 112px; }
-.tf-launch-logo { display: inline-flex; align-items: baseline; font-family: Arial, Helvetica, sans-serif; font-size: 44px; font-weight: 400; line-height: 1; letter-spacing: 0; animation: tf-logo-reveal 0.75s ease both; }
+.tf-launch-logo { display: inline-flex; align-items: baseline; font-family: var(--font-sans); font-size: 44px; font-weight: 500; line-height: 1; letter-spacing: 0; color: var(--brand-dark); animation: tf-logo-reveal 0.75s ease both; }
 .tf-launch-logo-suffix { font-size: 28px; }
 .tf-launch-line { width: 160px; height: 2px; overflow: hidden; background: var(--brand-muted); }
 .tf-launch-line span { display: block; width: 55%; height: 100%; background: var(--brand-accent); animation: tf-logo-line 1.4s ease-in-out infinite; }
