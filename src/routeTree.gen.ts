@@ -29,6 +29,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RoomAdvisorRouteImport } from './routes/room-advisor'
 import { Route as ShowroomsRouteImport } from './routes/showrooms'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as TrackOrderRouteImport } from './routes/track-order'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
@@ -156,6 +157,11 @@ const ShowroomsRoute = ShowroomsRouteImport.update({
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TrackOrderRoute = TrackOrderRouteImport.update({
+  id: '/track-order',
+  path: '/track-order',
   getParentRoute: () => rootRouteImport,
 } as any)
 const Char91DotmcpChar93ListToolsRoute =
@@ -338,6 +344,7 @@ export interface FileRoutesByFullPath {
   '/room-advisor': typeof RoomAdvisorRoute
   '/showrooms': typeof ShowroomsRoute
   '/terms': typeof TermsRoute
+  '/track-order': typeof TrackOrderRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
@@ -388,6 +395,7 @@ export interface FileRoutesByTo {
   '/room-advisor': typeof RoomAdvisorRoute
   '/showrooms': typeof ShowroomsRoute
   '/terms': typeof TermsRoute
+  '/track-order': typeof TrackOrderRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/checkout': typeof AuthenticatedCheckoutRoute
@@ -439,6 +447,7 @@ export interface FileRoutesById {
   '/room-advisor': typeof RoomAdvisorRoute
   '/showrooms': typeof ShowroomsRoute
   '/terms': typeof TermsRoute
+  '/track-order': typeof TrackOrderRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
@@ -491,6 +500,7 @@ export interface FileRouteTypes {
     | '/room-advisor'
     | '/showrooms'
     | '/terms'
+    | '/track-order'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/admin'
@@ -541,6 +551,7 @@ export interface FileRouteTypes {
     | '/room-advisor'
     | '/showrooms'
     | '/terms'
+    | '/track-order'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/checkout'
@@ -591,6 +602,7 @@ export interface FileRouteTypes {
     | '/room-advisor'
     | '/showrooms'
     | '/terms'
+    | '/track-order'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/admin'
@@ -643,6 +655,7 @@ export interface RootRouteChildren {
   RoomAdvisorRoute: typeof RoomAdvisorRoute
   ShowroomsRoute: typeof ShowroomsRoute
   TermsRoute: typeof TermsRoute
+  TrackOrderRoute: typeof TrackOrderRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ConfigureSlugRoute: typeof ConfigureSlugRoute
@@ -795,6 +808,13 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/track-order': {
+      id: '/track-order'
+      path: '/track-order'
+      fullPath: '/track-order'
+      preLoaderRoute: typeof TrackOrderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/.mcp/list-tools': {
@@ -1093,6 +1113,7 @@ const rootRouteChildren: RootRouteChildren = {
   RoomAdvisorRoute: RoomAdvisorRoute,
   ShowroomsRoute: ShowroomsRoute,
   TermsRoute: TermsRoute,
+  TrackOrderRoute: TrackOrderRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
