@@ -36,6 +36,7 @@ import { WelcomePopupSettings } from "@/components/admin/welcome-popup-settings"
 import { PopupInsights } from "@/components/admin/popup-insights";
 import { CartInsights } from "@/components/admin/cart-insights";
 import { PageEditor } from "@/components/admin/page-editor";
+import { RealHomesModeration } from "@/components/admin/real-homes-moderation";
 import { AdminUsers } from "@/components/admin/admin-users";
 import { FileManager, FilePickerModal } from "@/components/admin/file-manager";
 import { NotesManager } from "@/components/admin/notes-manager";
@@ -2727,6 +2728,7 @@ function Reviews() {
   };
   return (
     <div className="space-y-3">
+      <RealHomesModeration />
       <Card>
         <div className="flex items-center justify-between gap-3">
           <div className="text-[13px] font-semibold">Product reviews</div>

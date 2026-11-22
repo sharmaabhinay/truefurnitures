@@ -1,5 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useBrand } from "@/lib/brand";
+import { Button } from "@/components/ui/button";
+import { Truck } from "lucide-react";
 
 export function SiteFooter() {
   const brand = useBrand();
@@ -16,6 +18,8 @@ export function SiteFooter() {
         <div>
           <p className="text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-accent)] mb-5">Studio</p>
           <ul className="space-y-3 text-sm text-white/60 font-light">
+            <li><Button asChild variant="link" className="p-0 h-auto text-primary-foreground"><Link to="/track-order"><Truck />Track order</Link></Button></li>
+            <li><Link to="/gallery" className="hover:text-primary-foreground transition-colors">Real Homes of Indore</Link></li>
             <li><Link to="/collections" className="hover:text-white transition-colors">Collections</Link></li>
             <li><Link to="/about" className="hover:text-white transition-colors">The Atelier</Link></li>
             <li><Link to="/showrooms" className="hover:text-white transition-colors">Showrooms</Link></li>

@@ -6,7 +6,8 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { COL, fsList, sortRows, where } from "@/lib/db/firestore";
 import { useCart } from "@/lib/cart";
 import { useCustomerUnread, useAdminUnread } from "@/lib/messages";
-import { FiSearch, FiShoppingBag, FiMenu, FiX, FiChevronDown, FiMessageSquare } from "react-icons/fi";
+import { FiSearch, FiShoppingBag, FiMenu, FiX, FiChevronDown, FiMessageSquare, FiTruck } from "react-icons/fi";
+import { Button } from "@/components/ui/button";
 import { isProductLive } from "@/lib/availability";
 
 type SearchItem = {
@@ -92,7 +93,8 @@ export function SiteHeader() {
         { to: "/collections", label: "Collections" },
         { to: "/room-advisor", label: "Room advisor" },
         ...(f.design3d ? [{ to: "/design", label: "Design Yours" }] : []),
-        ...(f.gallery ? [{ to: "/gallery", label: "Gallery" }] : []),
+        ...(f.gallery ? [{ to: "/gallery", label: "Real Homes of Indore" }] : []),
+        { to: "/track-order", label: "Track order" },
         { to: "/cart", label: "Cart" },
       ],
     },
@@ -156,6 +158,7 @@ export function SiteHeader() {
           ))}
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
+          <Button asChild variant="ghost" size="sm" className="shrink-0 px-1 sm:px-3" title="Track order"><Link to="/track-order" aria-label="Track order"><FiTruck /><span className="hidden sm:inline">Track order</span></Link></Button>
           <div ref={searchRef} className="relative hidden md:block">
             <div className="flex items-center border border-[color:var(--brand-dark)]/15 bg-white/70 focus-within:border-[color:var(--brand-dark)] transition-colors">
               <FiSearch className="ml-2.5 text-[color:var(--brand-dark)]/50 shrink-0" size={14} />

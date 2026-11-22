@@ -1,19 +1,24 @@
 import { useFeatures } from "@/lib/brand";
 import { SectionDisabled } from "@/components/section-disabled";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { listRealHomes } from "@/lib/real-homes.functions";
+import { RealHomesGallery } from "@/components/real-homes-gallery";
+import { RealHomeSubmission } from "@/components/real-home-submission";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { COL, fsList, where, limit, sortRows } from "@/lib/db/firestore";
 import { formatDate } from "@/lib/format";
 
+const homesQuery = queryOptions({ queryKey: ["real-homes"], queryFn: () => listRealHomes(), staleTime: 30_000 });
 export const Route = createFileRoute("/gallery")({
+  loader: ({ context }) => context.queryClient.ensureQueryData(homesQuery),
   head: () => ({
     meta: [
-      { title: "Customer Gallery — True Furniture's" },
-      { name: "description", content: "Real bespoke sofas in real homes across Indore and Ujjain. Photos and reviews from our customers." },
-      { property: "og:title", content: "Customer Gallery — True Furniture's" },
-      { property: "og:description", content: "See how our sofas live in real Indore & Ujjain homes." },
+      { title: "Real Homes of Indore — True Furniture's" },
+      { name: "description", content: "Customer living rooms and purchased sofas, shared by locality. Discover real homes around Indore and submit your own." },
+      { property: "og:title", content: "Real Homes of Indore — True Furniture's" },
+      { property: "og:description", content: "Customer living rooms, local stories and sofas made for home." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -49,6 +54,10 @@ function Stars({ n }: { n: number }) {
 function Gallery() {
   const _features = useFeatures();
   if (!_features.gallery) return <SectionDisabled title="Gallery" />;
+  return <GalleryContent />;
+}
+function GalleryContent() {
+  const { data: homes } = useSuspenseQuery(homesQuery);
   const { data: reviews, isLoading } = useQuery({
     queryKey: ["public-reviews"],
     queryFn: async (): Promise<Review[]> => {
@@ -67,9 +76,12 @@ function Gallery() {
     <div className="min-h-screen bg-[color:var(--brand-cream)] text-[color:var(--brand-dark)] flex flex-col">
       <SiteHeader />
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 md:px-10 py-12 md:py-16">
-        <span className="tf-chip mb-4">Real Homes</span>
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-display mt-4 mb-3 text-balance">Our sofas in your home.</h1>
-        <p className="text-[color:var(--brand-dark)]/60 mb-10 max-w-2xl">Every review is from a verified customer in Indore or Ujjain. Photos are theirs.</p>
+        <span className="tf-chip mb-4">Made here. Loved here.</span>
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-display mt-4 mb-3 text-balance">Real Homes of Indore</h1>
+        <p className="text-muted-foreground mb-10 max-w-2xl">Personal spaces, favourite corners, sofas made for everyday life. Shared by customers with delivered orders.</p>
+        <RealHomesGallery homes={homes} />
+        <RealHomeSubmission />
+        <h2 className="font-display text-2xl mb-6">Customer reviews</h2>
 
         {isLoading ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
