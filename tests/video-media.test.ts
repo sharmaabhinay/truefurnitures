@@ -7,7 +7,7 @@ describe("product and homepage media", () => {
     expect(isDirectVideo("https://youtu.be/abcdefghijk")).toBe(false);
   });
   it("converts YouTube vertical links to the intended player", () => {
-    expect(parseVideoSource("https://www.youtube.com/shorts/abcdefghijk?feature=share")?.embedUrl).toBe("https://www.youtube-nocookie.com/embed/abcdefghijk?playsinline=1&rel=0");
+    expect(parseVideoSource("https://www.youtube.com/shorts/abcdefghijk?feature=share")?.embedUrl).toBe("https://www.youtube-nocookie.com/embed/abcdefghijk?playsinline=1&rel=0&autoplay=1&mute=1&loop=1&playlist=abcdefghijk&controls=0&enablejsapi=1");
   });
   it("converts Instagram reels without carrying arbitrary query options", () => {
     expect(parseVideoSource("https://www.instagram.com/reel/Abc_123/?igsh=test")?.embedUrl).toBe("https://www.instagram.com/reel/Abc_123/embed/");
