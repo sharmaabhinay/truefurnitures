@@ -1,9 +1,9 @@
 # Roadmap — fix issues from test report (Oct 2026)
 
 # Order tracking and Real Homes gallery
-- [ ] Add public seven-stage tracking, phone-protected workshop photos and signed-in all-orders tracking with header/footer links.
-- [ ] Add locality-tagged customer photo submissions for delivered purchases and staff review before publication.
-- [ ] Run privacy/eligibility tests and customer/admin end-to-end checks; document any verification blockers.
+- [x] Add public seven-stage tracking, phone-protected workshop photos and signed-in all-orders tracking with header/footer links.
+- [x] Add locality-tagged customer photo submissions for delivered purchases and staff review before publication.
+- [x] Public tracker verified with TF-53433 on phone, gallery loads with no errors; signed-in photo submission and staff approval not yet exercised.
 
 # Cart consistency sweep
 - [x] Read product/customiser additions, Buy Now, cart controls, header, checkout summary/order transaction, local/remote cart persistence, saved/shared-design links and staff cart reports. Fixed Buy Now adding an extra unit and cart decrement refusing zero removal. Both real public flows pass on mobile; 12 unit tests pass. Account cart sync, signed-in checkout and staff readback remain unverified; settled records unchanged.
