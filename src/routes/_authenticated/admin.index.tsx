@@ -52,6 +52,7 @@ import { sendQuoteStatusEmail } from "@/lib/email.functions";
 import { productStatusLabel } from "@/lib/availability";
 import { AModal, AInput, AButton } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
+import { DashboardOverview } from "@/components/admin/dashboard-overview";
 import { ProductEditorTabs } from "@/components/admin/product-editor-tabs";
 import {
   FiBarChart2, FiEye, FiPackage, FiUsers, FiTool, FiShoppingBag, FiShoppingCart, FiMessageCircle,
@@ -224,33 +225,23 @@ function AdminHome() {
   }, []);
 
   return (
-    <div className="min-h-screen flex admin-shell text-[#E8E8F0]" style={{ background: "#0F0F13" }}>
-      <style>{`
-        .admin-shell { font-family: 'DM Sans', 'Plus Jakarta Sans', system-ui, sans-serif; }
-        .admin-serif { font-family: 'Cormorant Garamond', 'Playfair Display', serif; }
-        .admin-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
-        .admin-scroll::-webkit-scrollbar-thumb { background:#2A2A38; border-radius: 3px; }
-        @keyframes admin-pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.3 } }
-        .admin-live-dot { animation: admin-pulse 2s infinite; }
-      `}</style>
-
+    <div className="min-h-screen flex admin-shell text-analytics-text bg-analytics-canvas">
       {sidebarOpen && (
-        <button
+        <Button variant="ghost"
           aria-label="Close menu"
           onClick={() => setSidebarOpen(false)}
-          className="fixed inset-0 z-40 bg-black/60 lg:hidden"
+          className="tf-admin-backdrop fixed inset-0 z-40 h-full w-full rounded-none lg:hidden"
         />
       )}
 
       <aside
-        className={`fixed z-50 top-0 bottom-0 left-0 w-60 flex flex-col border-r transition-transform lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
-        style={{ background: "#16161D", borderColor: "#2A2A38" }}
+        className={`fixed z-50 top-0 bottom-0 left-0 w-60 flex flex-col border-r border-analytics-border bg-analytics-surface transition-transform lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
-        <div className="px-6 py-5 border-b" style={{ borderColor: "#2A2A38" }}>
-          <h2 className="admin-serif text-xl font-semibold" style={{ color: "#C8A86B" }}>
+        <div className="px-6 py-5 border-b border-analytics-border">
+          <h2 className="admin-serif text-xl font-semibold text-analytics-gold">
             True Furniture's
           </h2>
-          <p className="text-[11px] mt-0.5" style={{ color: "#888899" }}>
+          <p className="text-[11px] mt-1 text-analytics-muted">
             Admin Panel · Indore
           </p>
         </div>
@@ -259,8 +250,7 @@ function AdminHome() {
             <div key={group.title}>
               {group.title && (
                 <div
-                  className="px-5 pt-3 pb-1 text-[10px] tracking-[0.14em] uppercase"
-                  style={{ color: "#888899" }}
+                  className="px-5 pt-5 pb-2 text-[10px] font-semibold uppercase text-analytics-muted"
                 >
                   {group.title}
                 </div>
@@ -268,22 +258,15 @@ function AdminHome() {
               {group.items.map((item) => {
                 const active = panel === item.key;
                 return (
-                  <button
+                  <Button variant="ghost"
                     key={item.key}
-                    onClick={() => {
-                      setPanel(item.key);
-                      setSidebarOpen(false);
-                    }}
-                    className="w-full flex items-center gap-3 px-6 py-2.5 text-[13px] text-left transition-colors border-l-2"
-                    style={{
-                      color: active ? "#C8A86B" : "#888899",
-                      background: active ? "rgba(200,168,107,0.06)" : "transparent",
-                      borderLeftColor: active ? "#C8A86B" : "transparent",
-                    }}
+                    onClick={() => { setPanel(item.key); setSidebarOpen(false); }}
+                    aria-current={active ? "page" : undefined}
+                    className={`tf-admin-nav w-[calc(100%-24px)] mx-3 h-10 justify-start gap-3 px-3 text-[13px] ${active ? "tf-admin-nav-active" : ""}`}
                   >
-                    <span className="text-base w-4 flex items-center">{item.icon}</span>
+                    <span className="text-base w-4 flex items-center shrink-0" aria-hidden="true">{item.icon}</span>
                     <span>{item.label}</span>
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -292,25 +275,23 @@ function AdminHome() {
             href="/"
             target="_blank"
             rel="noreferrer"
-            className="w-full flex items-center gap-3 px-6 py-2.5 text-[13px] text-left transition-colors border-l-2 border-l-transparent"
-            style={{ color: "#888899" }}
+            className="tf-admin-store-link w-full flex items-center gap-3 px-6 py-3 text-[13px]"
           >
             <span className="text-base w-4 flex items-center"><FiGlobe /></span>
             <span>View Store</span>
           </a>
         </nav>
-        <div className="p-5 border-t" style={{ borderColor: "#2A2A38" }}>
+        <div className="p-5 border-t border-analytics-border">
           <div className="flex items-center gap-3">
             <div
-              className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold"
-              style={{ background: "#C8A86B", color: "#1a1a1a" }}
+              className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold bg-analytics-gold text-analytics-canvas"
             >
               AD
             </div>
             <div className="min-w-0">
               <div className="text-sm truncate">Admin</div>
-              <div className="text-[11px]" style={{ color: "#888899" }}>
-                Super Administrator
+              <div className="text-[11px] text-analytics-muted">
+                Store administration
               </div>
             </div>
           </div>
@@ -319,56 +300,19 @@ function AdminHome() {
       </aside>
 
       <div className="flex-1 flex flex-col lg:ml-60 min-w-0">
-        <header
-          className="sticky top-0 z-30 flex items-center justify-between gap-3 px-4 sm:px-8 py-3 border-b"
-          style={{ background: "#16161D", borderColor: "#2A2A38" }}
-        >
-          <div className="flex items-center gap-3 min-w-0">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden text-lg px-2 -ml-2"
-              aria-label="Open menu"
-            >
-              <FiMenu />
-            </button>
-            <div className="text-[15px] font-semibold truncate">{TITLES[panel]}</div>
+        <header className="tf-admin-header sticky top-0 z-30 flex items-center justify-between gap-2 px-4 sm:px-8 py-3 border-b border-analytics-border bg-analytics-surface">
+          <div className="flex items-center gap-2 min-w-0">
+            <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)} className="lg:hidden shrink-0 text-analytics-text" aria-label="Open menu"><FiMenu /></Button>
+            <div className="text-sm font-semibold truncate">{TITLES[panel]}</div>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="hidden sm:block text-[12px]" style={{ color: "#888899" }}>
-              {now}
-            </div>
-            <div
-              className="hidden sm:flex items-center rounded-full px-2.5 py-1 text-[11px]"
-              style={{
-                background: "rgba(200,168,107,0.12)",
-                border: "1px solid rgba(200,168,107,0.2)",
-                color: "#C8A86B",
-              }}
-            >
-              <span
-                className="w-2 h-2 rounded-full admin-live-dot mr-2"
-                style={{ background: "#4CAF82" }}
-              />
-              Live
-            </div>
-            <Link
-              to="/"
-              className="rounded-md px-3 py-1.5 text-[12px] font-medium inline-flex items-center gap-1.5"
-              style={{ background: "#C8A86B", color: "#1a1a1a" }}
-            >
-              View Store <FiExternalLink />
-            </Link>
-            <button
-              onClick={() => window.location.reload()}
-              className="rounded-md px-3 py-1.5 text-[12px] font-medium inline-flex items-center gap-1.5"
-              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid #2A2A38", color: "#E8E8F0" }}
-            >
-              <FiRefreshCw /> Refresh
-            </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <time className="hidden xl:block text-xs text-analytics-muted mr-2">{now}</time>
+            <Button asChild size="sm" className="tf-admin-primary"><Link to="/"><span className="hidden sm:inline">View store</span><FiExternalLink /><span className="sr-only sm:hidden">View store</span></Link></Button>
+            <Button variant="outline" size="icon" onClick={() => window.location.reload()} className="tf-admin-icon-button" aria-label="Refresh page" title="Refresh page"><FiRefreshCw /></Button>
           </div>
         </header>
 
-        <main className="flex-1 p-4 sm:p-8 overflow-x-hidden">
+        <main className="flex-1 min-w-0 p-4 sm:p-6 xl:p-8">
           {panel === "dashboard" && <Dashboard onGo={setPanel} />}
           {panel === "analytics" && <SalesAnalytics />}
           {panel === "cartInsights" && <CartInsights />}
@@ -441,38 +385,6 @@ function CardTitle({ children, right }: { children: React.ReactNode; right?: Rea
       <div className="text-[13px] font-semibold">{children}</div>
       {right && <div className="text-[11px]" style={{ color: "#888899" }}>{right}</div>}
     </div>
-  );
-}
-
-function Metric({
-  label,
-  value,
-  icon,
-  change,
-  changeType = "up",
-}: {
-  label: string;
-  value: string | number;
-  icon: React.ReactNode;
-  change?: string;
-  changeType?: "up" | "dn";
-}) {
-  return (
-    <Card>
-      <div className="flex items-start justify-between">
-        <div className="text-[11px]" style={{ color: "#888899" }}>{label}</div>
-        <div aria-hidden="true" className="text-xl opacity-40 shrink-0">{icon}</div>
-      </div>
-      <div className="admin-serif text-3xl font-semibold mt-1">{value}</div>
-      {change && (
-        <div
-          className="text-[11px] mt-1"
-          style={{ color: changeType === "up" ? "#4CAF82" : "#E05050" }}
-        >
-          {changeType === "up" ? "↑" : "↓"} {change}
-        </div>
-      )}
-    </Card>
   );
 }
 
@@ -570,7 +482,7 @@ function DataTable({
 /* ================= DASHBOARD ================= */
 
 function Dashboard({ onGo }: { onGo: (p: PanelKey) => void }) {
-  const { data } = useQuery({
+  const { data, isPending, isError, refetch } = useQuery({
     queryKey: ["admin-overview"],
     queryFn: async () => {
       const [orders, bookings, customers, reviews, products, subscribers, popupEvents] = await Promise.all([
@@ -643,7 +555,7 @@ function Dashboard({ onGo }: { onGo: (p: PanelKey) => void }) {
     }
     return arr;
   }, [orders]);
-  const maxCount = Math.max(1, ...days.map((d) => d.count));
+
 
   // Top locations
   const locCounts: Record<string, number> = {};
@@ -653,7 +565,7 @@ function Dashboard({ onGo }: { onGo: (p: PanelKey) => void }) {
   const sortedLocs = Object.entries(locCounts)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 6);
-  const maxLoc = sortedLocs[0]?.[1] ?? 1;
+
 
   const recent = orders
     .slice()
@@ -663,159 +575,36 @@ function Dashboard({ onGo }: { onGo: (p: PanelKey) => void }) {
     )
     .slice(0, 8);
 
-  return (
-    <div className="space-y-6">
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <Metric label="Subscribers" value={subscriberCount} icon={<FiMail />} change="newsletter list" />
-        <Metric label="Quote Requests" value={bookingsAll.length} icon={<FiEdit3 />} change={`${pendingBookings} pending · ${followUpBookings} follow-up · ${answeredBookings} answered`} />
-        <Metric label="Customers" value={totalUsers} icon={<FiUsers />} change="registered accounts" />
-        <Metric label="Popup Funnel" value={`${popupShown} / ${popupSubscribed}`} icon={<FiTarget />} change={`${popupClosed} closed · ${popupRate}`} />
-      </div>
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <Metric label="Pending Enquiries" value={pendingBookings} icon={<FiMessageCircle />} change="awaiting follow-up" />
-        <Metric label="Pending Reviews" value={pendingReviews} icon={<FiStar />} change="awaiting approval" />
-
-        <Metric label="Active Products" value={data?.products.length ?? 0} icon={<FiShoppingBag />} change="live catalog" />
-        <Metric label="Total Revenue" value={formatINR(totalRevenue)} icon={<FiDollarSign />} change={monthRevenue ? `${formatINR(monthRevenue)} this month` : undefined} />
-      </div>
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <Metric label="Total Orders" value={orders.length} icon={<FiPackage />} change={monthOrders ? `+${monthOrders} this month` : undefined} />
-        <Metric label="Pending Orders" value={activeOrders} icon={<FiClock />} change="need attention" />
-        <Metric label="Cities Reached" value={cities.length} icon={<FiMapPin />} change={cities.slice(0, 2).join(", ") || "via delivery"} />
-        <Metric label="Visitor Events" value={visitorCount} icon={<FiEye />} change="tracked live" />
-      </div>
-
-      <div className="grid gap-5 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <Card>
-            <CardTitle right="Last 7 days">Order Activity</CardTitle>
-            <div className="flex items-end gap-1.5 h-28">
-              {days.map((d) => (
-                <div
-                  key={d.iso}
-                  title={`${d.count} orders`}
-                  className="flex-1 rounded-t transition-opacity hover:opacity-100"
-                  style={{
-                    height: `${Math.max(4, Math.round((d.count / maxCount) * 100))}%`,
-                    background: "#C8A86B",
-                    opacity: 0.75,
-                  }}
-                />
-              ))}
-            </div>
-            <div className="flex gap-1.5 mt-2">
-              {days.map((d) => (
-                <div
-                  key={d.iso}
-                  className="flex-1 text-center text-[10px]"
-                  style={{ color: "#888899" }}
-                >
-                  {d.label}
-                </div>
-              ))}
-            </div>
-          </Card>
-        </div>
-        <Card>
-          <CardTitle>Quick Actions</CardTitle>
-          <div className="space-y-2">
-            {[
-              { p: "orders" as PanelKey, l: `Review orders (${activeOrders})`, i: <FiPackage /> },
-              { p: "bookings" as PanelKey, l: `Bookings pending (${pendingBookings})`, i: <FiMessageCircle /> },
-              { p: "reviews" as PanelKey, l: `Reviews to approve (${pendingReviews})`, i: <FiStar /> },
-              { p: "products" as PanelKey, l: "Add new product", i: <FiPlus /> },
-              { p: "coupons" as PanelKey, l: "Create coupon", i: <FiTag /> },
-            ].map((a) => (
-              <button
-                key={a.p + a.l}
-                onClick={() => onGo(a.p)}
-                className="w-full flex items-center gap-3 text-left rounded-md px-3 py-2 text-[13px] transition-colors"
-                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid #2A2A38" }}
-              >
-                <span aria-hidden="true" className="w-5 shrink-0 flex justify-center text-base">{a.i}</span>
-                <span className="flex-1">{a.l}</span>
-                <FiArrowRight aria-hidden="true" className="shrink-0 text-muted-foreground" />
-              </button>
-            ))}
-          </div>
-        </Card>
-      </div>
-
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Card>
-          <CardTitle right={sortedLocs.length ? `${cities.length} cities` : ""}>
-            Top Locations
-          </CardTitle>
-          {sortedLocs.length === 0 ? (
-            <div className="text-center py-8 text-[13px]" style={{ color: "#888899" }}>
-              No orders with a delivery city yet.
-            </div>
-          ) : (
-            <div>
-              {sortedLocs.map(([city, n]) => (
-                <div
-                  key={city}
-                  className="flex items-center gap-3 py-2 border-b last:border-b-0"
-                  style={{ borderColor: "rgba(42,42,56,0.5)" }}
-                >
-                  <span className="flex-1 text-[13px] flex items-center gap-2"><FiMapPin aria-hidden="true" className="shrink-0" />{city}</span>
-                  <div
-                    className="w-28 h-1.5 rounded-full overflow-hidden"
-                    style={{ background: "rgba(255,255,255,0.06)" }}
-                  >
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${Math.round((Number(n) / Number(maxLoc)) * 100)}%`,
-                        background: "#C8A86B",
-                      }}
-                    />
-                  </div>
-                  <span className="text-[12px] w-8 text-right" style={{ color: "#888899" }}>
-                    {n}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
-
-        <Card>
-          <CardTitle right="Latest orders">Recent Activity</CardTitle>
-          {recent.length === 0 ? (
-            <div className="text-center py-8 text-[13px]" style={{ color: "#888899" }}>
-              No orders yet.
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {recent.map((o) => {
-                const snap = (o.sofa_snapshot ?? {}) as { name?: string };
-                return (
-                  <div
-                    key={o.id}
-                    className="flex items-center gap-3 py-2 border-b last:border-b-0"
-                    style={{ borderColor: "rgba(42,42,56,0.5)" }}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[13px] truncate">
-                        <span className="font-semibold">{o.order_number}</span>{" "}
-                        <span style={{ color: "#888899" }}>· {snap.name ?? "Custom"}</span>
-                      </div>
-                      <div className="text-[11px]" style={{ color: "#888899" }}>
-                        {o.delivery_city ?? "—"} · {formatDate(o.created_at)}
-                      </div>
-                    </div>
-                    <div className="text-[12px] font-medium">{formatINR(Number(o.total))}</div>
-                    <StatusPill status={o.status} />
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </Card>
-      </div>
-    </div>
-  );
+  return <DashboardOverview
+    loading={isPending}
+    error={isError}
+    onRetry={() => { void refetch(); }}
+    onOrders={() => onGo("orders")}
+    days={days}
+    locations={sortedLocs}
+    recent={recent}
+    metrics={[
+      { label: "Total revenue", value: formatINR(totalRevenue), icon: <FiDollarSign />, detail: `${formatINR(monthRevenue)} in the last 30 days` },
+      { label: "Total orders", value: orders.length, icon: <FiPackage />, detail: `${monthOrders} in the last 30 days` },
+      { label: "Pending orders", value: activeOrders, icon: <FiClock />, detail: "Awaiting completion" },
+      { label: "Customers", value: totalUsers, icon: <FiUsers />, detail: "Registered accounts" },
+      { label: "Quote requests", value: bookingsAll.length, icon: <FiEdit3 />, detail: `${followUpBookings} follow-up · ${answeredBookings} answered` },
+      { label: "Pending enquiries", value: pendingBookings, icon: <FiMessageCircle />, detail: "Awaiting follow-up" },
+      { label: "Pending reviews", value: pendingReviews, icon: <FiStar />, detail: "Awaiting approval" },
+      { label: "Active products", value: data?.products.length ?? 0, icon: <FiShoppingBag />, detail: "Catalogue products" },
+      { label: "Subscribers", value: subscriberCount, icon: <FiMail />, detail: "Newsletter list" },
+      { label: "Popup funnel", value: `${popupShown} / ${popupSubscribed}`, icon: <FiTarget />, detail: `${popupClosed} closed · ${popupRate}` },
+      { label: "Cities reached", value: cities.length, icon: <FiMapPin />, detail: cities.slice(0, 2).join(", ") || "Via delivery" },
+      { label: "Visitor events", value: visitorCount, icon: <FiEye />, detail: "Recorded in this browser" },
+    ]}
+    actions={[
+      { key: "orders", label: `Review orders (${activeOrders})`, icon: <FiPackage />, onClick: () => onGo("orders") },
+      { key: "bookings", label: `Pending quotes (${pendingBookings})`, icon: <FiMessageCircle />, onClick: () => onGo("bookings") },
+      { key: "reviews", label: `Approve reviews (${pendingReviews})`, icon: <FiStar />, onClick: () => onGo("reviews") },
+      { key: "products", label: "Manage products", icon: <FiShoppingBag />, onClick: () => onGo("products") },
+      { key: "coupons", label: "Manage coupons", icon: <FiTag />, onClick: () => onGo("coupons") },
+    ]}
+  />;
 }
 
 /* ================= ORDERS ================= */

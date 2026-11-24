@@ -1,5 +1,9 @@
 # Roadmap — fix issues from test report (Oct 2026)
 
+# Dashboard redesign comment a0c70229-4ca3-474f-b829-611a6304bc96
+- [x] Redesign dashboard metrics, chart, recent orders, quick actions and navigation without changing stored data or business calculations.
+- [ ] Verify phone/desktop visibility and interactions; reply to the thread with results and signed-in verification limits.
+
 # Order tracking and Real Homes gallery
 - [x] Add public seven-stage tracking, phone-protected workshop photos and signed-in all-orders tracking with header/footer links.
 - [x] Add locality-tagged customer photo submissions for delivered purchases and staff review before publication.
