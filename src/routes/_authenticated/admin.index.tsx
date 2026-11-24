@@ -58,6 +58,7 @@ import {
   FiSettings, FiStar, FiTag, FiEdit3, FiMapPin, FiFeather, FiBriefcase, FiTrendingUp,
   FiGlobe, FiMenu, FiRefreshCw, FiExternalLink, FiInbox, FiTrash2, FiPlus, FiDownload,
   FiAlertCircle, FiLoader, FiClock, FiMail, FiTruck, FiActivity, FiShield, FiFolder, FiCheckSquare,
+  FiTarget, FiDollarSign, FiBox, FiUser, FiArrowRight,
 } from "react-icons/fi";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
@@ -452,7 +453,7 @@ function Metric({
 }: {
   label: string;
   value: string | number;
-  icon: string;
+  icon: React.ReactNode;
   change?: string;
   changeType?: "up" | "dn";
 }) {
@@ -460,7 +461,7 @@ function Metric({
     <Card>
       <div className="flex items-start justify-between">
         <div className="text-[11px]" style={{ color: "#888899" }}>{label}</div>
-        <div className="text-xl opacity-40">{icon}</div>
+        <div aria-hidden="true" className="text-xl opacity-40 shrink-0">{icon}</div>
       </div>
       <div className="admin-serif text-3xl font-semibold mt-1">{value}</div>
       {change && (
@@ -665,23 +666,23 @@ function Dashboard({ onGo }: { onGo: (p: PanelKey) => void }) {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <Metric label="Subscribers" value={subscriberCount} icon="✉️" change="newsletter list" />
-        <Metric label="Quote Requests" value={bookingsAll.length} icon="📝" change={`${pendingBookings} pending · ${followUpBookings} follow-up · ${answeredBookings} answered`} />
-        <Metric label="Customers" value={totalUsers} icon="👥" change="registered accounts" />
-        <Metric label="Popup Funnel" value={`${popupShown} / ${popupSubscribed}`} icon="🎯" change={`${popupClosed} closed · ${popupRate}`} />
+        <Metric label="Subscribers" value={subscriberCount} icon={<FiMail />} change="newsletter list" />
+        <Metric label="Quote Requests" value={bookingsAll.length} icon={<FiEdit3 />} change={`${pendingBookings} pending · ${followUpBookings} follow-up · ${answeredBookings} answered`} />
+        <Metric label="Customers" value={totalUsers} icon={<FiUsers />} change="registered accounts" />
+        <Metric label="Popup Funnel" value={`${popupShown} / ${popupSubscribed}`} icon={<FiTarget />} change={`${popupClosed} closed · ${popupRate}`} />
       </div>
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <Metric label="Pending Enquiries" value={pendingBookings} icon="💬" change="awaiting follow-up" />
-        <Metric label="Pending Reviews" value={pendingReviews} icon="⭐" change="awaiting approval" />
+        <Metric label="Pending Enquiries" value={pendingBookings} icon={<FiMessageCircle />} change="awaiting follow-up" />
+        <Metric label="Pending Reviews" value={pendingReviews} icon={<FiStar />} change="awaiting approval" />
 
-        <Metric label="Active Products" value={data?.products.length ?? 0} icon="🛋️" change="live catalog" />
-        <Metric label="Total Revenue" value={formatINR(totalRevenue)} icon="💰" change={monthRevenue ? `${formatINR(monthRevenue)} this month` : undefined} />
+        <Metric label="Active Products" value={data?.products.length ?? 0} icon={<FiShoppingBag />} change="live catalog" />
+        <Metric label="Total Revenue" value={formatINR(totalRevenue)} icon={<FiDollarSign />} change={monthRevenue ? `${formatINR(monthRevenue)} this month` : undefined} />
       </div>
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <Metric label="Total Orders" value={orders.length} icon="📦" change={monthOrders ? `+${monthOrders} this month` : undefined} />
-        <Metric label="Pending Orders" value={activeOrders} icon="⏳" change="need attention" />
-        <Metric label="Cities Reached" value={cities.length} icon="📍" change={cities.slice(0, 2).join(", ") || "via delivery"} />
-        <Metric label="Visitor Events" value={visitorCount} icon="👁️" change="tracked live" />
+        <Metric label="Total Orders" value={orders.length} icon={<FiPackage />} change={monthOrders ? `+${monthOrders} this month` : undefined} />
+        <Metric label="Pending Orders" value={activeOrders} icon={<FiClock />} change="need attention" />
+        <Metric label="Cities Reached" value={cities.length} icon={<FiMapPin />} change={cities.slice(0, 2).join(", ") || "via delivery"} />
+        <Metric label="Visitor Events" value={visitorCount} icon={<FiEye />} change="tracked live" />
       </div>
 
       <div className="grid gap-5 lg:grid-cols-3">
@@ -719,11 +720,11 @@ function Dashboard({ onGo }: { onGo: (p: PanelKey) => void }) {
           <CardTitle>Quick Actions</CardTitle>
           <div className="space-y-2">
             {[
-              { p: "orders" as PanelKey, l: `Review orders (${activeOrders})`, i: "📦" },
-              { p: "bookings" as PanelKey, l: `Bookings pending (${pendingBookings})`, i: "💬" },
-              { p: "reviews" as PanelKey, l: `Reviews to approve (${pendingReviews})`, i: "⭐" },
-              { p: "products" as PanelKey, l: "Add new product", i: "＋" },
-              { p: "coupons" as PanelKey, l: "Create coupon", i: "🏷️" },
+              { p: "orders" as PanelKey, l: `Review orders (${activeOrders})`, i: <FiPackage /> },
+              { p: "bookings" as PanelKey, l: `Bookings pending (${pendingBookings})`, i: <FiMessageCircle /> },
+              { p: "reviews" as PanelKey, l: `Reviews to approve (${pendingReviews})`, i: <FiStar /> },
+              { p: "products" as PanelKey, l: "Add new product", i: <FiPlus /> },
+              { p: "coupons" as PanelKey, l: "Create coupon", i: <FiTag /> },
             ].map((a) => (
               <button
                 key={a.p + a.l}
@@ -731,9 +732,9 @@ function Dashboard({ onGo }: { onGo: (p: PanelKey) => void }) {
                 className="w-full flex items-center gap-3 text-left rounded-md px-3 py-2 text-[13px] transition-colors"
                 style={{ background: "rgba(255,255,255,0.03)", border: "1px solid #2A2A38" }}
               >
-                <span className="w-5 text-center">{a.i}</span>
+                <span aria-hidden="true" className="w-5 shrink-0 flex justify-center text-base">{a.i}</span>
                 <span className="flex-1">{a.l}</span>
-                <span style={{ color: "#888899" }}>→</span>
+                <FiArrowRight aria-hidden="true" className="shrink-0 text-muted-foreground" />
               </button>
             ))}
           </div>
@@ -757,7 +758,7 @@ function Dashboard({ onGo }: { onGo: (p: PanelKey) => void }) {
                   className="flex items-center gap-3 py-2 border-b last:border-b-0"
                   style={{ borderColor: "rgba(42,42,56,0.5)" }}
                 >
-                  <span className="flex-1 text-[13px]">📍 {city}</span>
+                  <span className="flex-1 text-[13px] flex items-center gap-2"><FiMapPin aria-hidden="true" className="shrink-0" />{city}</span>
                   <div
                     className="w-28 h-1.5 rounded-full overflow-hidden"
                     style={{ background: "rgba(255,255,255,0.06)" }}
@@ -1716,7 +1717,7 @@ function Products() {
               {p.hero_image ? (
                 <img src={p.hero_image} alt={p.name} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-3xl opacity-30">🛋️</div>
+                <div className="w-full h-full flex items-center justify-center text-3xl opacity-30"><FiShoppingBag aria-hidden="true" /></div>
               )}
             </div>
             <div className="p-4 space-y-2">
@@ -2431,7 +2432,7 @@ function ProductModal({
           {tab === 4 && (
             <div className="space-y-5">
               <div className="text-center rounded-2xl p-8" style={{ background: "#16161D", border: "1px dashed #2A2A38" }}>
-                <span className="text-5xl block mb-4">🧊</span>
+                <FiBox aria-hidden="true" className="text-5xl mx-auto mb-4" />
                 <p className="text-sm font-semibold mb-1">3D Model Upload</p>
                 <p className="text-xs mb-5" style={{ color: "#888899" }}>Upload .glb, .gltf, or .obj. If none is uploaded, the live canvas sofa preview still works automatically.</p>
                 <input
@@ -3068,14 +3069,14 @@ const V_ALL_TYPES = [
   "newsletter",
 ] as const;
 
-const V_TYPE_ICONS: Record<string, string> = {
-  session: "👤",
-  visit: "👁️",
-  product_view: "🛋️",
-  view_3d: "🧊",
-  add_to_cart: "🛒",
-  quote: "📝",
-  newsletter: "✉️",
+const V_TYPE_ICONS: Record<string, React.ReactNode> = {
+  session: <FiUser />,
+  visit: <FiEye />,
+  product_view: <FiShoppingBag />,
+  view_3d: <FiBox />,
+  add_to_cart: <FiShoppingCart />,
+  quote: <FiEdit3 />,
+  newsletter: <FiMail />,
 };
 
 const V_TYPE_COLORS: Record<string, string> = {
@@ -3171,7 +3172,7 @@ function Visitors() {
                 border: `1px solid ${active ? "#C8A86B" : "#2A2A38"}`,
               }}
             >
-              <span className="text-xl block mb-1">{V_TYPE_ICONS[type] || "📊"}</span>
+              <span aria-hidden="true" className="text-xl block mb-1">{V_TYPE_ICONS[type] || <FiBarChart2 />}</span>
               <div
                 className="admin-serif text-2xl font-semibold"
                 style={{ color: active ? "#C8A86B" : "#E8E8F0" }}
@@ -3192,7 +3193,7 @@ function Visitors() {
           <div className="space-y-2">
             {topCities.map(([city, n]) => (
               <div key={city} className="flex items-center gap-3">
-                <span className="text-[13px] flex-1">📍 {city}</span>
+                <span className="text-[13px] flex-1 flex items-center gap-2"><FiMapPin aria-hidden="true" className="shrink-0" />{city}</span>
                 <div
                   className="w-32 h-1.5 rounded-full overflow-hidden"
                   style={{ background: "rgba(255,255,255,0.06)" }}
@@ -3234,7 +3235,7 @@ function Visitors() {
         </div>
         {recent.length === 0 ? (
           <div className="text-center py-12" style={{ color: "#888899" }}>
-            <div className="text-4xl mb-3">👁️</div>
+            <FiEye aria-hidden="true" className="text-4xl mx-auto mb-3" />
             <div className="text-[13px]">
               No visitor events yet. Wire <code className="text-[11px]">logVisitor()</code> from
               <span className="mx-1" style={{ color: "#C8A86B" }}>@/lib/visitor-tracker</span>
@@ -3249,7 +3250,7 @@ function Visitors() {
                 className="flex items-center gap-3 py-2 border-b last:border-b-0"
                 style={{ borderColor: "rgba(42,42,56,0.5)" }}
               >
-                <span className="text-base flex-shrink-0">{V_TYPE_ICONS[v.type] || "•"}</span>
+                <span aria-hidden="true" className="text-base flex-shrink-0">{V_TYPE_ICONS[v.type] || <FiActivity />}</span>
                 <div className="flex-1 min-w-0">
                   <div className="text-[12px] truncate">
                     {v.type.replaceAll("_", " ")}
