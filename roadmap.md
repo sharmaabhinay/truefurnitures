@@ -2,7 +2,8 @@
 
 # Dashboard redesign comment a0c70229-4ca3-474f-b829-611a6304bc96
 - [x] Redesign dashboard metrics, chart, recent orders, quick actions and navigation without changing stored data or business calculations.
-- [ ] Verify phone/desktop visibility and interactions; reply to the thread with results and signed-in verification limits.
+- [x] Verify presentation at 320px, 360px, 768px and 1280px: all 12 metrics, five quick actions, recent-order rows and locations fit; seven button callbacks, chart tooltip, loading and error/retry states pass with no overflow or page errors. Seventeen existing analytics/shortcut tests pass; preview build OK. Reply to the thread with these results.
+- [ ] Verify dashboard data and navigation in the actual signed-in admin screen — blocked: the available account session does not authenticate this app’s Firebase login; /admin redirects to /auth. Isolated checks use temporary in-browser layout fixtures, not stored customer data.
 
 # Order tracking and Real Homes gallery
 - [x] Add public seven-stage tracking, phone-protected workshop photos and signed-in all-orders tracking with header/footer links.
