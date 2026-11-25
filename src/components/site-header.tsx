@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { COL, fsList, sortRows, where } from "@/lib/db/firestore";
 import { useCart } from "@/lib/cart";
 import { useCustomerUnread, useAdminUnread } from "@/lib/messages";
-import { FiSearch, FiShoppingBag, FiMenu, FiX, FiChevronDown, FiMessageSquare, FiTruck } from "react-icons/fi";
+import { FiSearch, FiShoppingBag, FiMenu, FiX, FiChevronDown, FiMessageSquare, FiUser, FiPackage, FiHeart, FiMapPin, FiLogOut, FiTruck } from "react-icons/fi";
 import { Button } from "@/components/ui/button";
 import { isProductLive } from "@/lib/availability";
 
@@ -53,7 +53,7 @@ const STATIC_SUGGESTIONS = [
 
 export function SiteHeader() {
   const brand = useBrand();
-  const { user, isStaff, signOut } = useAuth();
+  const { user, profile, isStaff, signOut } = useAuth();
   const signedIn = !!user;
   const isAdmin = isStaff;
   const [open, setOpen] = useState(false);
@@ -66,11 +66,16 @@ export function SiteHeader() {
   const { data: unread = 0 } = useCustomerUnread(!isAdmin ? user?.uid : undefined);
   const { data: adminUnread } = useAdminUnread(!!isAdmin);
   const [openGroup, setOpenGroup] = useState<string | null>("Shop");
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
         setSearchOpen(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileOpen(false);
       }
     };
     document.addEventListener("mousedown", onClick);
@@ -158,7 +163,6 @@ export function SiteHeader() {
           ))}
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
-          <Button asChild variant="ghost" size="sm" className="shrink-0 px-1 sm:px-3" title="Track order"><Link to="/track-order" aria-label="Track order"><FiTruck /><span className="hidden sm:inline">Track order</span></Link></Button>
           <div ref={searchRef} className="relative hidden md:block">
             <div className="flex items-center border border-[color:var(--brand-dark)]/15 bg-white/70 focus-within:border-[color:var(--brand-dark)] transition-colors">
               <FiSearch className="ml-2.5 text-[color:var(--brand-dark)]/50 shrink-0" size={14} />
@@ -247,32 +251,74 @@ export function SiteHeader() {
                   )}
                 </Link>
               )}
-              {!isAdmin && (
-                <Link to="/dashboard" className="hidden sm:inline-block px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-dark)] hover:text-[color:var(--brand-accent)] transition-colors">
-                  My Orders
-                </Link>
+              {isAdmin && (
+                <button
+                  onClick={async () => { await signOut(); }}
+                  className="hidden sm:inline-block px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-dark)]/60 hover:text-[color:var(--brand-accent)] transition-colors"
+                >
+                  Sign out
+                </button>
               )}
               {!isAdmin && (
-                <Link to="/messages" className="relative hidden sm:inline-block px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-dark)] hover:text-[color:var(--brand-accent)] transition-colors">
-                  Messages
-                  {unread > 0 && (
-                    <span className="absolute top-0 right-0 min-w-[16px] h-[16px] px-1 rounded-full bg-[color:var(--brand-accent)] text-white text-[9px] font-bold flex items-center justify-center animate-scale-in">
-                      {unread}
+                <div ref={profileRef} className="relative hidden sm:block">
+                  <button
+                    onClick={() => setProfileOpen((v) => !v)}
+                    aria-expanded={profileOpen}
+                    aria-label="Account menu"
+                    className="flex items-center gap-2 px-2 py-1.5 text-[color:var(--brand-dark)] hover:text-[color:var(--brand-accent)] transition-colors"
+                  >
+                    <span className="w-8 h-8 rounded-full bg-[color:var(--brand-dark)] text-white text-[11px] font-bold flex items-center justify-center uppercase">
+                      {(profile?.full_name || user?.email || "U").trim().charAt(0)}
                     </span>
+                    <FiChevronDown size={14} className={`transition-transform duration-200 ${profileOpen ? "rotate-180" : ""}`} />
+                    {unread > 0 && (
+                      <span className="absolute top-0 right-0 min-w-[16px] h-[16px] px-1 rounded-full bg-[color:var(--brand-accent)] text-white text-[9px] font-bold flex items-center justify-center animate-scale-in">
+                        {unread}
+                      </span>
+                    )}
+                  </button>
+                  {profileOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-[color:var(--brand-dark)]/10 shadow-xl z-50 animate-fade-up">
+                      <div className="px-4 py-3 border-b border-[color:var(--brand-dark)]/10">
+                        <p className="text-sm font-semibold text-[color:var(--brand-dark)] truncate">{profile?.full_name || "Welcome"}</p>
+                        {user?.email && <p className="text-[11px] text-[color:var(--brand-dark)]/55 truncate">{user.email}</p>}
+                        <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-[color:var(--brand-dark)]/50">
+                          {profile?.phone && <span>{profile.phone}{profile.phone_verified ? " ✓" : ""}</span>}
+                          {profile?.city && <span className="inline-flex items-center gap-1"><FiMapPin size={10} />{profile.city}</span>}
+                        </div>
+                      </div>
+                      <div className="py-1">
+                        {[
+                          { to: "/profile", label: "My Profile & Addresses", icon: FiUser },
+                          { to: "/dashboard", label: "My Orders", icon: FiPackage },
+                          { to: "/my-designs", label: "Saved Designs", icon: FiHeart },
+                          { to: "/messages", label: "Messages", icon: FiMessageSquare, badge: unread },
+                          { to: "/track-order", label: "Track Order", icon: FiTruck },
+                        ].map((item) => (
+                          <Link
+                            key={item.to}
+                            to={item.to}
+                            onClick={() => setProfileOpen(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-[color:var(--brand-dark)]/80 hover:bg-[color:var(--brand-muted)]/50 hover:text-[color:var(--brand-accent)] transition-colors"
+                          >
+                            <item.icon size={15} className="shrink-0" />
+                            <span className="flex-1">{item.label}</span>
+                            {item.badge ? (
+                              <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-[color:var(--brand-accent)] text-white text-[10px] font-bold flex items-center justify-center">{item.badge}</span>
+                            ) : null}
+                          </Link>
+                        ))}
+                      </div>
+                      <button
+                        onClick={async () => { setProfileOpen(false); await signOut(); }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[color:var(--brand-dark)]/60 hover:bg-[color:var(--brand-muted)]/50 hover:text-[color:var(--brand-accent)] transition-colors border-t border-[color:var(--brand-dark)]/10"
+                      >
+                        <FiLogOut size={15} /> Sign out
+                      </button>
+                    </div>
                   )}
-                </Link>
+                </div>
               )}
-              {!isAdmin && (
-                <Link to="/profile" className="hidden sm:inline-block px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-dark)] hover:text-[color:var(--brand-accent)] transition-colors">
-                  Profile
-                </Link>
-              )}
-              <button
-                onClick={async () => { await signOut(); }}
-                className="hidden sm:inline-block px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-dark)]/60 hover:text-[color:var(--brand-accent)] transition-colors"
-              >
-                Sign out
-              </button>
             </>
           ) : (
             <Link to="/auth" className="hidden sm:inline-block px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[color:var(--brand-dark)] hover:text-[color:var(--brand-accent)] transition-colors">
