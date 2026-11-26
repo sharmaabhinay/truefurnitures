@@ -460,3 +460,13 @@ button:disabled { cursor: not-allowed; }
 }
 @media (max-width: 359px) { .tf-dashboard-metric { padding: 10px; } .tf-dashboard-metric-icon { flex-basis: 22px; height: 22px; } .tf-dashboard-value { font-size: 18px; } }
 @media (prefers-reduced-motion: reduce) { .tf-dashboard-metric, .tf-dashboard-order { transition: none; } .tf-dashboard-metric:hover { transform: none; } }
+
+/* Same-origin visual Page Editor preview. */
+html[data-tf-visual-editor="true"] body { cursor: default; }
+html[data-tf-visual-editor="true"] [data-page-section],
+html[data-tf-visual-editor="true"] [data-editor-node],
+html[data-tf-visual-editor="true"] [data-editor-image] { cursor: pointer; }
+[data-tf-selected="true"] { outline: 3px solid var(--brand-accent) !important; outline-offset: -3px; }
+html[data-tf-visual-editor="true"] [data-page-section]:hover { outline: 1px dashed color-mix(in oklab, var(--brand-accent) 70%, transparent); outline-offset: -1px; }
+html[data-tf-visual-editor="true"] [data-editor-image]:hover { outline: 3px solid var(--brand-accent); outline-offset: -3px; }
+@media (prefers-reduced-motion: reduce) { html[data-tf-visual-editor="true"] * { scroll-behavior: auto !important; } }

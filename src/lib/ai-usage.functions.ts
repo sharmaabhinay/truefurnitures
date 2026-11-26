@@ -6,12 +6,13 @@ import type { AiUsageRow } from "./ai-usage";
 import { AI_DISABLED_MESSAGE } from "./ai-features";
 
 export const openAiSession = createServerFn({ method: "POST" })
-  .inputValidator((v: unknown) => z.object({ task: z.enum(["finder", "question", "description", "reply", "room"]), guestId: z.string().uuid() }).parse(v))
+  .inputValidator((v: unknown) => z.object({ task: z.enum(["finder", "question", "description", "reply", "design", "room"]), guestId: z.string().uuid() }).parse(v))
   .handler(async ({ data }) => {
     const { verifyIdToken, adminGetDoc, adminSetDoc } = await import("./firebase-admin.server");
     const bearer = getRequest().headers.get("authorization");
     const user = bearer?.startsWith("Bearer ") ? await verifyIdToken(bearer.slice(7)) : null;
-    if (data.task === "description" || data.task === "reply") {
+    const { isAdminAi } = await import("./ai-contract");
+    if (isAdminAi(data.task)) {
       if (!user) throw new Error("Staff sign-in required");
       const { staffOnly } = await import("./admin-data.functions");
       await staffOnly(user.role, user.uid);

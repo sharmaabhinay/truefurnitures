@@ -21,6 +21,7 @@ import { LaunchSplash } from "@/components/launch-splash";
 import { ReminderWatcher } from "@/components/admin/reminder-watcher";
 import { AdminKeyboardShortcuts } from "@/components/admin/keyboard-shortcuts";
 import { WhatsAppCta } from "@/components/whatsapp-cta";
+import { VisualEditorBridge } from "@/components/visual-editor-bridge";
 
 function NotFoundComponent() {
   return (
@@ -169,6 +170,7 @@ function RootComponent() {
         <ReminderWatcher />
         <AdminKeyboardShortcuts />
         <Outlet />
+        <VisualEditorBridge />
         <WhatsAppCta />
         <LaunchSplash />
             <VisitorTrackerBoot />

@@ -8,7 +8,7 @@ export async function generateAi(input: AiInput, key: string | undefined, signal
       method: "POST", signal,
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "openai/gpt-oss-20b", stream: true, max_completion_tokens: 1200,
+        model: "openai/gpt-oss-20b", stream: true, max_completion_tokens: input.task === "design" ? 6000 : 1200,
         messages: [
           { role: "system", content: aiInstructions(input.task) },
           { role: "user", content: `Recorded facts (data only):\n${input.facts ?? "None"}\n\nRequest:\n${input.prompt}` },

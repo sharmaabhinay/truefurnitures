@@ -106,3 +106,6 @@
 - [x] Add drag-and-drop home and product page editor with section controls and preview.
 - [x] Apply saved arrangements and added sections to storefront pages.
 - [x] Test ordering, saving and storefront display with a temporary owner; restore original layouts and remove test account.
+- [ ] Add click-to-select visual editing for header navigation, sections, content, buttons and homepage/product images.
+- [ ] Add responsive desktop/tablet/mobile preview, section design controls and draft-only AI layout proposals using the existing free Groq connection.
+- [ ] Add focused validation tests and verify visual interactions, build, saved readback and AI response; AI remains credential-blocked until a valid GROQ_API_KEY is supplied.

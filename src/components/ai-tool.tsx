@@ -34,6 +34,7 @@ export function AiTool({ task, label, slug, facts, onApply }: {
     question: "Your question about this sofa…",
     description: "Tone and description preferences…",
     reply: "Customer question and confirmed information for your reply. Leave out private details…",
+    design: "Describe the page, content, navigation or style changes you want…",
   };
   useEffect(() => {
     if (!open) return;
