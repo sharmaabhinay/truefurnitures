@@ -30,7 +30,7 @@ export function SectionInspector({ section, image, onChange, onUploading }: {
   };
   return <div className="space-y-4">
     {section.type === "hero" && <label className="block text-sm">Slide<select aria-label="Hero slide to edit" value={slide} onChange={e => setSlide(Number(e.target.value))} className="block mt-2 w-full border border-input bg-background p-2 rounded-md">{[0, 1, 2, 3].map(i => <option key={i} value={i}>Slide {i + 1}</option>)}</select></label>}
-    {(section.type !== "main" || section.type === "hero") && <>
+    {section.type !== "main" && <>
       <EditorField label="Eyebrow" value={section.type === "hero" ? hero.eyebrow ?? "" : section.eyebrow ?? ""} onChange={eyebrow => section.type === "hero" ? heroPatch({ eyebrow }) : onChange({ eyebrow })} />
       <EditorField label="Heading" value={section.type === "hero" ? hero.title ?? "" : section.title ?? ""} onChange={title => section.type === "hero" ? heroPatch({ title }) : onChange({ title })} />
       {section.type === "hero" && <EditorField label="Italic heading" value={hero.italic ?? ""} onChange={italic => heroPatch({ italic })} />}
