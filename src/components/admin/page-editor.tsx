@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, useSortable, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ArrowDown, ArrowUp, Eye, EyeOff, GripVertical, Plus, Save, Trash2, RotateCcw, Upload } from "lucide-react";
+import { ArrowDown, ArrowUp, Eye, EyeOff, GripVertical, Plus, Save, Trash2, RotateCcw, Monitor, Tablet, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { PageEditorTabs } from "./page-editor-tabs";
@@ -11,9 +11,12 @@ import { COL, fsList, fsSet, where } from "@/lib/db/firestore";
 import { defaults, moveSection, normalizeLayout, SECTION_LABELS, type PageKind, type PageSection } from "@/lib/page-layout";
 import { fetchLayouts, layoutKey } from "@/components/page-sections";
 import { useAuth } from "@/lib/auth/auth-context";
-import { uploadToCloudinary } from "@/lib/upload";
 import { toast } from "sonner";
 import { SiteContentEditor } from "./site-content-editor";
+import { EditorField, SectionInspector } from "./section-inspector";
+import { normalizeNavigation, normalizeHeaderCta, type NavigationItem, type HeaderCta } from "@/lib/site-navigation";
+import { AiTool } from "@/components/ai-tool";
+import { parsePageDesignProposal } from "@/lib/page-design-ai";
 
 export function PageEditor() {
   const [tab, setTab] = useState<"home" | "product" | "hero" | "brand">("home");
@@ -58,16 +61,33 @@ function PageLayoutEditor({ initialPage, onDirtyChange }: { initialPage: PageKin
   const [dirty, setDirty] = useState(false), [saving, setSaving] = useState(false), [uploading, setUploading] = useState(false);
   const [selected, setSelected] = useState<string | null>(null), [addType, setAddType] = useState("text");
   const [productSlug, setProductSlug] = useState("");
+  const [navigation, setNavigation] = useState<NavigationItem[]>(normalizeNavigation(null));
+  const [headerCta, setHeaderCta] = useState<HeaderCta>(normalizeHeaderCta(null));
+  const [editingHeader, setEditingHeader] = useState(false);
+  const [image, setImage] = useState<{ key: string; src: string; alt: string } | null>(null);
+  const [screen, setScreen] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const frame = useRef<HTMLIFrameElement>(null);
   const rowsRef = useRef(rows); rowsRef.current = rows;
   const pageRef = useRef(page); pageRef.current = page;
+  const navRef = useRef(navigation); navRef.current = navigation;
+  const ctaRef = useRef(headerCta); ctaRef.current = headerCta;
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
   useEffect(() => { onDirtyChange(dirty); }, [dirty, onDirtyChange]);
-  useEffect(() => { if (!dirty && !isPending) setRows(normalizeLayout(data?.[page], page)); }, [data, page, dirty, isPending]);
-  const sendPreview = () => frame.current?.contentWindow?.postMessage({ kind: "tf-page-preview", page: pageRef.current, sections: rowsRef.current }, window.location.origin);
-  useEffect(() => { sendPreview(); }, [rows, page]);
+  useEffect(() => { if (!dirty && !isPending) { setRows(normalizeLayout(data?.[page], page)); setNavigation(normalizeNavigation(data?.navigation)); setHeaderCta(normalizeHeaderCta(data?.headerCta)); } }, [data, page, dirty, isPending]);
+  const sendPreview = () => frame.current?.contentWindow?.postMessage({ kind: "tf-page-preview", page: pageRef.current, sections: rowsRef.current, navigation: navRef.current, headerCta: ctaRef.current }, window.location.origin);
+  useEffect(() => { sendPreview(); }, [rows, page, navigation, headerCta]);
   useEffect(() => {
-    const ready = (e: MessageEvent) => { if (e.origin === window.location.origin && e.source === frame.current?.contentWindow && e.data?.kind === "tf-page-ready") sendPreview(); };
+    const ready = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin || e.source !== frame.current?.contentWindow) return;
+      if (e.data?.kind === "tf-page-ready") sendPreview();
+      if (e.data?.kind === "tf-editor-select") {
+        setEditingHeader(e.data.node === "header");
+        if (typeof e.data.sectionId === "string" && rowsRef.current.some(row => row.id === e.data.sectionId)) {
+          setSelected(e.data.sectionId);
+          setImage(typeof e.data.imageKey === "string" ? { key: e.data.imageKey, src: typeof e.data.imageSrc === "string" ? e.data.imageSrc : "", alt: typeof e.data.imageAlt === "string" ? e.data.imageAlt : "" } : null);
+        } else { setSelected(null); setImage(null); }
+      }
+    };
     window.addEventListener("message", ready); return () => window.removeEventListener("message", ready);
   }, []);
   const change = (next: PageSection[]) => { setRows(next); setDirty(true); };
@@ -75,7 +95,7 @@ function PageLayoutEditor({ initialPage, onDirtyChange }: { initialPage: PageKin
   const patch = (values: Partial<PageSection>) => change(rows.map(s => s.id === selected ? { ...s, ...values } : s));
   const switchPage = (next: PageKind) => {
     if (dirty && !window.confirm("Discard unsaved changes?")) return;
-    setDirty(false); setSelected(null); setPage(next); setRows(normalizeLayout(data?.[next], next));
+    setDirty(false); setSelected(null); setImage(null); setEditingHeader(false); setPage(next); setRows(normalizeLayout(data?.[next], next));
   };
   useEffect(() => {
     if (!dirty) return;
@@ -85,7 +105,10 @@ function PageLayoutEditor({ initialPage, onDirtyChange }: { initialPage: PageKin
   const save = async () => {
     setSaving(true);
     try {
-      await fsSet(COL.siteSettings, "page-layouts", { [page]: rows });
+      const cleanRows = normalizeLayout(rows, page);
+      const cleanNav = normalizeNavigation(navigation);
+      if (cleanNav.length !== navigation.length || cleanRows.some((row, i) => (row.buttons?.length ?? 0) !== (rows[i]?.buttons?.length ?? 0))) throw new Error("Check your button labels and links. Use HTTPS URLs or site paths beginning with /.");
+      await fsSet(COL.siteSettings, "page-layouts", JSON.parse(JSON.stringify({ [page]: cleanRows, navigation: cleanNav, headerCta: normalizeHeaderCta(headerCta) })));
       await client.invalidateQueries({ queryKey: layoutKey });
       setDirty(false); toast.success("Page arrangement saved to the storefront");
     } catch (e) { toast.error(e instanceof Error ? e.message : "Page could not be saved"); }
@@ -101,7 +124,7 @@ function PageLayoutEditor({ initialPage, onDirtyChange }: { initialPage: PageKin
     <div className="flex flex-wrap items-center justify-between gap-4">
       <div><h2 className="text-xl font-semibold">Page editor</h2><p className="text-sm text-muted-foreground">{dirty ? "Unsaved changes" : "Saved arrangement"} · Product layout applies to all sofas</p></div>
       <div className="flex gap-2">
-        <Button variant="outline" onClick={() => { if (!dirty || window.confirm("Discard unsaved changes?")) { setDirty(false); setRows(normalizeLayout(data?.[page], page)); } }} disabled={!dirty || saving}><RotateCcw />Discard</Button>
+        <Button variant="outline" onClick={() => { if (!dirty || window.confirm("Discard unsaved changes?")) { setDirty(false); setRows(normalizeLayout(data?.[page], page)); setNavigation(normalizeNavigation(data?.navigation)); setHeaderCta(normalizeHeaderCta(data?.headerCta)); } }} disabled={!dirty || saving}><RotateCcw />Discard</Button>
         <Button onClick={save} disabled={!dirty || saving || uploading}><Save />{saving ? "Saving…" : "Save changes"}</Button>
       </div>
     </div>
@@ -110,28 +133,34 @@ function PageLayoutEditor({ initialPage, onDirtyChange }: { initialPage: PageKin
       {page === "product" && <select aria-label="Product to preview" value={previewSlug ?? ""} onChange={e => setProductSlug(e.target.value)} className="border border-input rounded-md bg-background p-2 max-w-full">{products.map(p => <option key={p.id} value={p.slug}>{p.name}</option>)}</select>}
       <Button variant="ghost" onClick={() => { if (window.confirm("Restore default sections? Save changes to apply.")) change(defaults(page)); }}>Restore default sections</Button>
     </div>
-    <div className="grid xl:grid-cols-[minmax(380px,0.8fr)_minmax(0,1.2fr)] gap-6">
-      <div className="space-y-4 min-w-0">
+    <div className="grid xl:grid-cols-[minmax(0,340px)_minmax(0,1fr)] gap-6">
+      <div className="space-y-4 min-w-0 xl:max-h-[850px] xl:overflow-y-auto xl:pr-2">
+        <Button variant={editingHeader ? "secondary" : "outline"} className="w-full justify-start" onClick={() => { setEditingHeader(true); setSelected(null); frame.current?.contentWindow?.postMessage({ kind: "tf-editor-highlight", node: "header" }, window.location.origin); }}>Header & navigation</Button>
+        {editingHeader && <div className="space-y-4 border-b border-border pb-5">
+          <h3 className="font-semibold">Header & navigation</h3>
+          {navigation.map((item, index) => <div key={item.id} className="space-y-2 border-b border-border pb-3">
+            <EditorField label={`Navigation ${index + 1} label`} value={item.label} onChange={label => { setNavigation(navigation.map(n => n.id === item.id ? { ...n, label } : n)); setDirty(true); }} />
+            <EditorField label={`Navigation ${index + 1} link`} value={item.url} onChange={url => { setNavigation(navigation.map(n => n.id === item.id ? { ...n, url } : n)); setDirty(true); }} />
+            <div className="flex gap-1">
+              <Button size="icon" variant="ghost" title="Move link up" aria-label={`Move navigation ${index + 1} up`} disabled={index === 0} onClick={() => { const next = [...navigation]; const previous = next[index - 1]; if (!previous) return; next[index - 1] = item; next[index] = previous; setNavigation(next); setDirty(true); }}><ArrowUp /></Button>
+              <Button size="icon" variant="ghost" title="Move link down" aria-label={`Move navigation ${index + 1} down`} disabled={index === navigation.length - 1} onClick={() => { const next = [...navigation]; const following = next[index + 1]; if (!following) return; next[index + 1] = item; next[index] = following; setNavigation(next); setDirty(true); }}><ArrowDown /></Button>
+              <Button size="icon" variant="ghost" title={item.enabled ? "Hide link" : "Show link"} aria-label={`Toggle navigation ${index + 1}`} onClick={() => { setNavigation(navigation.map(n => n.id === item.id ? { ...n, enabled: !n.enabled } : n)); setDirty(true); }}>{item.enabled ? <Eye /> : <EyeOff />}</Button>
+              <Button size="icon" variant="ghost" title="Remove link" aria-label={`Remove navigation ${index + 1}`} onClick={() => { setNavigation(navigation.filter(n => n.id !== item.id)); setDirty(true); }}><Trash2 /></Button>
+            </div>
+          </div>)}
+          <Button variant="outline" disabled={navigation.length >= 12} onClick={() => { setNavigation([...navigation, { id: crypto.randomUUID(), label: "Track order", url: "/track-order", enabled: true }]); setDirty(true); }}><Plus />Add navigation link</Button>
+          <EditorField label="Header button text" value={headerCta.label} onChange={label => { setHeaderCta({ ...headerCta, label }); setDirty(true); }} />
+          <EditorField label="Header button link" value={headerCta.url} onChange={url => { setHeaderCta({ ...headerCta, url }); setDirty(true); }} />
+          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={headerCta.enabled} onChange={e => { setHeaderCta({ ...headerCta, enabled: e.target.checked }); setDirty(true); }} />Show header button</label>
+        </div>}
+        {active && !editingHeader && <div className="space-y-4 border-b border-border pb-5"><h3 className="font-semibold">{SECTION_LABELS[active.type]}</h3><SectionInspector key={active.id} section={active} image={image} onChange={patch} onUploading={setUploading} /></div>}
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={({ active: a, over }) => { if (over) change(moveSection(rows, String(a.id), String(over.id))); }}>
-          <SortableContext items={rows.map(s => s.id)} strategy={verticalListSortingStrategy}><ol className="space-y-2">{rows.map((s, i) => <SectionRow key={s.id} section={s} selected={selected === s.id} first={i === 0} last={i === rows.length - 1} onSelect={() => setSelected(s.id)} onMove={d => { const target = rows[i + d]; if (target) change(moveSection(rows, s.id, target.id)); }} onToggle={() => change(rows.map(r => r.id === s.id ? { ...r, enabled: !r.enabled } : r))} onRemove={() => { if (window.confirm("Remove this section from the page?")) change(rows.filter(r => r.id !== s.id)); }} />)}</ol></SortableContext>
+          <SortableContext items={rows.map(s => s.id)} strategy={verticalListSortingStrategy}><ol className="space-y-2">{rows.map((s, i) => <SectionRow key={s.id} section={s} selected={selected === s.id} first={i === 0} last={i === rows.length - 1} onSelect={() => { setSelected(s.id); setImage(null); setEditingHeader(false); frame.current?.contentWindow?.postMessage({ kind: "tf-editor-highlight", sectionId: s.id }, window.location.origin); }} onMove={d => { const target = rows[i + d]; if (target) change(moveSection(rows, s.id, target.id)); }} onToggle={() => change(rows.map(r => r.id === s.id ? { ...r, enabled: !r.enabled } : r))} onRemove={() => { if (window.confirm("Remove this section from the page?")) change(rows.filter(r => r.id !== s.id)); }} />)}</ol></SortableContext>
         </DndContext>
         <div className="flex gap-2"><select aria-label="Section type" className="min-w-0 flex-1 border border-input rounded-md p-2 bg-background" value={addType} onChange={e => setAddType(e.target.value)}>{available.map(t => <option key={t} value={t}>{SECTION_LABELS[t]}</option>)}</select><Button onClick={() => { const id = crypto.randomUUID(); change([...rows, { id, type: addType, enabled: true }]); setSelected(id); }}><Plus />Add section</Button></div>
-        {active && <div className="border-t border-border pt-5 space-y-4"><h3 className="font-semibold">{SECTION_LABELS[active.type]}</h3>
-          {active.type === "text" || active.type === "image" ? <>
-            <label className="block text-sm">Heading<input aria-label="Section heading" className="block w-full mt-2 border border-input bg-background rounded-md p-2" value={active.title ?? ""} onChange={e => patch({ title: e.target.value })} /></label>
-            <label className="block text-sm">Text<textarea aria-label="Section text" rows={4} className="block w-full mt-2 border border-input bg-background rounded-md p-2" value={active.body ?? ""} onChange={e => patch({ body: e.target.value })} /></label>
-            {active.type === "image" && <>
-              <label className="inline-flex items-center gap-2 text-sm cursor-pointer border border-input p-3 rounded-md"><Upload />{uploading ? "Uploading…" : "Upload photograph"}<input type="file" accept="image/*" className="sr-only" disabled={uploading} onChange={async e => {
-                const file = e.target.files?.[0], id = active.id; if (!file) return; setUploading(true);
-                try { const result = await uploadToCloudinary(file, "page-sections", "image"); setRows(previous => previous.map(s => s.id === id ? { ...s, image: result.url } : s)); setDirty(true); }
-                catch (err) { toast.error(err instanceof Error ? err.message : "Upload failed"); } finally { setUploading(false); }
-              }} /></label>
-              <label className="block text-sm">Image description<input aria-label="Image description" className="block w-full mt-2 border border-input bg-background rounded-md p-2" value={active.alt ?? ""} onChange={e => patch({ alt: e.target.value })} /></label>
-            </>}
-          </> : <p className="text-muted-foreground text-sm">Existing content is managed in its corresponding admin section.</p>}
-        </div>}
+        <AiTool task="design" label="Design with AI" facts={JSON.stringify({ page, sections: rows, navigation, headerCta, allowedTypes: available })} onApply={raw => { try { const proposal = parsePageDesignProposal(raw, page); if (!window.confirm(`${proposal.summary}\nApply this proposal to your unsaved preview?`)) return; if (proposal.sections) setRows(proposal.sections); if (proposal.navigation) setNavigation(proposal.navigation); if (proposal.headerCta) setHeaderCta(proposal.headerCta); setDirty(true); } catch (error) { toast.error(error instanceof Error ? error.message : "The proposal could not be applied"); } }} />
       </div>
-      <div className="min-w-0"><h3 className="text-sm font-semibold mb-3">Live preview</h3>{source ? <iframe key={source} ref={frame} src={source} title="Storefront page preview" onLoad={sendPreview} className="w-full h-[850px] border border-border rounded-md bg-background" /> : <p className="text-muted-foreground">No published sofas available to preview.</p>}</div>
+      <div className="min-w-0"><div className="flex items-center justify-between gap-2 mb-3"><h3 className="text-sm font-semibold">Live preview</h3><div className="flex gap-1" role="group" aria-label="Preview screen size">{([{ id: "desktop", Icon: Monitor }, { id: "tablet", Icon: Tablet }, { id: "mobile", Icon: Smartphone }] as const).map(({ id, Icon }) => <Button key={id} size="icon" variant={screen === id ? "secondary" : "ghost"} aria-label={`${id} preview`} title={`${id} preview`} aria-pressed={screen === id} onClick={() => setScreen(id)}><Icon /></Button>)}</div></div><div className="overflow-x-auto bg-muted/30">{source ? <iframe key={source} ref={frame} src={source} title="Storefront page preview" onLoad={sendPreview} className={`block mx-auto h-[850px] border border-border rounded-md bg-background ${screen === "mobile" ? "w-[375px] max-w-full" : screen === "tablet" ? "w-[768px] max-w-full" : "w-full"}`} /> : <p className="text-muted-foreground">No published sofas available to preview.</p>}</div></div>
     </div>
   </div>;
 }

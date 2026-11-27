@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import showcaseVideo from "@/assets/sofa-living-room.mp4.asset.json";
 import showcasePoster from "@/assets/sofa-living-room.jpg.asset.json";
 import { heroSlideVideo } from "@/lib/hero-slide-video";
+import { EditableImage, usePageSectionContent } from "@/components/page-sections";
+import { EditorialLink } from "@/components/editorial-link";
 
 const slides = [
   {
@@ -58,6 +60,7 @@ const slides = [
 export function HeroCarousel() {
   const [i, setI] = useState(0);
   const brand = useBrand();
+  const { section, image } = usePageSectionContent();
   const videoSettings = useVideoSettings();
   const [screen, setScreen] = useState<"desktop" | "tablet" | "mobile">("desktop");
   useEffect(() => {
@@ -71,14 +74,16 @@ export function HeroCarousel() {
   const settings = videoSettings.data ?? { disabled: [] };
   const configuredVideo = selectHeroVideo(settings, screen, brand);
   useEffect(() => {
+    if (window.parent !== window && new URLSearchParams(window.location.search).get("sectionPreview") === "1") return;
     const t = setTimeout(() => setI((v) => (v + 1) % slides.length), i === 3 ? 14000 : 6500);
     return () => clearTimeout(t);
   }, [i]);
   const selectedVideo = heroSlideVideo(i, configuredVideo, showcaseVideo.url);
   const video = !videoSettings.error && videoEnabled(settings, selectedVideo) ? selectedVideo : "";
-  const base = slides[i];
+  const base = slides[i] ?? slides[0];
+  if (!base) return null;
   // The first slide is CMS-driven so admin edits show up on the live site.
-  const s =
+  const original =
     i === 0
       ? {
           ...base,
@@ -90,12 +95,15 @@ export function HeroCarousel() {
           cta: brand.hero_cta || base.cta,
         }
       : base;
+  const override = section?.heroSlides?.[i];
+  const s = { ...original, image: image(`hero:${i}`, original.image), eyebrow: override?.eyebrow || original.eyebrow, title: override?.title || original.title, italic: override?.italic || original.italic, body: override?.body || original.body, cta: override?.buttonLabel || original.cta };
+  const href = override?.buttonUrl || ("params" in original && original.params ? `/products/${original.params.slug}` : "/design");
 
   return (
     <section className="relative min-h-[92vh] flex items-center overflow-hidden bg-[color:var(--brand-cream)]">
       {/* background image */}
       <div key={i} className="absolute inset-0">
-        {video ? (parseVideoSource(video)?.kind === "file" ? <HeroVideo key={video} url={video} poster={s.image} /> : <ProductVideo key={video} url={video} title="Homepage sofa video" productId="homepage" />) : <img src={s.image} alt="" aria-hidden fetchPriority={i === 0 ? "high" : "auto"} decoding="async" className="w-full h-full object-cover animate-kenburns" />}
+        {video ? (parseVideoSource(video)?.kind === "file" ? <HeroVideo key={video} url={video} poster={s.image} /> : <ProductVideo key={video} url={video} title="Homepage sofa video" productId="homepage" />) : <EditableImage imageKey={`hero:${i}`} data-editor-priority src={s.image} alt={override?.alt ?? ""} aria-hidden fetchPriority={i === 0 ? "high" : "auto"} decoding="async" className="w-full h-full object-cover animate-kenburns" />}
         <div className="absolute inset-0 bg-gradient-to-r from-[color:var(--brand-cream)] via-[color:var(--brand-cream)]/70 md:via-[color:var(--brand-cream)]/50 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-[color:var(--brand-cream)]/60 via-transparent to-transparent md:hidden" />
       </div>
@@ -112,15 +120,9 @@ export function HeroCarousel() {
           {s.body}
         </p>
         <div className="flex flex-wrap gap-3 sm:gap-4">
-          {"params" in s && s.params ? (
-            <Link to="/products/$slug" params={s.params} className="px-6 sm:px-8 py-4 bg-[color:var(--brand-dark)] text-white text-[10px] sm:text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors">
+            <EditorialLink href={href} className="px-6 sm:px-8 py-4 bg-primary text-primary-foreground text-[10px] sm:text-xs font-bold uppercase tracking-widest hover:opacity-90 transition-colors">
               {s.cta}
-            </Link>
-          ) : (
-            <Link to="/design" className="px-6 sm:px-8 py-4 bg-[color:var(--brand-dark)] text-white text-[10px] sm:text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors">
-              {s.cta}
-            </Link>
-          )}
+            </EditorialLink>
           <Link to="/collections" className="px-6 sm:px-8 py-4 border border-[color:var(--brand-dark)]/20 text-[10px] sm:text-xs font-bold uppercase tracking-widest hover:bg-[color:var(--brand-dark)] hover:text-white transition-all">
             View Catalog
           </Link>

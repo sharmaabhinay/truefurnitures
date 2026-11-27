@@ -17,7 +17,7 @@ export function VisualEditorBridge() {
       event.preventDefault();
       event.stopPropagation();
       const target = event.target instanceof Element ? event.target : null;
-      const image = target?.closest<HTMLElement>("[data-editor-image]");
+      const image = target?.closest<HTMLElement>("[data-editor-image]") ?? target?.closest("[data-page-section]")?.querySelector<HTMLElement>("[data-editor-image][data-editor-priority]");
       const section = target?.closest<HTMLElement>("[data-page-section]");
       const node = target?.closest<HTMLElement>("[data-editor-node]");
       highlight(image ?? node ?? section ?? null);
@@ -35,7 +35,7 @@ export function VisualEditorBridge() {
       const { sectionId, imageKey, node } = event.data;
       const elements = document.querySelectorAll<HTMLElement>("[data-editor-image], [data-page-section], [data-editor-node]");
       const match = [...elements].find(element => imageKey
-        ? element.dataset.editorImage === imageKey
+        ? element.dataset.editorImage === imageKey && element.dataset.editorSection === sectionId
         : node ? element.dataset.editorNode === node
           : element.dataset.pageSection === sectionId && !element.dataset.editorImage && !element.dataset.editorNode);
       highlight(match ?? null);

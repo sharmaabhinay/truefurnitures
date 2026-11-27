@@ -9,6 +9,8 @@ import { useCustomerUnread, useAdminUnread } from "@/lib/messages";
 import { FiSearch, FiShoppingBag, FiMenu, FiX, FiChevronDown, FiMessageSquare, FiUser, FiPackage, FiHeart, FiMapPin, FiLogOut, FiTruck } from "react-icons/fi";
 import { Button } from "@/components/ui/button";
 import { isProductLive } from "@/lib/availability";
+import { useSiteNavigation } from "@/lib/use-site-navigation";
+import { EditorialLink } from "@/components/editorial-link";
 
 type SearchItem = {
   slug: string;
@@ -84,19 +86,14 @@ export function SiteHeader() {
 
   // Minimal top nav — only the essentials are shown on desktop.
   const f = brand.features ?? DEFAULT_FEATURES;
-  const primaryNav = [
-    { to: "/collections", label: "Collections" },
-    { to: "/room-advisor", label: "Room advisor" },
-    ...(f.hireCarpenter ? [{ to: "/hire-carpenter", label: "Hire a Carpenter" }] : []),
-    { to: "/contact", label: "Contact" },
-  ] as { to: string; label: string }[];
+  const { navigation, cta } = useSiteNavigation(f);
+  const primaryNav = navigation.map(item => ({ to: item.url, label: item.label }));
   // The drawer groups everything into collapsible submenus so it never overflows.
   const drawerGroups = [
     {
       title: "Shop",
       items: [
-        { to: "/collections", label: "Collections" },
-        { to: "/room-advisor", label: "Room advisor" },
+        ...primaryNav,
         ...(f.design3d ? [{ to: "/design", label: "Design Yours" }] : []),
         ...(f.gallery ? [{ to: "/gallery", label: "Real Homes of Indore" }] : []),
         { to: "/track-order", label: "Track order" },
@@ -153,13 +150,13 @@ export function SiteHeader() {
           {brand.announcement}
         </div>
       )}
-      <nav className="sticky top-0 z-50 flex items-center justify-between gap-3 px-4 sm:px-6 md:px-10 py-4 md:py-5 bg-[color:var(--brand-cream)]/85 backdrop-blur-md border-b border-[color:var(--brand-dark)]/5">
+      <nav data-editor-node="header" className="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 md:px-10 py-4 md:py-5 bg-[color:var(--brand-cream)]/85 backdrop-blur-md border-b border-[color:var(--brand-dark)]/5">
         <Link to="/" className="font-display text-xl sm:text-2xl font-bold tracking-tight text-[color:var(--brand-dark)] hover:text-[color:var(--brand-accent)] transition-colors shrink-0">
           {brand.brand_name}
         </Link>
-        <div className="hidden lg:flex gap-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-[color:var(--brand-dark)]">
+        <div className="hidden lg:flex flex-wrap gap-x-6 gap-y-3 min-w-0 max-w-full text-[11px] font-semibold uppercase tracking-[0.2em] text-[color:var(--brand-dark)]">
           {primaryNav.map((n) => (
-            <Link key={n.to} to={n.to} className="hover:text-[color:var(--brand-accent)] transition-colors">{n.label}</Link>
+            <EditorialLink key={`${n.to}-${n.label}`} href={n.to} className="break-words hover:text-[color:var(--brand-accent)] transition-colors">{n.label}</EditorialLink>
           ))}
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
@@ -325,13 +322,10 @@ export function SiteHeader() {
               Sign in
             </Link>
           )}
-          {f.design3d && (
-          <Link
-            to="/design"
-            className="hidden sm:inline-block px-4 sm:px-6 py-2.5 bg-[color:var(--brand-dark)] text-white text-[10px] font-bold uppercase tracking-widest hover:bg-[color:var(--brand-accent)] transition-colors whitespace-nowrap"
-          >
-            Design Yours
-          </Link>
+          {cta.enabled && (cta.url !== "/design" || f.design3d) && (
+          <EditorialLink href={cta.url} className="hidden sm:inline-block max-w-48 px-4 sm:px-6 py-2.5 bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-widest hover:opacity-90 transition-colors break-words">
+            {cta.label}
+          </EditorialLink>
           )}
           <button
             aria-label="Open menu"
@@ -393,14 +387,14 @@ export function SiteHeader() {
                     {expanded && (
                       <div className="pb-2 flex flex-col animate-fade-up">
                         {g.items.map((n) => (
-                          <Link
+                          <EditorialLink
                             key={n.to}
-                            to={n.to}
+                            href={n.to}
                             onClick={() => setOpen(false)}
                             className="py-2.5 pl-3 text-sm text-[color:var(--brand-dark)]/75 hover:text-[color:var(--brand-accent)] transition-colors"
                           >
                             {n.label}
-                          </Link>
+                          </EditorialLink>
                         ))}
                       </div>
                     )}
@@ -427,10 +421,10 @@ export function SiteHeader() {
                 <Link to="/auth" onClick={() => setOpen(false)} className="py-3 border-b border-[color:var(--brand-dark)]/10 text-sm font-semibold uppercase tracking-widest">Sign in</Link>
               )}
             </div>
-            {f.design3d && (
-              <Link to="/design" onClick={() => setOpen(false)} className="mt-auto text-center px-6 py-4 bg-[color:var(--brand-dark)] text-white text-xs font-bold uppercase tracking-widest">
-                Design Yours
-              </Link>
+            {cta.enabled && (cta.url !== "/design" || f.design3d) && (
+              <EditorialLink href={cta.url} onClick={() => setOpen(false)} className="mt-auto text-center px-6 py-4 bg-primary text-primary-foreground text-xs font-bold uppercase tracking-widest break-words">
+                {cta.label}
+              </EditorialLink>
             )}
           </div>
         </div>

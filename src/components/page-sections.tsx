@@ -31,6 +31,11 @@ export function EditableCopy({ field, fallback }: { field: "eyebrow" | "title" |
   return <>{typeof value === "string" && value.trim() ? value : fallback}</>;
 }
 
+export function EditableSectionLink({ href, children, className }: { href: string; children: ReactNode; className?: string }) {
+  const { section } = usePageSectionContent();
+  return <EditorialLink href={section?.buttonUrl || href} {...(className ? { className } : {})}>{section?.buttonLabel || children}</EditorialLink>;
+}
+
 export function EditableImage({ imageKey, src, alt, ...props }: ImgHTMLAttributes<HTMLImageElement> & { imageKey: string; src: string; alt: string }) {
   const { section, image, imageAlt } = usePageSectionContent();
   const customSource = section?.type === "image" && imageKey === "main" ? safeImage(section.image) : undefined;
@@ -49,9 +54,7 @@ function CustomSection({ section }: { section: PageSection }) {
     {section.eyebrow && <p className="tf-chip mb-4">{section.eyebrow}</p>}
     {section.title && <h2 className="font-display text-3xl sm:text-4xl mb-5">{section.title}</h2>}
     {section.body && <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap max-w-3xl">{section.body}</p>}
-    {!!section.buttons?.length && <div className="flex flex-wrap gap-3 mt-8">
-      {section.buttons.map(button => <EditorialLink key={button.id} href={button.url} className="inline-flex items-center justify-center rounded-md bg-primary px-5 py-3 text-xs font-semibold uppercase tracking-widest text-primary-foreground transition-opacity hover:opacity-90">{button.label}</EditorialLink>)}
-    </div>}
+    {section.buttonLabel && section.buttonUrl && <div className="mt-6"><EditableSectionLink href={section.buttonUrl} className="inline-flex items-center justify-center rounded-md bg-primary px-5 py-3 text-xs font-semibold text-primary-foreground">{section.buttonLabel}</EditableSectionLink></div>}
   </section>;
 }
 
@@ -89,7 +92,7 @@ export function PageSections({ page, sections }: { page: PageKind; sections: Rec
         data-page-section={s.id}
         data-section-type={s.type}
         className={`${spacingClass[style.spacing]} ${backgroundClass[style.background]} ${style.alignment === "center" ? "text-center" : ""}`}
-      >{content}</div>
+      >{content}{!!s.buttons?.length && <div className="max-w-6xl mx-auto px-6 pb-8 flex flex-wrap gap-3">{s.buttons.map(button => <EditorialLink key={button.id} href={button.url} className="inline-flex items-center justify-center rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground break-words">{button.label}</EditorialLink>)}</div>}</div>
     </SectionContext.Provider>;
   })}</>;
 }

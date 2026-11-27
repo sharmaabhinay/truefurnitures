@@ -3,6 +3,7 @@ import useEmblaCarousel from "embla-carousel-react";
 import { Box } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
+import { EditableImage } from "@/components/page-sections";
 
 type GalleryImage = { src: string; label: string };
 
@@ -60,7 +61,7 @@ export function ProductGallery({ images, activeImage, setActiveImage, sofaName, 
           <div className="flex">
             {images.map((image, index) => (
               <div key={`${index}-${image.src}`} className="min-w-0 flex-[0_0_100%] aspect-[4/5]" role="group" aria-roledescription="slide" aria-label={`${index + 1} of ${images.length}`} aria-hidden={selected !== index}>
-                <img src={image.src} alt={`${sofaName} — ${image.label}`} width={1000} height={1250}
+                <EditableImage imageKey={`product:${sofaSlug}:${index}`} src={image.src} alt={`${sofaName} — ${image.label}`} width={1000} height={1250}
                   loading={index === 0 ? "eager" : "lazy"} decoding="async" draggable={false}
                   className="w-full h-full object-cover select-none" />
               </div>
@@ -75,7 +76,7 @@ export function ProductGallery({ images, activeImage, setActiveImage, sofaName, 
         {images.map((image, index) => (
           <Button key={`${index}-${image.src}`} variant="ghost" onClick={() => choose(index)} aria-label={`View ${image.label}`} aria-pressed={selected === index}
             className={`h-auto w-16 sm:w-20 shrink-0 aspect-square p-0 rounded-none overflow-hidden border-2 ${selected === index ? "border-primary" : "border-transparent hover:border-border"}`}>
-            <img src={image.src} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
+            <EditableImage imageKey={`product:${sofaSlug}:${index}`} src={image.src} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
           </Button>
         ))}
       </div>
