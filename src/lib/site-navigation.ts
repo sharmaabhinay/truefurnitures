@@ -18,6 +18,18 @@ export const DEFAULT_NAVIGATION: NavigationItem[] = [
 ];
 export const DEFAULT_HEADER_CTA: HeaderCta = { label: "Design Yours", url: "/design", enabled: true };
 
+export const HEADER_ROTATION_MS = 3_000;
+const ROTATING_PATHS = new Set(["/room-advisor", "/hire-carpenter", "/contact", "/design"]);
+
+export function splitHeaderNavigation(navigation: NavigationItem[], cta: HeaderCta, features: FeatureFlags) {
+  const links = navigation.filter(item => item.enabled && (!item.feature || features[item.feature]) && (item.url !== "/design" || features.design3d) && (item.url !== "/hire-carpenter" || features.hireCarpenter));
+  const rotating = links.filter(item => ROTATING_PATHS.has(item.url));
+  if (cta.enabled && cta.url === "/design" && features.design3d && !rotating.some(item => item.url === cta.url)) {
+    rotating.push({ id: "header-design", ...cta });
+  }
+  return { primary: links.filter(item => !ROTATING_PATHS.has(item.url)), rotating };
+}
+
 export function normalizeNavigation(value: unknown): NavigationItem[] {
   if (!Array.isArray(value)) return DEFAULT_NAVIGATION.map(item => ({ ...item }));
   const seen = new Set<string>();

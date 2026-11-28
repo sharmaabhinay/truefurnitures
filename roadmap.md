@@ -1,5 +1,9 @@
 # Roadmap — fix issues from test report (Oct 2026)
 
+# Header comment 4d127203-84ca-4f95-a5a4-a33528c2222f
+- [ ] Consolidate Room Advisor, Hire a Carpenter, Contact and Design Yours into one three-second upward-rotating link and restore a responsive frosted-glass header.
+- [ ] Verify rotation, link destinations, menu access and phone/tablet/desktop layout; reply to the comment.
+
 # Dashboard redesign comment a0c70229-4ca3-474f-b829-611a6304bc96
 - [x] Redesign dashboard metrics, chart, recent orders, quick actions and navigation without changing stored data or business calculations.
 - [x] Verify presentation at 320px, 360px, 768px and 1280px: all 12 metrics, five quick actions, recent-order rows and locations fit; seven button callbacks, chart tooltip, loading and error/retry states pass with no overflow or page errors. Seventeen existing analytics/shortcut tests pass; preview build OK. Reply to the thread with these results.

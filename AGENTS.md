@@ -42,3 +42,4 @@
 - Public order tracking returns an explicit safe timeline projection; workshop media requires a matching order phone or verified owner session, so guessable order numbers never reveal customer details or photos.
 - Customer-home submissions use server-only Firestore access and validated Cloudinary image uploads; require a delivered owner order and consent, and publish only after staff moderation to prevent spoofed purchase claims or unreviewed photos.
 - Keep dashboard presentation separate from protected reads, using scoped analytics tokens and responsive order rows; this allows layout checks without fabricating live store data or changing business calculations.
+- Split header links from saved navigation into primary and rotating groups in a pure helper; pause rotation during interaction so the visible label and destination remain aligned.

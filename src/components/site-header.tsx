@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { isProductLive } from "@/lib/availability";
 import { useSiteNavigation } from "@/lib/use-site-navigation";
 import { EditorialLink } from "@/components/editorial-link";
+import { RotatingHeaderLink } from "@/components/rotating-header-link";
+import { splitHeaderNavigation } from "@/lib/site-navigation";
 
 type SearchItem = {
   slug: string;
@@ -88,6 +90,7 @@ export function SiteHeader() {
   const f = brand.features ?? DEFAULT_FEATURES;
   const { navigation, cta } = useSiteNavigation(f);
   const primaryNav = navigation.map(item => ({ to: item.url, label: item.label }));
+  const headerLinks = splitHeaderNavigation(navigation, cta, f);
   // The drawer groups everything into collapsible submenus so it never overflows.
   const drawerGroups = [
     {
@@ -150,17 +153,20 @@ export function SiteHeader() {
           {brand.announcement}
         </div>
       )}
-      <nav data-editor-node="header" className="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 md:px-10 py-4 md:py-5 bg-[color:var(--brand-cream)]/85 backdrop-blur-md border-b border-[color:var(--brand-dark)]/5">
-        <Link to="/" className="font-display text-xl sm:text-2xl font-bold tracking-tight text-[color:var(--brand-dark)] hover:text-[color:var(--brand-accent)] transition-colors shrink-0">
+      <nav aria-label="Main navigation" data-editor-node="header" className="tf-site-header sticky top-0 z-50 backdrop-blur-xl backdrop-saturate-150">
+        <Link to="/" className="tf-header-brand font-display font-bold text-brand-dark hover:text-brand-accent transition-colors">
           {brand.brand_name}
         </Link>
-        <div className="hidden lg:flex flex-wrap gap-x-6 gap-y-3 min-w-0 max-w-full text-[11px] font-semibold uppercase tracking-[0.2em] text-[color:var(--brand-dark)]">
-          {primaryNav.map((n) => (
-            <EditorialLink key={`${n.to}-${n.label}`} href={n.to} className="break-words hover:text-[color:var(--brand-accent)] transition-colors">{n.label}</EditorialLink>
-          ))}
+        <div className="tf-header-explore">
+          <div className="tf-header-primary">
+            {headerLinks.primary.slice(0, 3).map((n) => (
+              <EditorialLink key={n.id} href={n.url} className="text-brand-dark hover:text-brand-accent transition-colors">{n.label}</EditorialLink>
+            ))}
+          </div>
+          <RotatingHeaderLink items={headerLinks.rotating} />
         </div>
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div ref={searchRef} className="relative hidden md:block">
+        <div className="tf-header-actions flex items-center gap-1 sm:gap-2">
+          <div ref={searchRef} className="relative hidden min-[1440px]:block">
             <div className="flex items-center border border-[color:var(--brand-dark)]/15 bg-white/70 focus-within:border-[color:var(--brand-dark)] transition-colors">
               <FiSearch className="ml-2.5 text-[color:var(--brand-dark)]/50 shrink-0" size={14} />
               <input
@@ -322,22 +328,22 @@ export function SiteHeader() {
               Sign in
             </Link>
           )}
-          {cta.enabled && (cta.url !== "/design" || f.design3d) && (
+          {cta.enabled && cta.url !== "/design" && (
           <EditorialLink href={cta.url} className="hidden sm:inline-block max-w-48 px-4 sm:px-6 py-2.5 bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-widest hover:opacity-90 transition-colors break-words">
             {cta.label}
           </EditorialLink>
           )}
-          <button
+          <Button variant="ghost" size="icon"
             aria-label="Open menu"
             onClick={() => setOpen(true)}
-            className="lg:hidden p-2 -mr-2 text-[color:var(--brand-dark)]"
+            className="text-brand-dark"
           >
             <FiMenu size={22} />
-          </button>
+          </Button>
         </div>
       </nav>
       {open && (
-        <div className="fixed inset-0 z-[60] lg:hidden">
+        <div className="fixed inset-0 z-[60]">
           <div className="absolute inset-0 bg-[color:var(--brand-dark)]/50 backdrop-blur-sm" onClick={() => setOpen(false)} />
           <div className="absolute right-0 top-0 h-full w-[86%] max-w-sm bg-[color:var(--brand-cream)] p-6 flex flex-col animate-slide-in">
             <div className="flex items-center justify-between mb-8">
